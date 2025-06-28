@@ -1,0 +1,601 @@
+"""Manim MCP server integration for animation generation."""
+
+import asyncio
+import logging
+import subprocess
+import time
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import AsyncIterator, List, Optional
+
+import aiohttp
+
+from .models import (AnimationRequest, AnimationResponse, AnimationScene,
+                     ManimConfig)
+
+
+class ManimMCPClient:
+    """Client for interacting with Manim MCP server."""
+
+    def __init__(self, config: Optional[ManimConfig] = None):
+        """Initialize the MCP client.
+
+        Args:
+            config: Manim configuration. Uses default if None.
+        """
+        self.config = config or ManimConfig()
+        self.logger = logging.getLogger(__name__)
+        self.server_process: Optional[subprocess.Popen] = None
+        self.session_pool: List[aiohttp.ClientSession] = []
+        self.active_connections = 0
+        self._health_check_task: Optional[asyncio.Task] = None
+        self._shutdown_event = asyncio.Event()
+
+    async def start_server(self) -> bool:
+        """Start the Manim MCP server.
+
+        Returns:
+            True if server started successfully, False otherwise
+        """
+        if self.is_server_running():
+            self.logger.info("Manim server already running")
+            return True
+
+        if not self.config.auto_start:
+            self.logger.error("Server not running and auto_start is disabled")
+            return False
+
+        try:
+            # Ensure output directories exist
+            if self.config.output_dir:
+                self.config.output_dir.mkdir(parents=True, exist_ok=True)
+            if self.config.temp_dir:
+                self.config.temp_dir.mkdir(parents=True, exist_ok=True)
+
+            # Build server command
+            cmd = self._build_server_command()
+
+            self.logger.info(f"Starting Manim MCP server: {' '.join(cmd)}")
+
+            # Start server process
+            self.server_process = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            )
+
+            # Wait for server to be ready
+            if await self._wait_for_server_ready():
+                self.logger.info(
+                    f"Manim server started successfully on {self.config.get_server_url()}"
+                )
+
+                # Start health check task
+                if self.config.auto_restart:
+                    self._health_check_task = asyncio.create_task(
+                        self._health_check_loop()
+                    )
+
+                return True
+            else:
+                self.logger.error("Server failed to start within timeout")
+                await self.stop_server()
+                return False
+
+        except Exception as e:
+            self.logger.error(f"Failed to start Manim server: {e}")
+            await self.stop_server()
+            return False
+
+    async def stop_server(self) -> None:
+        """Stop the Manim MCP server."""
+        self._shutdown_event.set()
+
+        # Stop health check task
+        if self._health_check_task:
+            self._health_check_task.cancel()
+            try:
+                await self._health_check_task
+            except asyncio.CancelledError:
+                pass
+
+        # Close session pool
+        await self._close_session_pool()
+
+        # Stop server process
+        if self.server_process:
+            try:
+                self.server_process.terminate()
+
+                # Wait for graceful shutdown
+                try:
+                    self.server_process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    self.logger.warning(
+                        "Server didn't shutdown gracefully, forcing termination"
+                    )
+                    self.server_process.kill()
+                    self.server_process.wait()
+
+                self.logger.info("Manim server stopped")
+            except Exception as e:
+                self.logger.error(f"Error stopping server: {e}")
+            finally:
+                self.server_process = None
+
+    async def render_scene(self, scene: AnimationScene, output_path: Path) -> bool:
+        """Render a single animation scene.
+
+        Args:
+            scene: Scene to render
+            output_path: Path for output video
+
+        Returns:
+            True if rendering succeeded, False otherwise
+        """
+        async with self._get_session() as session:
+            try:
+                # Prepare render request
+                request_data = {
+                    "scene_id": scene.scene_id,
+                    "initial_formula": scene.initial_formula,
+                    "final_formula": scene.final_formula,
+                    "intermediate_formulas": scene.intermediate_formulas,
+                    "transformation_type": scene.transformation_type.value,
+                    "duration": scene.duration,
+                    "highlighted_parts": scene.highlighted_parts,
+                    "output_path": str(output_path),
+                    "fade_in_time": scene.fade_in_time,
+                    "fade_out_time": scene.fade_out_time,
+                }
+
+                url = f"{self.config.get_server_url()}/render_scene"
+
+                timeout = aiohttp.ClientTimeout(total=self.config.render_timeout)
+
+                async with session.post(
+                    url, json=request_data, timeout=timeout
+                ) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        if result.get("success"):
+                            self.logger.debug(
+                                f"Successfully rendered scene {scene.scene_id}"
+                            )
+                            return True
+                        else:
+                            error_msg = result.get("error", "Unknown error")
+                            self.logger.error(f"Scene rendering failed: {error_msg}")
+                            return False
+                    else:
+                        error_text = await response.text()
+                        self.logger.error(
+                            f"Server error {response.status}: {error_text}"
+                        )
+                        return False
+
+            except asyncio.TimeoutError:
+                self.logger.error(f"Rendering timeout for scene {scene.scene_id}")
+                return False
+            except Exception as e:
+                self.logger.error(f"Error rendering scene {scene.scene_id}: {e}")
+                return False
+
+    async def render_animation(self, request: AnimationRequest) -> AnimationResponse:
+        """Render complete animation from request.
+
+        Args:
+            request: Animation request
+
+        Returns:
+            Animation response with results
+        """
+        start_time = time.time()
+
+        try:
+            # Ensure server is running
+            if not await self._ensure_server_running():
+                return AnimationResponse(
+                    request=request,
+                    success=False,
+                    error_message="Failed to start Manim server",
+                )
+
+            # Prepare output paths
+            output_dir = self.config.output_dir or Path.cwd() / "animations"
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            video_path = output_dir / f"{request.theorem_name}_{request.request_id}.mp4"
+            preview_path = (
+                output_dir / f"{request.theorem_name}_{request.request_id}_preview.png"
+            )
+
+            # Render segments
+            segment_paths = []
+            chapter_markers = []
+            current_time = 0.0
+
+            for i, segment in enumerate(request.segments):
+                segment_path = (
+                    output_dir
+                    / f"{request.theorem_name}_{request.request_id}_segment_{i}.mp4"
+                )
+
+                if await self._render_segment(segment, segment_path):
+                    segment_paths.append(segment_path)
+                    chapter_markers.append((current_time, segment.title))
+                    current_time += segment.total_duration
+                else:
+                    return AnimationResponse(
+                        request=request,
+                        success=False,
+                        error_message=f"Failed to render segment {i}: {segment.title}",
+                    )
+
+            # Combine segments into final video
+            if len(segment_paths) > 1:
+                if not await self._combine_segments(segment_paths, video_path):
+                    return AnimationResponse(
+                        request=request,
+                        success=False,
+                        error_message="Failed to combine video segments",
+                    )
+            elif len(segment_paths) == 1:
+                # Single segment, just copy/move
+                import shutil
+
+                shutil.copy2(segment_paths[0], video_path)
+            else:
+                return AnimationResponse(
+                    request=request,
+                    success=False,
+                    error_message="No segments were successfully rendered",
+                )
+
+            # Generate preview image
+            await self._generate_preview(video_path, preview_path)
+
+            # Calculate file size
+            file_size_mb = (
+                video_path.stat().st_size / (1024 * 1024)
+                if video_path.exists()
+                else None
+            )
+
+            # Get actual duration
+            actual_duration = await self._get_video_duration(video_path)
+
+            generation_time = (time.time() - start_time) * 1000
+
+            return AnimationResponse(
+                request=request,
+                video_path=video_path,
+                preview_image_path=preview_path if preview_path.exists() else None,
+                segments_paths=segment_paths,
+                actual_duration=actual_duration,
+                file_size_mb=file_size_mb,
+                generation_time_ms=generation_time,
+                chapter_markers=chapter_markers,
+                success=True,
+            )
+
+        except Exception as e:
+            generation_time = (time.time() - start_time) * 1000
+            self.logger.exception("Animation rendering failed")
+
+            return AnimationResponse(
+                request=request,
+                generation_time_ms=generation_time,
+                success=False,
+                error_message=str(e),
+            )
+
+    async def health_check(self) -> bool:
+        """Check if server is healthy.
+
+        Returns:
+            True if server is healthy, False otherwise
+        """
+        try:
+            async with self._get_session() as session:
+                url = f"{self.config.get_server_url()}/health"
+                timeout = aiohttp.ClientTimeout(total=5.0)
+
+                async with session.get(url, timeout=timeout) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        return result.get("status") == "healthy"
+                    return False
+
+        except Exception:
+            return False
+
+    def is_server_running(self) -> bool:
+        """Check if server process is running.
+
+        Returns:
+            True if server process is alive, False otherwise
+        """
+        if not self.server_process:
+            return False
+
+        try:
+            # Check if process is still alive
+            return self.server_process.poll() is None
+        except Exception:
+            return False
+
+    @asynccontextmanager
+    async def _get_session(self) -> AsyncIterator[aiohttp.ClientSession]:
+        """Get a session from the pool or create a new one."""
+        if self.active_connections >= self.config.max_connections:
+            # Wait for a connection to become available
+            await asyncio.sleep(0.1)
+
+        session = None
+        try:
+            if self.session_pool:
+                session = self.session_pool.pop()
+            else:
+                connector = aiohttp.TCPConnector(limit=self.config.max_connections)
+                session = aiohttp.ClientSession(
+                    connector=connector,
+                    timeout=aiohttp.ClientTimeout(total=self.config.connection_timeout),
+                )
+
+            self.active_connections += 1
+            yield session
+
+        finally:
+            self.active_connections -= 1
+            if session and not session.closed:
+                self.session_pool.append(session)
+
+    async def _close_session_pool(self) -> None:
+        """Close all sessions in the pool."""
+        while self.session_pool:
+            session = self.session_pool.pop()
+            await session.close()
+
+    def _build_server_command(self) -> List[str]:
+        """Build command to start Manim MCP server."""
+        cmd = [
+            "python",
+            "-m",
+            "manim_mcp_server",
+            "--host",
+            self.config.server_host,
+            "--port",
+            str(self.config.server_port),
+            "--max-renders",
+            str(self.config.max_concurrent_renders),
+        ]
+
+        if self.config.output_dir:
+            cmd.extend(["--output-dir", str(self.config.output_dir)])
+
+        if self.config.temp_dir:
+            cmd.extend(["--temp-dir", str(self.config.temp_dir)])
+
+        if self.config.keep_temp_files:
+            cmd.append("--keep-temp")
+
+        return cmd
+
+    async def _wait_for_server_ready(self) -> bool:
+        """Wait for server to be ready to accept connections."""
+        start_time = time.time()
+
+        while time.time() - start_time < self.config.server_timeout:
+            if await self.health_check():
+                return True
+
+            await asyncio.sleep(1.0)
+
+        return False
+
+    async def _ensure_server_running(self) -> bool:
+        """Ensure server is running, start if needed."""
+        if await self.health_check():
+            return True
+
+        if self.config.auto_start:
+            return await self.start_server()
+
+        return False
+
+    async def _health_check_loop(self) -> None:
+        """Background task for health checking and auto-restart."""
+        while not self._shutdown_event.is_set():
+            try:
+                await asyncio.sleep(self.config.health_check_interval)
+
+                if self._shutdown_event.is_set():
+                    break
+
+                if not await self.health_check():
+                    self.logger.warning("Server health check failed")
+
+                    if self.config.auto_restart:
+                        self.logger.info("Attempting to restart server")
+                        await self.stop_server()
+                        await asyncio.sleep(2.0)
+
+                        if not self._shutdown_event.is_set():
+                            await self.start_server()
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                self.logger.error(f"Health check error: {e}")
+
+    async def _render_segment(self, segment, output_path: Path) -> bool:
+        """Render a single segment."""
+        try:
+            async with self._get_session() as session:
+                request_data = {
+                    "segment_title": segment.title,
+                    "scenes": [
+                        {
+                            "scene_id": scene.scene_id,
+                            "initial_formula": scene.initial_formula,
+                            "final_formula": scene.final_formula,
+                            "intermediate_formulas": scene.intermediate_formulas,
+                            "transformation_type": scene.transformation_type.value,
+                            "duration": scene.duration,
+                            "highlighted_parts": scene.highlighted_parts,
+                            "narration_text": scene.narration_text,
+                        }
+                        for scene in segment.scenes
+                    ],
+                    "output_path": str(output_path),
+                }
+
+                url = f"{self.config.get_server_url()}/render_segment"
+                timeout = aiohttp.ClientTimeout(
+                    total=self.config.render_timeout * len(segment.scenes)
+                )
+
+                async with session.post(
+                    url, json=request_data, timeout=timeout
+                ) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        return result.get("success", False)
+                    return False
+
+        except Exception as e:
+            self.logger.error(f"Error rendering segment: {e}")
+            return False
+
+    async def _combine_segments(
+        self, segment_paths: List[Path], output_path: Path
+    ) -> bool:
+        """Combine multiple segments into final video."""
+        try:
+            async with self._get_session() as session:
+                request_data = {
+                    "segment_paths": [str(p) for p in segment_paths],
+                    "output_path": str(output_path),
+                }
+
+                url = f"{self.config.get_server_url()}/combine_segments"
+                timeout = aiohttp.ClientTimeout(total=300.0)  # 5 minutes for combining
+
+                async with session.post(
+                    url, json=request_data, timeout=timeout
+                ) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        return result.get("success", False)
+                    return False
+
+        except Exception as e:
+            self.logger.error(f"Error combining segments: {e}")
+            return False
+
+    async def _generate_preview(self, video_path: Path, preview_path: Path) -> bool:
+        """Generate preview image from video."""
+        try:
+            async with self._get_session() as session:
+                request_data = {
+                    "video_path": str(video_path),
+                    "preview_path": str(preview_path),
+                    "timestamp": 5.0,  # Generate preview at 5 seconds
+                }
+
+                url = f"{self.config.get_server_url()}/generate_preview"
+                timeout = aiohttp.ClientTimeout(total=30.0)
+
+                async with session.post(
+                    url, json=request_data, timeout=timeout
+                ) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        return result.get("success", False)
+                    return False
+
+        except Exception as e:
+            self.logger.error(f"Error generating preview: {e}")
+            return False
+
+    async def _get_video_duration(self, video_path: Path) -> Optional[float]:
+        """Get duration of video file."""
+        try:
+            async with self._get_session() as session:
+                request_data = {"video_path": str(video_path)}
+
+                url = f"{self.config.get_server_url()}/get_duration"
+                timeout = aiohttp.ClientTimeout(total=10.0)
+
+                async with session.post(
+                    url, json=request_data, timeout=timeout
+                ) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        return result.get("duration")
+                    return None
+
+        except Exception as e:
+            self.logger.error(f"Error getting video duration: {e}")
+            return None
+
+
+class ManimMCPManager:
+    """High-level manager for Manim MCP operations."""
+
+    def __init__(self, config: Optional[ManimConfig] = None):
+        """Initialize the manager.
+
+        Args:
+            config: Manim configuration
+        """
+        self.config = config or ManimConfig()
+        self.client = ManimMCPClient(self.config)
+        self.logger = logging.getLogger(__name__)
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        await self.client.start_server()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        await self.client.stop_server()
+
+    async def render_animation(self, request: AnimationRequest) -> AnimationResponse:
+        """Render animation with automatic retries."""
+        for attempt in range(self.config.retry_attempts):
+            try:
+                return await self.client.render_animation(request)
+            except Exception as e:
+                if attempt < self.config.retry_attempts - 1:
+                    self.logger.warning(
+                        f"Render attempt {attempt + 1} failed: {e}, retrying..."
+                    )
+                    await asyncio.sleep(self.config.retry_delay * (attempt + 1))
+                else:
+                    self.logger.error(f"All render attempts failed: {e}")
+                    return AnimationResponse(
+                        request=request,
+                        success=False,
+                        error_message=f"Rendering failed after {self.config.retry_attempts} attempts: {e}",
+                    )
+
+    async def validate_setup(self) -> bool:
+        """Validate that Manim setup is working."""
+        try:
+            # Check if we can start the server
+            if not await self.client.start_server():
+                return False
+
+            # Check health
+            if not await self.client.health_check():
+                return False
+
+            self.logger.info("Manim MCP setup validation successful")
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Manim setup validation failed: {e}")
+            return False
+        finally:
+            await self.client.stop_server()

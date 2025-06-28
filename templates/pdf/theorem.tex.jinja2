@@ -1,0 +1,36 @@
+\subsection{{{ theorem_name }}}
+
+\begin{theorem}[{{ theorem_name }}]
+{{ theorem_statement }}
+\end{theorem}
+
+\subsubsection{Explanation}
+{{ explanation }}
+
+{% if animation_path %}
+\subsubsection{Visual Proof}
+\textit{Animation available at: {{ animation_path }}}
+{% endif %}
+
+\subsubsection{Proof Steps}
+\begin{enumerate}
+{% for step in proof_steps %}
+\item \textbf{{{ step.description }}}
+  {% if step.mathematical_content %}
+  \[{{ step.mathematical_content }}\]
+  {% endif %}
+  {% if step.reasoning %}
+  
+  \textit{Reasoning:} {{ step.reasoning }}
+  {% endif %}
+{% endfor %}
+\end{enumerate}
+
+{% if key_insights %}
+\subsubsection{Key Insights}
+\begin{itemize}
+{% for insight in key_insights %}
+\item {{ insight }}
+{% endfor %}
+\end{itemize}
+{% endif %}

@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proof-sketcher"
+version = "0.1.0"
+description = "Transform Lean 4 theorems into natural language explanations with synchronized animations"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+keywords = ["lean", "theorem-proving", "documentation", "manim", "mathematics"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "click>=8.0",
+    "pydantic>=2.0",
+    "rich>=13.0",
+    "jinja2>=3.0",
+    "PyYAML>=6.0",
+    "toml>=0.10",
+    "typing-extensions>=4.0",
+    "tenacity>=8.0",
+    "orjson>=3.8",
+    "aiofiles>=23.0",
+    "aiohttp>=3.8",
+    "jsonschema>=4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+]
+
+[project.scripts]
+proof-sketcher = "proof_sketcher.cli:main"
+
+[tool.setuptools.package-data]
+proof_sketcher = [
+    "parser/*.lean",
+    "templates/*.jinja2",
+    "templates/**/*.jinja2",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "B", "Q"]
+ignore = ["E501", "B017", "N805", "F841", "W291"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
