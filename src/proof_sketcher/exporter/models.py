@@ -134,6 +134,7 @@ class ExportOptions(BaseModel):
         "{theorem_name}", description="Output filename pattern"
     )
     create_index: bool = Field(True, description="Create index file")
+    create_subdirs: bool = Field(True, description="Create subdirectories for assets")
 
     # Content options
     include_source: bool = Field(True, description="Include source code")
@@ -142,6 +143,7 @@ class ExportOptions(BaseModel):
         True, description="Include animations if available"
     )
     embed_media: bool = Field(True, description="Embed media vs. link")
+    include_timestamps: bool = Field(True, description="Include generation timestamps")
 
     # Formatting
     line_numbers: bool = Field(True, description="Show line numbers in code")
@@ -155,6 +157,30 @@ class ExportOptions(BaseModel):
     # Performance
     parallel_export: bool = Field(True, description="Use parallel processing")
     compress_output: bool = Field(False, description="Compress output files")
+
+    # Format-specific settings
+    # HTML settings
+    html_theme: str = Field("doc-gen4", description="HTML theme")
+    html_syntax_style: str = Field(
+        "monokai", description="Code syntax highlighting style"
+    )
+    html_embed_videos: bool = Field(True, description="Embed videos in HTML")
+
+    # Markdown settings
+    markdown_flavor: str = Field("github", description="Markdown flavor")
+    markdown_math_style: str = Field("katex", description="Math rendering style")
+    markdown_collapsible_proofs: bool = Field(
+        True, description="Make proofs collapsible"
+    )
+
+    # PDF settings
+    pdf_engine: str = Field("pdflatex", description="LaTeX engine")
+    pdf_document_class: str = Field("article", description="LaTeX document class")
+    pdf_font_size: int = Field(11, description="Base font size")
+
+    # Jupyter settings
+    jupyter_kernel: str = Field("python3", description="Jupyter kernel")
+    jupyter_include_outputs: bool = Field(False, description="Include cell outputs")
 
     class Config:
         """Pydantic configuration."""
@@ -243,21 +269,25 @@ class BaseExporter(ABC):
         """
         return TemplateContext(
             theorem_name=sketch.theorem_name,
-            theorem_statement=sketch.theorem_statement,
-            explanation=sketch.explanation,
+            theorem_statement="",  # ProofSketch doesn't have theorem_statement
+            explanation=sketch.introduction,  # Use introduction instead
             proof_steps=[
                 {
                     "description": step.description,
                     "mathematical_content": step.mathematical_content,
-                    "reasoning": step.reasoning,
-                    "prerequisites": step.prerequisites,
+                    "reasoning": step.intuition
+                    or "",  # Use intuition instead of reasoning
+                    "prerequisites": [],  # ProofStep doesn't have prerequisites
                 }
-                for step in sketch.steps
+                for step in sketch.key_steps  # Use key_steps instead of steps
             ],
-            key_insights=sketch.key_insights,
-            visualization_hints=sketch.visualization_hints,
+            key_insights=[],  # ProofSketch doesn't have key_insights
+            visualization_hints=[],  # ProofSketch doesn't have visualization_hints
             animation_path=str(animation_path) if animation_path else None,
             timestamp=(
-                datetime.now().isoformat() if self.options.include_timestamps else None
+                datetime.now().isoformat()
+                if hasattr(self.options, "include_timestamps")
+                and self.options.include_timestamps
+                else None
             ),
         )

@@ -6,8 +6,14 @@ from typing import List, Optional
 
 from ..generator.models import ProofSketch
 from .base import BaseExporterImpl
-from .models import (ExportContext, ExportFormat, ExportOptions, ExportResult,
-                     TemplateContext, TemplateType)
+from .models import (
+    ExportContext,
+    ExportFormat,
+    ExportOptions,
+    ExportResult,
+    TemplateContext,
+    TemplateType,
+)
 from .template_manager import TemplateManager
 
 
@@ -48,7 +54,7 @@ class MarkdownExporter(BaseExporterImpl):
 
         # Render markdown template
         markdown_content = self.template_manager.render_template(
-            ExportFormat.MARKDOWN, TemplateType.THEOREM, template_context.dict()
+            ExportFormat.MARKDOWN, TemplateType.THEOREM, template_context
         )
 
         # Write output file
@@ -78,10 +84,10 @@ class MarkdownExporter(BaseExporterImpl):
         for sketch in sketches:
             theorem_data = {
                 "name": sketch.theorem_name,
-                "statement": sketch.theorem_statement,
+                "statement": "",  # ProofSketch doesn't have theorem_statement
                 "url": context.theorem_links.get(sketch.theorem_name, "#"),
-                "summary": self._truncate_text(sketch.explanation, 150),
-                "step_count": len(sketch.steps),
+                "summary": self._truncate_text(sketch.introduction, 150),
+                "step_count": len(sketch.key_steps),
                 "has_animation": sketch.theorem_name in context.animations,
             }
             theorem_list.append(theorem_data)
@@ -132,10 +138,12 @@ class MarkdownExporter(BaseExporterImpl):
         Returns:
             Template context
         """
-        base_context = super()._create_context(sketch)
+        base_context = super()._create_template_context(sketch, context)
 
         # Markdown-specific settings
-        base_context.math_renderer = (
+        # Convert to dict to modify
+        context_dict = base_context
+        context_dict["math_renderer"] = (
             "katex" if self.options.markdown_flavor == "github" else "mathjax"
         )
 
@@ -145,10 +153,10 @@ class MarkdownExporter(BaseExporterImpl):
             # Make path relative to output directory
             try:
                 rel_path = animation_path.relative_to(self.options.output_dir)
-                base_context.animation_path = str(rel_path)
+                context_dict["animation_path"] = str(rel_path)
             except ValueError:
                 # If not relative, use absolute path
-                base_context.animation_path = str(animation_path)
+                context_dict["animation_path"] = str(animation_path)
 
         # Add navigation links as Markdown
         all_names = [s.theorem_name for s in context.sketches]
@@ -171,9 +179,12 @@ class MarkdownExporter(BaseExporterImpl):
             next_url = context.theorem_links.get(next_sketch.theorem_name, "#")
             nav_links.append(f"[{next_sketch.theorem_name} →]({next_url})")
 
-        base_context.custom_metadata["navigation"] = " | ".join(nav_links)
+        # Add navigation to context
+        if "custom_metadata" not in context_dict:
+            context_dict["custom_metadata"] = {}
+        context_dict["custom_metadata"]["navigation"] = " | ".join(nav_links)
 
-        return base_context
+        return context_dict
 
     def _truncate_text(self, text: str, max_length: int) -> str:
         """Truncate text to maximum length with ellipsis.
@@ -238,17 +249,8 @@ class MarkdownExporter(BaseExporterImpl):
         root_theorems = []
         dependent_theorems = {}
 
-        for sketch in sketches:
-            has_deps = False
-            for dep in sketch.dependencies:
-                if any(s.theorem_name == dep for s in sketches):
-                    has_deps = True
-                    if dep not in dependent_theorems:
-                        dependent_theorems[dep] = []
-                    dependent_theorems[dep].append(sketch)
-
-            if not has_deps:
-                root_theorems.append(sketch)
+        # ProofSketch doesn't have dependencies, so all theorems are root theorems
+        root_theorems = sketches[:]
 
         # Write root theorems
         if root_theorems:

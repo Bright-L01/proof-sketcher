@@ -203,6 +203,20 @@ class BaseExporterImpl:
             create_subdirs=self.options.create_subdirs,
         )
 
+    def _generate_filename(self, name: str, extension: str) -> Path:
+        """Generate output filename.
+
+        Args:
+            name: Base name (e.g., theorem name)
+            extension: File extension
+
+        Returns:
+            Full path to output file
+        """
+        filename = self.options.filename_pattern.format(theorem_name=name)
+        filename = self._sanitize_filename(filename)
+        return self.options.output_dir / f"{filename}.{extension}"
+
     def _get_output_url(self, sketch: ProofSketch) -> str:
         """Get output URL for a sketch.
 
@@ -228,6 +242,46 @@ class BaseExporterImpl:
             ExportFormat.JUPYTER: "ipynb",
         }
         return extensions.get(self.format, "txt")
+
+    def _create_template_context(
+        self, sketch: ProofSketch, context: ExportContext
+    ) -> dict:
+        """Create template context for rendering.
+
+        Args:
+            sketch: Proof sketch
+            context: Export context
+
+        Returns:
+            Template context dictionary
+        """
+        from datetime import datetime
+
+        from .models import TemplateContext
+
+        # Create TemplateContext using the BaseExporter method
+        template_context = TemplateContext(
+            theorem_name=sketch.theorem_name,
+            theorem_statement="",  # ProofSketch doesn't have theorem_statement
+            explanation=sketch.introduction,
+            proof_steps=[
+                {
+                    "description": step.description,
+                    "mathematical_content": step.mathematical_content,
+                    "reasoning": step.intuition or "",
+                    "prerequisites": [],
+                }
+                for step in sketch.key_steps
+            ],
+            key_insights=[],
+            visualization_hints=[],
+            animation_path=None,
+            timestamp=(
+                datetime.now().isoformat() if self.options.include_timestamps else None
+            ),
+        )
+
+        return template_context.dict()
 
     def _sanitize_filename(self, filename: str) -> str:
         """Sanitize filename for filesystem.
@@ -260,15 +314,41 @@ class BaseExporterImpl:
             dependencies = set()
 
             # Extract dependencies from proof steps
-            for step in sketch.steps:
-                for prereq in step.prerequisites:
-                    # Check if prerequisite is another theorem
-                    if any(s.theorem_name == prereq for s in sketches):
-                        dependencies.add(prereq)
+            # ProofStep doesn't have prerequisites, so skip this for now
+            # for step in sketch.key_steps:
+            #     for prereq in step.prerequisites:
+            #         # Check if prerequisite is another theorem
+            #         if any(s.theorem_name == prereq for s in sketches):
+            #             dependencies.add(prereq)
 
             graph[sketch.theorem_name] = dependencies
 
         return graph
+
+    def _copy_animation(self, source_path: Path, theorem_name: str) -> Path:
+        """Copy animation file to output directory.
+
+        Args:
+            source_path: Source animation file path
+            theorem_name: Theorem name for naming
+
+        Returns:
+            Destination path
+        """
+        import shutil
+
+        # Create animations subdirectory if needed
+        animations_dir = self.options.output_dir / "animations"
+        animations_dir.mkdir(exist_ok=True)
+
+        # Generate destination filename
+        dest_filename = f"{self._sanitize_filename(theorem_name)}{source_path.suffix}"
+        dest_path = animations_dir / dest_filename
+
+        # Copy file
+        shutil.copy2(source_path, dest_path)
+
+        return dest_path
 
     def _copy_assets(self) -> List[Path]:
         """Copy static assets to output directory.

@@ -4,12 +4,14 @@ import pytest
 from jinja2 import Template
 
 from proof_sketcher.generator.models import GenerationConfig, GenerationType
-from proof_sketcher.generator.prompts import (PromptTemplates,
-                                              prompt_templates,
-                                              render_eli5_prompt,
-                                              render_proof_sketch_prompt,
-                                              render_step_by_step_prompt,
-                                              render_tactic_explanation_prompt)
+from proof_sketcher.generator.prompts import (
+    PromptTemplates,
+    prompt_templates,
+    render_eli5_prompt,
+    render_proof_sketch_prompt,
+    render_step_by_step_prompt,
+    render_tactic_explanation_prompt,
+)
 from proof_sketcher.parser.models import TheoremInfo
 
 
@@ -188,8 +190,8 @@ class TestPromptTemplates:
         assert "test_theorem" in rendered
         assert "P implies Q" in rendered  # Formatted statement
         assert "Logic.impl" in rendered
-        assert "by assumption" in rendered
         assert "Implication example" in rendered
+        # ELI5 template doesn't include proof text, only proof sketch does
 
 
 class TestConvenienceFunctions:

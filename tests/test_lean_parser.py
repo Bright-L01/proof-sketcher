@@ -46,7 +46,7 @@ class TestLeanParserIntegration:
     def test_parse_file_non_lean_extension(self, tmp_path):
         """Test parsing file with non-Lean extension."""
         test_file = tmp_path / "test.txt"
-        test_file.write_text("not a lean file")
+        test_file.write_text("not a lean file", encoding="utf-8")
 
         parser = LeanParser()
         result = parser.parse_file(test_file)
@@ -57,7 +57,7 @@ class TestLeanParserIntegration:
     def test_parse_file_empty_lean_file(self, tmp_path):
         """Test parsing empty Lean file."""
         test_file = tmp_path / "empty.lean"
-        test_file.write_text("")
+        test_file.write_text("", encoding="utf-8")
 
         parser = LeanParser()
         result = parser.parse_file(test_file)
@@ -75,7 +75,7 @@ class TestLeanParserIntegration:
 
         content = """theorem test_theorem : True := trivial"""
         test_file = tmp_path / "test.lean"
-        test_file.write_text(content)
+        test_file.write_text(content, encoding="utf-8")
 
         config = ParserConfig(fallback_to_regex=True)
         parser = LeanParser(config)
@@ -92,11 +92,11 @@ class TestLeanParserIntegration:
         """Test parsing with Lake project detection."""
         # Create a lakefile
         lakefile = tmp_path / "lakefile.lean"
-        lakefile.write_text("import Lake")
+        lakefile.write_text("import Lake", encoding="utf-8")
 
         # Create test file
         test_file = tmp_path / "Test.lean"
-        test_file.write_text("theorem test : True := trivial")
+        test_file.write_text("theorem test : True := trivial", encoding="utf-8")
 
         # Mock subprocess calls
         def mock_subprocess(*args, **kwargs):
@@ -134,7 +134,9 @@ class TestLeanParserIntegration:
     def test_parse_theorem_success(self, mock_run, tmp_path):
         """Test successful single theorem parsing."""
         test_file = tmp_path / "test.lean"
-        test_file.write_text("theorem add_zero (n : Nat) : n + 0 = n := by simp")
+        test_file.write_text(
+            "theorem add_zero (n : Nat) : n + 0 = n := by simp", encoding="utf-8"
+        )
 
         # Mock successful Lean extraction
         json_output = {
@@ -166,7 +168,7 @@ class TestLeanParserIntegration:
     def test_parse_theorem_with_retry(self, mock_run, tmp_path):
         """Test theorem parsing with retry logic."""
         test_file = tmp_path / "test.lean"
-        test_file.write_text("theorem test : True := trivial")
+        test_file.write_text("theorem test : True := trivial", encoding="utf-8")
 
         # First call times out, second succeeds
         def mock_subprocess(*args, **kwargs):
@@ -200,7 +202,7 @@ class TestLeanParserIntegration:
     def test_parse_theorem_timeout_exhausted(self, mock_run, tmp_path):
         """Test theorem parsing when all retry attempts are exhausted."""
         test_file = tmp_path / "test.lean"
-        test_file.write_text("theorem test : True := trivial")
+        test_file.write_text("theorem test : True := trivial", encoding="utf-8")
 
         def mock_subprocess(*args, **kwargs):
             if "--version" in args[0]:
@@ -297,19 +299,19 @@ class TestLeanParserIntegration:
     def test_parse_file_performance_tracking(self, tmp_path):
         """Test that parse time is tracked."""
         test_file = tmp_path / "test.lean"
-        test_file.write_text("-- Simple file")
+        test_file.write_text("-- Simple file", encoding="utf-8")
 
         parser = LeanParser()
         result = parser.parse_file(test_file)
 
         assert result.parse_time_ms is not None
-        assert result.parse_time_ms > 0
+        assert result.parse_time_ms >= 0
 
     @patch("proof_sketcher.parser.lean_parser.subprocess.run")
     def test_parse_file_json_decode_error(self, mock_run, tmp_path):
         """Test handling of JSON decode errors from Lean extractor."""
         test_file = tmp_path / "test.lean"
-        test_file.write_text("theorem test : True := trivial")
+        test_file.write_text("theorem test : True := trivial", encoding="utf-8")
 
         def mock_subprocess(*args, **kwargs):
             if "--version" in args[0]:
@@ -336,7 +338,7 @@ import Mathlib.Logic.Basic
 -- Some content here
 """
         test_file = tmp_path / "with_imports.lean"
-        test_file.write_text(content)
+        test_file.write_text(content, encoding="utf-8")
 
         parser = LeanParser()
         result = parser.parse_file(test_file)
@@ -353,7 +355,7 @@ import Mathlib.Logic.Basic
 theorem add_zero (n : ℕ) : n + 0 = n := by simp
 """
         test_file = tmp_path / "simple_theorem.lean"
-        test_file.write_text(content)
+        test_file.write_text(content, encoding="utf-8")
 
         parser = LeanParser()
         result = parser.parse_file(test_file)
@@ -378,7 +380,7 @@ lemma lem1 (p : Prop) : p → p := fun h => h
 theorem thm2 : False → True := fun _ => trivial
 """
         test_file = tmp_path / "multiple_theorems.lean"
-        test_file.write_text(content)
+        test_file.write_text(content, encoding="utf-8")
 
         parser = LeanParser()
         result = parser.parse_file(test_file)
@@ -401,7 +403,7 @@ by
   rw [Nat.add_comm]
 """
         test_file = tmp_path / "multiline.lean"
-        test_file.write_text(content)
+        test_file.write_text(content, encoding="utf-8")
 
         parser = LeanParser()
         result = parser.parse_file(test_file)

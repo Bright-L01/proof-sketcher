@@ -9,29 +9,20 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+from ..core.exceptions import (
+    ParserError,
+    LeanExecutableError,
+    LeanTimeoutError,
+    ConfigValidationError,
+)
+from ..core.interfaces import IParser
+from ..core.utils import ensure_directory, get_timestamp
+
 from .config import ParserConfig
 from .models import FileMetadata, ParseError, ParseResult, TheoremInfo
 
 
-class LeanParserError(Exception):
-    """Base exception for LeanParser errors."""
-
-    pass
-
-
-class LeanExecutableError(LeanParserError):
-    """Raised when Lean executable is not available or invalid."""
-
-    pass
-
-
-class LakeProjectError(LeanParserError):
-    """Raised when Lake project operations fail."""
-
-    pass
-
-
-class LeanParser:
+class LeanParser(IParser):
     """Parser for extracting theorem information from Lean files."""
 
     def __init__(self, config: Optional[ParserConfig] = None) -> None:
@@ -47,7 +38,11 @@ class LeanParser:
         # Validate configuration
         config_errors = self.config.validate()
         if config_errors:
-            raise ValueError(f"Invalid configuration: {', '.join(config_errors)}")
+            raise ConfigValidationError(
+                message=f"Invalid parser configuration: {', '.join(config_errors)}",
+                details={"errors": config_errors},
+                error_code="parser_config_invalid"
+            )
 
     def parse_file(self, file_path: Path) -> ParseResult:
         """Parse a Lean file and extract all theorem information.
@@ -116,9 +111,14 @@ class LeanParser:
 
         except Exception as e:
             self.logger.exception(f"Failed to parse file {file_path}")
+            parser_error = ParserError(
+                message=f"Parsing failed: {str(e)}",
+                details={"file_path": str(file_path)},
+                error_code="parse_failed"
+            )
             return ParseResult(
                 success=False,
-                errors=[ParseError(message=f"Parsing failed: {str(e)}")],
+                errors=[ParseError.from_exception(parser_error)],
                 parse_time_ms=(time.time() - start_time) * 1000,
             )
 
@@ -168,6 +168,16 @@ class LeanParser:
                     time.sleep(delay)
                 else:
                     self.logger.error(f"Final timeout extracting {theorem_name}")
+                    raise LeanTimeoutError(
+                        message=f"Lean extraction timed out for theorem {theorem_name}",
+                        details={
+                            "theorem": theorem_name,
+                            "file_path": str(file_path),
+                            "timeout": self.config.lean_timeout,
+                            "attempts": self.config.retry_config.max_attempts
+                        },
+                        error_code="lean_timeout"
+                    )
 
             except Exception as e:
                 if attempt < self.config.retry_config.max_attempts - 1:
@@ -526,10 +536,10 @@ class LeanParser:
             if current_line == start_line:
                 # Extract everything after theorem declaration
                 # Look for the main type annotation colon (after parameters)
-                match = re.match(r'^(theorem|lemma)\s+(\w+)\s*(.*)$', line)
+                match = re.match(r"^(theorem|lemma)\s+(\w+)\s*(.*)$", line)
                 if match:
                     rest = match.group(3).strip()
-                    
+
                     # If there are parameters, include them in the statement
                     if rest.startswith("("):
                         paren_count = 0
@@ -542,7 +552,7 @@ class LeanParser:
                                 if paren_count == 0:
                                     idx = i + 1
                                     break
-                        
+
                         # Include parameters and everything after the type annotation colon
                         params = rest[:idx].strip()
                         after_params = rest[idx:].strip()

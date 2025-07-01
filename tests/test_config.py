@@ -7,8 +7,12 @@ from pathlib import Path
 import pytest
 import yaml
 
-from proof_sketcher.config.config import (ExportConfig, ProofSketcherConfig,
-                                          get_config, reset_config)
+from proof_sketcher.config.config import (
+    ExportConfig,
+    ProofSketcherConfig,
+    get_config,
+    reset_config,
+)
 
 
 class TestExportConfig:

@@ -97,17 +97,18 @@ class JupyterExporter(BaseExporterImpl):
         # Title cell
         cells.append(self._create_markdown_cell(f"# {sketch.theorem_name}"))
 
-        # Statement cell
+        # Introduction cell (ProofSketch doesn't have theorem_statement)
         cells.append(
-            self._create_markdown_cell(
-                "## Statement\n\n" f"```lean\n{sketch.theorem_statement}\n```"
-            )
+            self._create_markdown_cell(f"## Introduction\n\n{sketch.introduction}")
         )
 
-        # Explanation cell
-        cells.append(
-            self._create_markdown_cell(f"## Explanation\n\n{sketch.explanation}")
-        )
+        # Key steps preview
+        if sketch.key_steps:
+            cells.append(
+                self._create_markdown_cell(
+                    f"## Overview\n\nThis proof has {len(sketch.key_steps)} key steps."
+                )
+            )
 
         # Interactive exploration cell
         cells.append(
@@ -115,7 +116,7 @@ class JupyterExporter(BaseExporterImpl):
                 "# Interactive exploration\n"
                 "# You can use this cell to experiment with the concepts\n\n"
                 f"theorem_name = '{sketch.theorem_name}'\n"
-                f"step_count = {len(sketch.steps)}\n\n"
+                f"step_count = {len(sketch.key_steps)}\n\n"
                 "print(f'Theorem {theorem_name} has {step_count} steps')"
             )
         )
@@ -139,14 +140,14 @@ class JupyterExporter(BaseExporterImpl):
         # Proof steps
         cells.append(self._create_markdown_cell("## Proof Steps"))
 
-        for i, step in enumerate(sketch.steps, 1):
+        for i, step in enumerate(sketch.key_steps, 1):
             step_md = f"### Step {i}: {step.description}\n\n"
 
             if step.mathematical_content:
                 step_md += f"$$\n{step.mathematical_content}\n$$\n\n"
 
-            if step.reasoning:
-                step_md += f"**Reasoning:** {step.reasoning}\n\n"
+            if step.intuition:
+                step_md += f"**Intuition:** {step.intuition}\n\n"
 
             cells.append(self._create_markdown_cell(step_md))
 
@@ -160,12 +161,11 @@ class JupyterExporter(BaseExporterImpl):
                     )
                 )
 
-        # Key insights
-        if sketch.key_insights:
-            insights_md = "## Key Insights\n\n"
-            for insight in sketch.key_insights:
-                insights_md += f"- {insight}\n"
-            cells.append(self._create_markdown_cell(insights_md))
+        # Conclusion
+        if sketch.conclusion:
+            cells.append(
+                self._create_markdown_cell(f"## Conclusion\n\n{sketch.conclusion}")
+            )
 
         # Summary code cell
         cells.append(
@@ -173,8 +173,7 @@ class JupyterExporter(BaseExporterImpl):
                 "# Summary and further exploration\n"
                 f"summary = {{\n"
                 f"    'theorem': '{sketch.theorem_name}',\n"
-                f"    'steps': {len(sketch.steps)},\n"
-                f"    'insights': {len(sketch.key_insights)},\n"
+                f"    'steps': {len(sketch.key_steps)},\n"
                 f"}}\n\n"
                 "print('Proof Summary:')\n"
                 "for key, value in summary.items():\n"
@@ -239,16 +238,16 @@ class JupyterExporter(BaseExporterImpl):
             cells.append(
                 self._create_code_cell(
                     f"# Theorem: {sketch.theorem_name}\n"
-                    f"show_theorem('{sketch.theorem_name}', '''{sketch.theorem_statement}''')"
+                    f"# Introduction: {sketch.introduction[:100]}..."
                 )
             )
 
-            # Explanation
-            cells.append(self._create_markdown_cell(sketch.explanation))
+            # Introduction
+            cells.append(self._create_markdown_cell(sketch.introduction))
 
             # Interactive steps
             steps_code = f"# Proof steps for {sketch.theorem_name}\n"
-            for i, step in enumerate(sketch.steps, 1):
+            for i, step in enumerate(sketch.key_steps, 1):
                 math_content = step.mathematical_content or ""
                 steps_code += (
                     f"show_step({i}, '{step.description}', '{math_content}')\n"
@@ -261,7 +260,7 @@ class JupyterExporter(BaseExporterImpl):
             self._create_code_cell(
                 "# Summary statistics\n"
                 f"total_theorems = {len(sketches)}\n"
-                f"total_steps = {sum(len(s.steps) for s in sketches)}\n"
+                f"total_steps = {sum(len(s.key_steps) for s in sketches)}\n"
                 f"avg_steps = total_steps / total_theorems\n\n"
                 "print(f'Total theorems: {total_theorems}')\n"
                 "print(f'Total proof steps: {total_steps}')\n"

@@ -52,9 +52,15 @@ For advanced usage and customization, see the individual class documentation.
 from .animator import CachedManimAnimator, ManimAnimator
 from .formula_extractor import FormulaExtractor, LeanToLatexConverter
 from .manim_mcp import ManimMCPClient, ManimMCPManager
-from .models import (AnimationConfig, AnimationQuality, AnimationRequest,
-                     AnimationResponse, AnimationStyle, ManimConfig,
-                     TransformationType)
+from .models import (
+    AnimationConfig,
+    AnimationQuality,
+    AnimationRequest,
+    AnimationResponse,
+    AnimationStyle,
+    ManimConfig,
+    TransformationType,
+)
 from .scene_builder import ProofAnimationBuilder
 
 # Convenience alias for backward compatibility

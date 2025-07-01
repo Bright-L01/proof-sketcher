@@ -6,12 +6,17 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from proof_sketcher.generator.claude import (ClaudeAPIError,
-                                             ClaudeExecutableError,
-                                             ClaudeGenerator,
-                                             ClaudeTimeoutError)
-from proof_sketcher.generator.models import (GenerationConfig, GenerationType,
-                                             ProofSketch)
+from proof_sketcher.generator.ai_generator import (
+    ClaudeAPIError,
+    ClaudeExecutableError,
+    ClaudeGenerator,
+    ClaudeTimeoutError,
+)
+from proof_sketcher.generator.models import (
+    GenerationConfig,
+    GenerationType,
+    ProofSketch,
+)
 from proof_sketcher.parser.models import TheoremInfo
 
 
@@ -24,7 +29,7 @@ class TestClaudeGenerator:
         mock_run.return_value = Mock(returncode=0, stdout="Claude CLI v1.0.0")
 
         generator = ClaudeGenerator()
-        assert generator.claude_executable == "claude"
+        assert generator.ai_executable == "claude"
         assert isinstance(generator.default_config, GenerationConfig)
 
     @patch("proof_sketcher.generator.claude.subprocess.run")
@@ -351,23 +356,23 @@ class TestClaudeGenerator:
             assert element in cmd
 
     @patch("proof_sketcher.generator.claude.subprocess.run")
-    def test_check_claude_available(self, mock_run):
+    def test_check_ai_available(self, mock_run):
         """Test checking Claude availability."""
         # Test successful check
         mock_run.return_value = Mock(returncode=0, stdout="Claude CLI v1.0.0")
         generator = ClaudeGenerator()
-        assert generator.check_claude_available() is True
+        assert generator.check_ai_available() is True
 
         # Test failed check
         mock_run.return_value = Mock(returncode=1)
-        assert generator.check_claude_available() is False
+        assert generator.check_ai_available() is False
 
         # Test FileNotFoundError
         mock_run.side_effect = FileNotFoundError()
-        assert generator.check_claude_available() is False
+        assert generator.check_ai_available() is False
 
     @patch("proof_sketcher.generator.claude.subprocess.run")
-    def test_get_claude_version(self, mock_run):
+    def test_get_ai_version(self, mock_run):
         """Test getting Claude version."""
         mock_run.side_effect = [
             Mock(returncode=0, stdout="Claude CLI v1.0.0"),  # For initialization
@@ -375,7 +380,7 @@ class TestClaudeGenerator:
         ]
 
         generator = ClaudeGenerator()
-        version = generator.get_claude_version()
+        version = generator.get_ai_version()
 
         assert version == "Claude CLI version 1.2.3"
 

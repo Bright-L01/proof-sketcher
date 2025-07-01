@@ -296,14 +296,14 @@ class ProofSketcherConfig:
         if parser_errors:
             errors.extend([f"Parser: {e}" for e in parser_errors])
 
-        # Validate paths
-        if not self.cache_dir.parent.exists():
+        # Validate and create paths
+        if not self.cache_dir.exists():
             try:
                 self.cache_dir.mkdir(parents=True, exist_ok=True)
             except Exception as e:
                 errors.append(f"Cannot create cache directory: {e}")
 
-        if not self.data_dir.parent.exists():
+        if not self.data_dir.exists():
             try:
                 self.data_dir.mkdir(parents=True, exist_ok=True)
             except Exception as e:
@@ -322,7 +322,7 @@ class ProofSketcherConfig:
         parser_dict = asdict(self.parser)
         if parser_dict.get("working_dir") is not None:
             parser_dict["working_dir"] = str(parser_dict["working_dir"])
-        
+
         config_dict = {
             "project_name": self.project_name,
             "version": self.version,
@@ -344,15 +344,15 @@ class ProofSketcherConfig:
                 return {k: convert_values(v) for k, v in obj.items()}
             elif isinstance(obj, list):
                 return [convert_values(v) for v in obj]
-            elif hasattr(obj, 'value'):  # Enum
+            elif hasattr(obj, "value"):  # Enum
                 return obj.value
             elif isinstance(obj, Path):  # Path object
                 return str(obj)
             else:
                 return obj
-        
+
         config_dict = convert_values(config_dict)
-        
+
         if path.suffix in (".yaml", ".yml"):
             with open(path, "w") as f:
                 yaml.safe_dump(config_dict, f, default_flow_style=False)

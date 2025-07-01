@@ -8,9 +8,14 @@ from unittest.mock import Mock, patch
 import pytest
 
 from proof_sketcher.animator.manim_mcp import ManimMCPClient
-from proof_sketcher.animator.models import AnimationRequest, AnimationScene, AnimationSegment, TransformationType
+from proof_sketcher.animator.models import (
+    AnimationRequest,
+    AnimationScene,
+    AnimationSegment,
+    TransformationType,
+)
 from proof_sketcher.config.config import ProofSketcherConfig
-from proof_sketcher.generator.claude import ClaudeGenerator
+from proof_sketcher.generator import AIGenerator as ClaudeGenerator
 from proof_sketcher.parser.lean_parser import LeanParser
 from proof_sketcher.parser.models import TheoremInfo
 
@@ -39,7 +44,7 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
     rw [ih]
 """
         lean_file = tmp_path / "test.lean"
-        lean_file.write_text(lean_content)
+        lean_file.write_text(lean_content, encoding="utf-8")
         return lean_file
 
     def test_parse_lean_file(self, config, sample_lean_file):
@@ -58,7 +63,7 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
         """Test generating natural language explanation."""
         # Mock executable check to pass
         mock_check.return_value = True
-        
+
         # Mock Claude response with proper ProofSketch format
         mock_json = {
             "theorem_name": "test_theorem",
@@ -68,19 +73,19 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
                     "step_number": 1,
                     "description": "Base case: 0 + 0 = 0",
                     "mathematical_content": "0 + 0 = 0",
-                    "tactics": ["rfl"]
+                    "tactics": ["rfl"],
                 },
                 {
                     "step_number": 2,
                     "description": "Inductive step: assume true for n, prove for n+1",
                     "mathematical_content": "(n + 1) + 0 = n + 1",
-                    "tactics": ["induction", "rw"]
-                }
+                    "tactics": ["induction", "rw"],
+                },
             ],
             "conclusion": "Therefore, adding zero to any natural number leaves it unchanged.",
-            "difficulty_level": "beginner"
+            "difficulty_level": "beginner",
         }
-        
+
         mock_run.return_value = Mock(
             stdout=json.dumps(mock_json),
             stderr="",
@@ -110,7 +115,7 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
             )
 
             client = ManimMCPClient(config.manim)
-            
+
             # Create proper animation request with required fields
             scene1 = AnimationScene(
                 scene_id="scene1",
@@ -118,7 +123,7 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
                 duration=10.0,
                 initial_formula="n + 0",
                 final_formula="n",
-                transformation_type=TransformationType.SIMPLIFICATION
+                transformation_type=TransformationType.SIMPLIFICATION,
             )
             scene2 = AnimationScene(
                 scene_id="scene2",
@@ -126,20 +131,18 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
                 duration=10.0,
                 initial_formula="n",
                 final_formula="n",
-                transformation_type=TransformationType.EQUALITY_CHAIN
+                transformation_type=TransformationType.EQUALITY_CHAIN,
             )
-            
+
             segment = AnimationSegment(
-                segment_id="main",
-                title="Test Theorem Proof",
-                scenes=[scene1, scene2]
+                segment_id="main", title="Test Theorem Proof", scenes=[scene1, scene2]
             )
-            
+
             request = AnimationRequest(
                 theorem_name="test_theorem",
                 request_id="test-request-id",
                 segments=[segment],
-                config=config.animator
+                config=config.animator,
             )
 
             response = await client.render_animation(request)
@@ -160,9 +163,11 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
 
         # Generate explanation (mocked)
         with patch("subprocess.run") as mock_run:
-            with patch("proof_sketcher.generator.claude.ClaudeGenerator.check_claude_available") as mock_check:
+            with patch(
+                "proof_sketcher.generator.claude.ClaudeGenerator.check_claude_available"
+            ) as mock_check:
                 mock_check.return_value = True
-                
+
                 # Mock proper ProofSketch JSON
                 mock_json = {
                     "theorem_name": "test_theorem",
@@ -172,13 +177,13 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
                             "step_number": 1,
                             "description": "Step 1",
                             "mathematical_content": "n + 0 = n",
-                            "tactics": []
+                            "tactics": [],
                         }
                     ],
                     "conclusion": "Proven.",
-                    "difficulty_level": "beginner"
+                    "difficulty_level": "beginner",
                 }
-                
+
                 mock_run.return_value = Mock(
                     stdout=json.dumps(mock_json),
                     stderr="",
@@ -209,9 +214,11 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
 
         # Generate explanation
         with patch("subprocess.run") as mock_run:
-            with patch("proof_sketcher.generator.claude.ClaudeGenerator.check_claude_available") as mock_check:
+            with patch(
+                "proof_sketcher.generator.claude.ClaudeGenerator.check_claude_available"
+            ) as mock_check:
                 mock_check.return_value = True
-                
+
                 # Mock proper ProofSketch JSON
                 mock_json = {
                     "theorem_name": theorem.name,
@@ -221,19 +228,19 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
                             "step_number": 1,
                             "description": "Step 1",
                             "mathematical_content": "n + 0 = n",
-                            "tactics": []
+                            "tactics": [],
                         },
                         {
                             "step_number": 2,
-                            "description": "Step 2", 
+                            "description": "Step 2",
                             "mathematical_content": "n = n",
-                            "tactics": []
-                        }
+                            "tactics": [],
+                        },
                     ],
                     "conclusion": "Proven.",
-                    "difficulty_level": "beginner"
+                    "difficulty_level": "beginner",
                 }
-                
+
                 mock_run.return_value = Mock(
                     stdout=json.dumps(mock_json),
                     stderr="",
@@ -262,20 +269,18 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
                     duration=60.0,
                     initial_formula="n + 0",
                     final_formula="n",
-                    transformation_type=TransformationType.SIMPLIFICATION
+                    transformation_type=TransformationType.SIMPLIFICATION,
                 )
-                
+
                 segment = AnimationSegment(
-                    segment_id="main",
-                    title=sketch.theorem_name,
-                    scenes=[scene]
+                    segment_id="main", title=sketch.theorem_name, scenes=[scene]
                 )
-                
+
                 request = AnimationRequest(
                     theorem_name=theorem.name,
                     request_id="test-request-id",
                     segments=[segment],
-                    config=config.animator
+                    config=config.animator,
                 )
                 response = await client.render_animation(request)
 
@@ -286,7 +291,9 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
         """Test handling of parse failures."""
         # Create file with no theorems (just plain text)
         bad_lean = tmp_path / "bad.lean"
-        bad_lean.write_text("This is not a Lean file, just plain text")
+        bad_lean.write_text(
+            "This is not a Lean file, just plain text", encoding="utf-8"
+        )
 
         parser = LeanParser(config.parser)
         result = parser.parse_file(bad_lean)
@@ -301,14 +308,14 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
         """Test handling of generation failures."""
         # Mock executable check to pass
         mock_check.return_value = True
-        
+
         # Mock Claude failure
         mock_run.return_value = Mock(
             stdout="", stderr="Error: API limit exceeded", returncode=1
         )
 
         theorem = TheoremInfo(name="test", statement="test")
-        
+
         generator = ClaudeGenerator(config.generator)
         # Since claude returns non-zero exit code, this should raise an exception
         with pytest.raises(Exception):
@@ -326,7 +333,7 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
             )
 
             client = ManimMCPClient(config.manim)
-            
+
             # Create minimal valid animation request
             scene = AnimationScene(
                 scene_id="test_scene",
@@ -334,20 +341,18 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
                 duration=30.0,
                 initial_formula="1",
                 final_formula="1",
-                transformation_type=TransformationType.EQUALITY_CHAIN
+                transformation_type=TransformationType.EQUALITY_CHAIN,
             )
-            
+
             segment = AnimationSegment(
-                segment_id="test_segment",
-                title="Test",
-                scenes=[scene]
+                segment_id="test_segment", title="Test", scenes=[scene]
             )
-            
+
             request = AnimationRequest(
                 theorem_name="test",
                 request_id="test-id",
                 segments=[segment],
-                config=config.animator
+                config=config.animator,
             )
 
             response = await client.render_animation(request)
@@ -368,8 +373,8 @@ class TestCLIIntegration:
 
         # Create test Lean file
         lean_file = tmp_path / "test.lean"
-        lean_file.write_text("theorem test : 1 = 1 := rfl")
-        
+        lean_file.write_text("theorem test : 1 = 1 := rfl", encoding="utf-8")
+
         # Mock parser to return a successful result
         mock_parser = Mock()
         mock_result = Mock()
@@ -381,7 +386,7 @@ class TestCLIIntegration:
         mock_result.theorems = [mock_theorem]
         mock_parser.parse_file.return_value = mock_result
         mock_parser_class.return_value = mock_parser
-        
+
         # Mock generator to return a proof sketch
         mock_generator = Mock()
         mock_sketch = Mock()
@@ -427,8 +432,13 @@ class TestCLIIntegration:
             print(f"Output: {result.output}")
             if result.exception:
                 import traceback
-                traceback.print_exception(type(result.exception), result.exception, result.exception.__traceback__)
-        
+
+                traceback.print_exception(
+                    type(result.exception),
+                    result.exception,
+                    result.exception.__traceback__,
+                )
+
         assert result.exit_code == 0
         assert config_file.exists()
         assert "Configuration saved" in result.output
@@ -460,7 +470,7 @@ generator:
   model: "claude-3-opus-20240229"
 """
         config_file = tmp_path / ".proof-sketcher.yaml"
-        config_file.write_text(config_content)
+        config_file.write_text(config_content, encoding="utf-8")
 
         config = ProofSketcherConfig.load(config_file)
 

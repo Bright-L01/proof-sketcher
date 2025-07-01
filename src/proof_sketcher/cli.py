@@ -16,19 +16,25 @@ from rich.table import Table
 from . import __version__
 from .animator.manim_mcp import ManimMCPClient
 from .animator.models import AnimationRequest
-from .config.config import Config, set_config
-from .exporter import (ExportContext, ExportFormat, ExportOptions,
-                       HTMLExporter, JupyterExporter, MarkdownExporter,
-                       PDFExporter)
-from .generator.claude import ClaudeGenerator
+from .config.config import ProofSketcherConfig, get_config, set_config
+from .exporter import (
+    ExportContext,
+    ExportFormat,
+    ExportOptions,
+    HTMLExporter,
+    JupyterExporter,
+    MarkdownExporter,
+    PDFExporter,
+)
 from .generator.cache import CacheManager
+from .generator import AIGenerator as ClaudeGenerator
 from .parser.lean_parser import LeanParser
 
 # Set up rich console and logging
 console = Console()
 
 
-def setup_logging(config: Config) -> None:
+def setup_logging(config: ProofSketcherConfig) -> None:
     """Configure logging with rich formatting."""
     level = getattr(logging, config.log_level.upper(), logging.INFO)
     if config.debug:
@@ -94,7 +100,11 @@ def prove(
 ) -> None:
     """Process a Lean file and generate explanations."""
     logging.getLogger(__name__)
-    config: Config = ctx.obj["config"]
+    config: ProofSketcherConfig = ctx.obj["config"]
+
+    # Validate file extension
+    if not lean_file.suffix == ".lean":
+        raise click.BadParameter("File must have .lean extension")
 
     # Set output directory
     if output is None:
@@ -143,7 +153,7 @@ def prove(
             "[cyan]Generating explanations...", total=len(theorems_to_process)
         )
 
-        generator = ClaudeGenerator(config.generator)
+        generator = ClaudeGenerator(default_config=config.generator)
         sketches = []
         animations = {}
 
@@ -259,7 +269,7 @@ def config() -> None:
 @click.pass_context
 def show(ctx: click.Context) -> None:
     """Show current configuration."""
-    config: Config = ctx.obj["config"]
+    config: ProofSketcherConfig = ctx.obj["config"]
 
     # Create configuration table
     table = Table(title="Current Configuration", show_header=True)
@@ -276,7 +286,9 @@ def show(ctx: click.Context) -> None:
 
     # Parser settings
     table.add_row("Parser", "Lean Executable", str(config.parser.lean_executable))
-    table.add_row("Parser", "Lake Build on Parse", str(config.parser.lake_build_on_parse))
+    table.add_row(
+        "Parser", "Lake Build on Parse", str(config.parser.lake_build_on_parse)
+    )
     table.add_row("Parser", "Timeout", f"{config.parser.lean_timeout}s")
 
     # Generator settings
@@ -308,7 +320,7 @@ def show(ctx: click.Context) -> None:
 @click.pass_context
 def save(ctx: click.Context, output: Optional[Path]) -> None:
     """Save current configuration to file."""
-    config: Config = ctx.obj["config"]
+    config: ProofSketcherConfig = ctx.obj["config"]
 
     if output is None:
         output = Path(".proof-sketcher.yaml")
@@ -332,22 +344,24 @@ def cache() -> None:
 @click.pass_context
 def clear(ctx: click.Context, force: bool) -> None:
     """Clear all cached data."""
-    config: Config = ctx.obj["config"]
+    config: ProofSketcherConfig = ctx.obj["config"]
     cache_dir = config.cache_dir
 
     if cache_dir.exists():
         if not force:
-            console.print(f"[yellow]Warning: This will clear all cached data at {cache_dir}[/yellow]")
+            console.print(
+                f"[yellow]Warning: This will clear all cached data at {cache_dir}[/yellow]"
+            )
             if not click.confirm("Are you sure you want to continue?"):
                 console.print("[yellow]Cache clear cancelled[/yellow]")
                 return
-        
+
         console.print(f"[yellow]Clearing cache at {cache_dir}...[/yellow]")
-        
+
         # Clear generator cache
         generator_cache = CacheManager(cache_dir / "generator")
         generator_count = generator_cache.clear()
-        
+
         # Clear animation cache if it exists
         animation_count = 0
         animation_cache_dir = cache_dir / "animations"
@@ -356,9 +370,11 @@ def clear(ctx: click.Context, force: bool) -> None:
                 if file.is_file():
                     file.unlink()
                     animation_count += 1
-        
+
         total_count = generator_count + animation_count
-        console.print(f"[green]✓ Cache cleared successfully ({total_count} entries removed)[/green]")
+        console.print(
+            f"[green]✓ Cache cleared successfully ({total_count} entries removed)[/green]"
+        )
     else:
         console.print("[yellow]No cache directory found[/yellow]")
 
@@ -367,7 +383,7 @@ def clear(ctx: click.Context, force: bool) -> None:
 @click.pass_context
 def status(ctx: click.Context) -> None:
     """Show cache status and statistics."""
-    config: Config = ctx.obj["config"]
+    config: ProofSketcherConfig = ctx.obj["config"]
     cache_dir = config.cache_dir
 
     console.print("[bold blue]Cache Status:[/bold blue]")
@@ -378,7 +394,7 @@ def status(ctx: click.Context) -> None:
         # Get generator cache stats
         generator_cache = CacheManager(cache_dir / "generator")
         gen_stats = generator_cache.get_cache_stats()
-        
+
         # Get animation cache stats
         animation_count = 0
         animation_size_mb = 0.0
@@ -388,25 +404,27 @@ def status(ctx: click.Context) -> None:
                 if file.is_file():
                     animation_count += 1
                     animation_size_mb += file.stat().st_size / (1024 * 1024)
-        
+
         # Display statistics
-        console.print(f"\n[bold]Generator Cache:[/bold]")
+        console.print("\n[bold]Generator Cache:[/bold]")
         console.print(f"  • Theorem sketches cached: {gen_stats['total_entries']}")
         console.print(f"  • Cache size: {gen_stats['size_mb']} MB")
         console.print(f"  • Maximum size: {gen_stats['max_size_mb']} MB")
-        
-        if gen_stats.get('by_type'):
+
+        if gen_stats.get("by_type"):
             console.print("  • Cached by type:")
-            for gen_type, count in gen_stats['by_type'].items():
+            for gen_type, count in gen_stats["by_type"].items():
                 console.print(f"    - {gen_type}: {count}")
-        
-        console.print(f"\n[bold]Animation Cache:[/bold]")
+
+        console.print("\n[bold]Animation Cache:[/bold]")
         console.print(f"  • Animations cached: {animation_count}")
         console.print(f"  • Cache size: {animation_size_mb:.2f} MB")
-        
-        total_size_mb = gen_stats['size_mb'] + animation_size_mb
-        console.print(f"\n[bold]Total:[/bold]")
-        console.print(f"  • Total entries: {gen_stats['total_entries'] + animation_count}")
+
+        total_size_mb = gen_stats["size_mb"] + animation_size_mb
+        console.print("\n[bold]Total:[/bold]")
+        console.print(
+            f"  • Total entries: {gen_stats['total_entries'] + animation_count}"
+        )
         console.print(f"  • Total size: {total_size_mb:.2f} MB")
 
 
@@ -415,7 +433,7 @@ def status(ctx: click.Context) -> None:
 @click.pass_context
 def list(ctx: click.Context, pattern: Optional[str]) -> None:
     """List cached items, optionally filtered by pattern."""
-    config: Config = ctx.obj["config"]
+    config: ProofSketcherConfig = ctx.obj["config"]
     cache_dir = config.cache_dir
 
     console.print("[bold blue]Cached Items:[/bold blue]")
@@ -428,7 +446,7 @@ def list(ctx: click.Context, pattern: Optional[str]) -> None:
     generator_files = []
     animation_files = []
     other_files = []
-    
+
     for item in cache_dir.rglob("*"):
         if item.is_file():
             if pattern is None or pattern in str(item):
@@ -441,9 +459,11 @@ def list(ctx: click.Context, pattern: Optional[str]) -> None:
                     other_files.append(item)
 
     total_files = len(generator_files) + len(animation_files) + len(other_files)
-    
+
     if total_files > 0:
-        table = Table(title=f"Cached Files{f' (filtered by: {pattern})' if pattern else ''}")
+        table = Table(
+            title=f"Cached Files{f' (filtered by: {pattern})' if pattern else ''}"
+        )
         table.add_column("Type", style="magenta")
         table.add_column("File", style="cyan")
         table.add_column("Size", style="green")
@@ -456,10 +476,12 @@ def list(ctx: click.Context, pattern: Optional[str]) -> None:
                 "%Y-%m-%d %H:%M", time.localtime(file.stat().st_mtime)
             )
             table.add_row("Generator", str(file.relative_to(cache_dir)), size, modified)
-        
+
         if len(generator_files) > 10:
-            table.add_row("...", f"and {len(generator_files) - 10} more generator files", "", "")
-        
+            table.add_row(
+                "...", f"and {len(generator_files) - 10} more generator files", "", ""
+            )
+
         # Add animation cache files
         for file in sorted(animation_files)[:10]:  # Limit to 10 most recent
             size = f"{file.stat().st_size / 1024:.1f} KB"
@@ -467,10 +489,12 @@ def list(ctx: click.Context, pattern: Optional[str]) -> None:
                 "%Y-%m-%d %H:%M", time.localtime(file.stat().st_mtime)
             )
             table.add_row("Animation", str(file.relative_to(cache_dir)), size, modified)
-        
+
         if len(animation_files) > 10:
-            table.add_row("...", f"and {len(animation_files) - 10} more animation files", "", "")
-        
+            table.add_row(
+                "...", f"and {len(animation_files) - 10} more animation files", "", ""
+            )
+
         # Add other files
         for file in sorted(other_files):
             size = f"{file.stat().st_size / 1024:.1f} KB"
@@ -483,6 +507,52 @@ def list(ctx: click.Context, pattern: Optional[str]) -> None:
         console.print(f"\n[dim]Total: {total_files} files[/dim]")
     else:
         console.print("[yellow]No cached items found[/yellow]")
+
+
+@cli.command()
+@click.argument("lean_file", type=click.Path(exists=True, path_type=Path))
+@click.pass_context
+def list_theorems(ctx: click.Context, lean_file: Path) -> None:
+    """List all theorems in a Lean file."""
+    config: ProofSketcherConfig = ctx.obj["config"]
+
+    # Validate file extension
+    if not lean_file.suffix == ".lean":
+        raise click.BadParameter("File must have .lean extension")
+
+    console.print(f"[bold blue]Parsing {lean_file.name}...[/bold blue]\n")
+
+    # Parse the Lean file
+    parser = LeanParser(config.parser)
+    result = parser.parse_file(lean_file)
+
+    if result.errors:
+        console.print("[bold red]⚠️  Parsing errors:[/bold red]")
+        for error in result.errors:
+            console.print(f"  • {error}")
+        console.print()
+
+    if not result.theorems:
+        console.print("[yellow]No theorems found in file[/yellow]")
+        return
+
+    # Create table for theorems
+    table = Table(title=f"Theorems in {lean_file.name}")
+    table.add_column("Name", style="cyan", no_wrap=True)
+    table.add_column("Statement", style="green")
+    table.add_column("Line", style="yellow", justify="right")
+
+    for theorem in result.theorems:
+        # Truncate long statements
+        statement = theorem.statement
+        if len(statement) > 60:
+            statement = statement[:57] + "..."
+
+        line_info = f"line {theorem.line_number}" if theorem.line_number else "N/A"
+        table.add_row(theorem.name, statement, line_info)
+
+    console.print(table)
+    console.print(f"\n[dim]Total: {len(result.theorems)} theorems[/dim]")
 
 
 @cli.command()

@@ -8,8 +8,14 @@ from typing import List, Optional
 
 from ..generator.models import ProofSketch
 from .base import BaseExporterImpl
-from .models import (ExportContext, ExportFormat, ExportOptions, ExportResult,
-                     TemplateContext, TemplateType)
+from .models import (
+    ExportContext,
+    ExportFormat,
+    ExportOptions,
+    ExportResult,
+    TemplateContext,
+    TemplateType,
+)
 from .template_manager import TemplateManager
 
 

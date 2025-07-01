@@ -10,8 +10,7 @@ from typing import AsyncIterator, List, Optional
 
 import aiohttp
 
-from .models import (AnimationRequest, AnimationResponse, AnimationScene,
-                     ManimConfig)
+from .models import AnimationRequest, AnimationResponse, AnimationScene, ManimConfig
 
 
 class ManimMCPClient:

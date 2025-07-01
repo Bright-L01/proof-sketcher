@@ -4,8 +4,12 @@ from datetime import datetime
 
 import pytest
 
-from proof_sketcher.parser.models import (FileMetadata, ParseError,
-                                          ParseResult, TheoremInfo)
+from proof_sketcher.parser.models import (
+    FileMetadata,
+    ParseError,
+    ParseResult,
+    TheoremInfo,
+)
 
 
 class TestTheoremInfo:
@@ -72,7 +76,7 @@ class TestFileMetadata:
     def test_file_metadata_creation(self, tmp_path):
         """Test file metadata creation."""
         test_file = tmp_path / "test.lean"
-        test_file.write_text("-- Test file")
+        test_file.write_text("-- Test file", encoding="utf-8")
 
         metadata = FileMetadata(
             file_path=test_file,

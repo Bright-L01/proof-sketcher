@@ -7,10 +7,13 @@ from pathlib import Path
 from unittest.mock import Mock
 
 from proof_sketcher.generator.cache import CachedClaudeGenerator, CacheManager
-from proof_sketcher.generator.models import (CacheEntry, GenerationConfig,
-                                             GenerationRequest,
-                                             GenerationResponse,
-                                             GenerationType)
+from proof_sketcher.generator.models import (
+    CacheEntry,
+    GenerationConfig,
+    GenerationRequest,
+    GenerationResponse,
+    GenerationType,
+)
 from proof_sketcher.parser.models import TheoremInfo
 
 
