@@ -1,0 +1,329 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>proof_sketcher.exporter.pdf &mdash; Proof Sketcher 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=bcd76cb2" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Proof Sketcher
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Proof Sketcher</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">proof_sketcher.exporter.pdf</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for proof_sketcher.exporter.pdf</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;PDF exporter using LaTeX.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..generator.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProofSketch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseExporterImpl</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ExportContext</span><span class="p">,</span>
+    <span class="n">ExportFormat</span><span class="p">,</span>
+    <span class="n">ExportOptions</span><span class="p">,</span>
+    <span class="n">ExportResult</span><span class="p">,</span>
+    <span class="n">TemplateContext</span><span class="p">,</span>
+    <span class="n">TemplateType</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.template_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">TemplateManager</span>
+
+
+<div class="viewcode-block" id="PDFExporter">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.exporter.PDFExporter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PDFExporter</span><span class="p">(</span><span class="n">BaseExporterImpl</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Exporter for PDF format via LaTeX.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PDFExporter.__init__">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.exporter.PDFExporter.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ExportOptions</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">template_manager</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TemplateManager</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize PDF exporter.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            options: Export options</span>
+<span class="sd">            template_manager: Template manager</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">ExportFormat</span><span class="o">.</span><span class="n">PDF</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">template_manager</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">latex_engine</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="s2">&quot;pdf_engine&quot;</span><span class="p">,</span> <span class="s2">&quot;pdflatex&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">options</span> <span class="k">else</span> <span class="s2">&quot;pdflatex&quot;</span>
+        <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_export_sketch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sketch</span><span class="p">:</span> <span class="n">ProofSketch</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ExportContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export a single proof sketch to PDF.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sketch: Proof sketch to export</span>
+<span class="sd">            context: Export context</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of created files</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">created_files</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Generate LaTeX content</span>
+        <span class="n">template_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_template_context</span><span class="p">(</span><span class="n">sketch</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="n">latex_content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_manager</span><span class="o">.</span><span class="n">render_template</span><span class="p">(</span>
+            <span class="n">ExportFormat</span><span class="o">.</span><span class="n">PDF</span><span class="p">,</span> <span class="n">TemplateType</span><span class="o">.</span><span class="n">THEOREM</span><span class="p">,</span> <span class="n">template_context</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Compile LaTeX to PDF</span>
+        <span class="n">pdf_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile_latex</span><span class="p">(</span><span class="n">latex_content</span><span class="p">,</span> <span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pdf_file</span><span class="p">:</span>
+            <span class="n">created_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pdf_file</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exported </span><span class="si">{</span><span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">pdf_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">created_files</span>
+
+<div class="viewcode-block" id="PDFExporter.export_multiple">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.exporter.PDFExporter.export_multiple">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">export_multiple</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">sketches</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ProofSketch</span><span class="p">],</span> <span class="n">context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ExportContext</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExportResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export multiple sketches as a single PDF document.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sketches: List of proof sketches</span>
+<span class="sd">            context: Export context</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Export result</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="n">context</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_default_context</span><span class="p">(</span><span class="n">sketches</span><span class="p">)</span>
+
+        <span class="c1"># For PDF, we create a single document with all theorems</span>
+        <span class="n">template_context</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;project_name&quot;</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">project_name</span><span class="p">,</span>
+            <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">author</span><span class="p">,</span>
+            <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">version</span><span class="p">,</span>
+            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="k">if</span> <span class="n">context</span><span class="o">.</span><span class="n">include_timestamps</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;theorems&quot;</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Add all theorems to context</span>
+        <span class="k">for</span> <span class="n">sketch</span> <span class="ow">in</span> <span class="n">sketches</span><span class="p">:</span>
+            <span class="n">theorem_ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_template_context</span><span class="p">(</span><span class="n">sketch</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+            <span class="n">template_context</span><span class="p">[</span><span class="s2">&quot;theorems&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">theorem_ctx</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
+
+        <span class="c1"># Render complete document</span>
+        <span class="n">latex_content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_manager</span><span class="o">.</span><span class="n">render_template</span><span class="p">(</span>
+            <span class="n">ExportFormat</span><span class="o">.</span><span class="n">PDF</span><span class="p">,</span>
+            <span class="n">TemplateType</span><span class="o">.</span><span class="n">LAYOUT</span><span class="p">,</span>
+            <span class="n">template_context</span><span class="p">,</span>
+            <span class="n">custom_name</span><span class="o">=</span><span class="s2">&quot;document.tex.jinja2&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Compile to PDF</span>
+        <span class="n">pdf_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile_latex</span><span class="p">(</span><span class="n">latex_content</span><span class="p">,</span> <span class="s2">&quot;proof_sketcher_output&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">pdf_file</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ExportResult</span><span class="p">(</span>
+                <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="nb">format</span><span class="o">=</span><span class="n">ExportFormat</span><span class="o">.</span><span class="n">PDF</span><span class="p">,</span>
+                <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
+                <span class="n">files_created</span><span class="o">=</span><span class="p">[</span><span class="n">pdf_file</span><span class="p">],</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ExportResult</span><span class="p">(</span>
+                <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="nb">format</span><span class="o">=</span><span class="n">ExportFormat</span><span class="o">.</span><span class="n">PDF</span><span class="p">,</span>
+                <span class="n">output_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
+                <span class="n">errors</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Failed to compile LaTeX to PDF&quot;</span><span class="p">],</span>
+            <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compile_latex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">latex_content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compile LaTeX content to PDF.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            latex_content: LaTeX source code</span>
+<span class="sd">            name: Base name for output file</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Path to PDF file if successful</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Use temporary directory for compilation</span>
+        <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">tmpdir</span><span class="p">:</span>
+            <span class="n">tmp_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">)</span>
+
+            <span class="c1"># Write LaTeX file</span>
+            <span class="n">tex_file</span> <span class="o">=</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">.tex&quot;</span>
+            <span class="n">tex_file</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">latex_content</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Copy any required assets</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_copy_latex_assets</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span>
+
+            <span class="c1"># Run LaTeX compiler twice for references</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">latex_engine</span><span class="p">,</span> <span class="s2">&quot;-interaction=nonstopmode&quot;</span><span class="p">,</span> <span class="n">tex_file</span><span class="o">.</span><span class="n">name</span><span class="p">],</span>
+                        <span class="n">cwd</span><span class="o">=</span><span class="n">tmp_path</span><span class="p">,</span>
+                        <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;LaTeX compilation failed:</span><span class="se">\n</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+                        <span class="k">return</span> <span class="kc">None</span>
+
+                <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">TimeoutExpired</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;LaTeX compilation timed out&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">None</span>
+                <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;LaTeX engine &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">latex_engine</span><span class="si">}</span><span class="s2">&#39; not found&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">None</span>
+
+            <span class="c1"># Move PDF to output directory</span>
+            <span class="n">pdf_src</span> <span class="o">=</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">.pdf&quot;</span>
+            <span class="k">if</span> <span class="n">pdf_src</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">pdf_dst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_filename</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;pdf&quot;</span><span class="p">)</span>
+                <span class="n">pdf_src</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">pdf_dst</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">pdf_dst</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;PDF file not generated: </span><span class="si">{</span><span class="n">pdf_src</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_template_context</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">sketch</span><span class="p">:</span> <span class="n">ProofSketch</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ExportContext</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TemplateContext</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create template context with LaTeX-specific formatting.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sketch: Proof sketch</span>
+<span class="sd">            context: Export context</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Template context</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">base_context</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_create_context</span><span class="p">(</span><span class="n">sketch</span><span class="p">)</span>
+
+        <span class="c1"># Escape LaTeX special characters in text fields</span>
+        <span class="n">base_context</span><span class="o">.</span><span class="n">explanation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_manager</span><span class="o">.</span><span class="n">_latex_escape</span><span class="p">(</span>
+            <span class="n">base_context</span><span class="o">.</span><span class="n">explanation</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Format mathematical content for LaTeX</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">base_context</span><span class="o">.</span><span class="n">proof_steps</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;mathematical_content&quot;</span> <span class="ow">in</span> <span class="n">step</span><span class="p">:</span>
+                <span class="c1"># Already in LaTeX format, no escaping needed</span>
+                <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="n">base_context</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_copy_latex_assets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy LaTeX assets to compilation directory.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            target_dir: Target directory</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Copy any custom LaTeX packages or styles</span>
+        <span class="n">assets_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_manager</span><span class="o">.</span><span class="n">get_asset_dir</span><span class="p">(</span><span class="n">ExportFormat</span><span class="o">.</span><span class="n">PDF</span><span class="p">,</span> <span class="s2">&quot;latex&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">assets_dir</span> <span class="ow">and</span> <span class="n">assets_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">assets_dir</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.sty&quot;</span><span class="p">,</span> <span class="s2">&quot;.cls&quot;</span><span class="p">,</span> <span class="s2">&quot;.tex&quot;</span><span class="p">]:</span>
+                    <span class="n">shutil</span><span class="o">.</span><span class="n">copy2</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">target_dir</span> <span class="o">/</span> <span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Proof Sketcher Team.
+      <span class="lastupdated">Last updated on Jul 01, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

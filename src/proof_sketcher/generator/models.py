@@ -23,6 +23,7 @@ class GenerationType(str, Enum):
     ELI5_EXPLANATION = "eli5_explanation"
     TACTIC_EXPLANATION = "tactic_explanation"
     STEP_BY_STEP = "step_by_step"
+    MATHEMATICAL_CONTEXT = "mathematical_context"
 
 
 class ProofStep(BaseModel):

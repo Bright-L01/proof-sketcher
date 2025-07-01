@@ -1,0 +1,708 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>proof_sketcher.generator.ai_generator &mdash; Proof Sketcher 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=bcd76cb2" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Proof Sketcher
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Proof Sketcher</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">proof_sketcher.generator.ai_generator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for proof_sketcher.generator.ai_generator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;AI integration for natural language generation using subprocess.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..core.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AIExecutableError</span><span class="p">,</span>
+    <span class="n">AITimeoutError</span><span class="p">,</span>
+    <span class="n">GeneratorError</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..core.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">IGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..parser.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TheoremInfo</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">GenerationConfig</span><span class="p">,</span>
+    <span class="n">GenerationRequest</span><span class="p">,</span>
+    <span class="n">GenerationResponse</span><span class="p">,</span>
+    <span class="n">GenerationType</span><span class="p">,</span>
+    <span class="n">ProofSketch</span><span class="p">,</span>
+    <span class="n">ProofStep</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.prompts</span><span class="w"> </span><span class="kn">import</span> <span class="n">prompt_templates</span>
+
+<span class="c1"># Backward compatibility aliases</span>
+<span class="n">ClaudeError</span> <span class="o">=</span> <span class="n">GeneratorError</span>
+<span class="n">ClaudeExecutableError</span> <span class="o">=</span> <span class="n">AIExecutableError</span>
+<span class="n">ClaudeAPIError</span> <span class="o">=</span> <span class="n">GeneratorError</span>
+<span class="n">ClaudeTimeoutError</span> <span class="o">=</span> <span class="n">AITimeoutError</span>
+
+
+<div class="viewcode-block" id="AIGenerator">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.generator.AIGenerator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AIGenerator</span><span class="p">(</span><span class="n">IGenerator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generator for natural language explanations using AI CLI tools.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AIGenerator.__init__">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.generator.AIGenerator.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ai_executable</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;claude&quot;</span><span class="p">,</span>  <span class="c1"># Still defaults to claude for compatibility</span>
+        <span class="n">default_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">GenerationConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the AI generator.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ai_executable: Path to the AI CLI executable</span>
+<span class="sd">            default_config: Default generation configuration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ai_executable</span> <span class="o">=</span> <span class="n">ai_executable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_config</span> <span class="o">=</span> <span class="n">default_config</span> <span class="ow">or</span> <span class="n">GenerationConfig</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="c1"># Validate AI tool is available</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_ai_available</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">AIExecutableError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;AI executable not found: </span><span class="si">{</span><span class="n">ai_executable</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">details</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;executable&quot;</span><span class="p">:</span> <span class="n">ai_executable</span><span class="p">},</span>
+                <span class="n">error_code</span><span class="o">=</span><span class="s2">&quot;ai_executable_not_found&quot;</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AIGenerator.generate_proof_sketch">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.generator.AIGenerator.generate_proof_sketch">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_proof_sketch</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">theorem</span><span class="p">:</span> <span class="n">TheoremInfo</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">GenerationConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mathematical_context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProofSketch</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a structured proof sketch for a theorem.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            theorem: Theorem information</span>
+<span class="sd">            config: Generation configuration</span>
+<span class="sd">            mathematical_context: Additional mathematical context</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ProofSketch with structured explanation</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ClaudeError: If generation fails</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_config</span>
+
+        <span class="c1"># Create generation request</span>
+        <span class="n">request</span> <span class="o">=</span> <span class="n">GenerationRequest</span><span class="p">(</span>
+            <span class="n">generation_type</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="n">PROOF_SKETCH</span><span class="p">,</span>
+            <span class="n">theorem_name</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">theorem_statement</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">statement</span><span class="p">,</span>
+            <span class="n">theorem_dependencies</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">dependencies</span><span class="p">,</span>
+            <span class="n">proof_text</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">proof</span><span class="p">,</span>
+            <span class="n">docstring</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">docstring</span><span class="p">,</span>
+            <span class="n">mathematical_context</span><span class="o">=</span><span class="n">mathematical_context</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Generate response</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_response</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">response</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ClaudeAPIError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to generate proof sketch: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">error_message</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Parse the JSON response into ProofSketch</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Extract JSON from response if it&#39;s wrapped in text</span>
+                <span class="n">content</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">content</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;```json&quot;</span><span class="p">):</span>
+                    <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;```json&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="n">content</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">):</span>
+                    <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+                <span class="n">sketch_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+
+                <span class="c1"># Convert to ProofSketch model</span>
+                <span class="n">proof_sketch</span> <span class="o">=</span> <span class="n">ProofSketch</span><span class="p">(</span>
+                    <span class="n">theorem_name</span><span class="o">=</span><span class="n">sketch_data</span><span class="p">[</span><span class="s2">&quot;theorem_name&quot;</span><span class="p">],</span>
+                    <span class="n">introduction</span><span class="o">=</span><span class="n">sketch_data</span><span class="p">[</span><span class="s2">&quot;introduction&quot;</span><span class="p">],</span>
+                    <span class="n">key_steps</span><span class="o">=</span><span class="p">[</span>
+                        <span class="n">ProofStep</span><span class="p">(</span><span class="o">**</span><span class="n">step_data</span><span class="p">)</span> <span class="k">for</span> <span class="n">step_data</span> <span class="ow">in</span> <span class="n">sketch_data</span><span class="p">[</span><span class="s2">&quot;key_steps&quot;</span><span class="p">]</span>
+                    <span class="p">],</span>
+                    <span class="n">conclusion</span><span class="o">=</span><span class="n">sketch_data</span><span class="p">[</span><span class="s2">&quot;conclusion&quot;</span><span class="p">],</span>
+                    <span class="n">difficulty_level</span><span class="o">=</span><span class="n">sketch_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                        <span class="s2">&quot;difficulty_level&quot;</span><span class="p">,</span> <span class="s2">&quot;intermediate&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">mathematical_areas</span><span class="o">=</span><span class="n">sketch_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mathematical_areas&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+                    <span class="n">prerequisites</span><span class="o">=</span><span class="n">sketch_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prerequisites&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+                <span class="p">)</span>
+
+                <span class="k">return</span> <span class="n">proof_sketch</span>
+
+            <span class="k">except</span> <span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to parse proof sketch JSON: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="c1"># Fallback: create a simple proof sketch from the text response</span>
+                <span class="k">return</span> <span class="n">ProofSketch</span><span class="p">(</span>
+                    <span class="n">theorem_name</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">introduction</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
+                    <span class="n">key_steps</span><span class="o">=</span><span class="p">[</span>
+                        <span class="n">ProofStep</span><span class="p">(</span>
+                            <span class="n">step_number</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;See introduction for details&quot;</span><span class="p">,</span>
+                            <span class="n">mathematical_content</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">statement</span><span class="p">,</span>
+                            <span class="n">tactics</span><span class="o">=</span><span class="p">[],</span>
+                        <span class="p">)</span>
+                    <span class="p">],</span>
+                    <span class="n">conclusion</span><span class="o">=</span><span class="s2">&quot;Generated explanation above.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># If response.content is already a ProofSketch</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">ProofSketch</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span>
+
+        <span class="k">raise</span> <span class="n">ClaudeAPIError</span><span class="p">(</span><span class="s2">&quot;Unexpected response format for proof sketch&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AIGenerator.generate_eli5_explanation">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.generator.AIGenerator.generate_eli5_explanation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_eli5_explanation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">theorem</span><span class="p">:</span> <span class="n">TheoremInfo</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">GenerationConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mathematical_context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate an ELI5 (Explain Like I&#39;m 5) explanation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            theorem: Theorem information</span>
+<span class="sd">            config: Generation configuration</span>
+<span class="sd">            mathematical_context: Additional mathematical context</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Plain text ELI5 explanation</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ClaudeError: If generation fails</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_config</span>
+
+        <span class="n">request</span> <span class="o">=</span> <span class="n">GenerationRequest</span><span class="p">(</span>
+            <span class="n">generation_type</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="n">ELI5_EXPLANATION</span><span class="p">,</span>
+            <span class="n">theorem_name</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">theorem_statement</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">statement</span><span class="p">,</span>
+            <span class="n">theorem_dependencies</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">dependencies</span><span class="p">,</span>
+            <span class="n">proof_text</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">proof</span><span class="p">,</span>
+            <span class="n">docstring</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">docstring</span><span class="p">,</span>
+            <span class="n">mathematical_context</span><span class="o">=</span><span class="n">mathematical_context</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_response</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">response</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ClaudeAPIError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to generate ELI5 explanation: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">error_message</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span>
+
+        <span class="k">raise</span> <span class="n">ClaudeAPIError</span><span class="p">(</span><span class="s2">&quot;Unexpected response format for ELI5 explanation&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AIGenerator.generate_tactic_explanation">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.generator.AIGenerator.generate_tactic_explanation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_tactic_explanation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">theorem</span><span class="p">:</span> <span class="n">TheoremInfo</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">GenerationConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mathematical_context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate explanation of Lean tactics used in the proof.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            theorem: Theorem information</span>
+<span class="sd">            config: Generation configuration</span>
+<span class="sd">            mathematical_context: Additional mathematical context</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Plain text tactic explanation</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ClaudeError: If generation fails</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_config</span>
+
+        <span class="n">request</span> <span class="o">=</span> <span class="n">GenerationRequest</span><span class="p">(</span>
+            <span class="n">generation_type</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="n">TACTIC_EXPLANATION</span><span class="p">,</span>
+            <span class="n">theorem_name</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">theorem_statement</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">statement</span><span class="p">,</span>
+            <span class="n">theorem_dependencies</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">dependencies</span><span class="p">,</span>
+            <span class="n">proof_text</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">proof</span><span class="p">,</span>
+            <span class="n">docstring</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">docstring</span><span class="p">,</span>
+            <span class="n">mathematical_context</span><span class="o">=</span><span class="n">mathematical_context</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_response</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">response</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ClaudeAPIError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to generate tactic explanation: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">error_message</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span>
+
+        <span class="k">raise</span> <span class="n">ClaudeAPIError</span><span class="p">(</span><span class="s2">&quot;Unexpected response format for tactic explanation&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AIGenerator.generate_step_by_step">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.generator.AIGenerator.generate_step_by_step">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_step_by_step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">theorem</span><span class="p">:</span> <span class="n">TheoremInfo</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">GenerationConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mathematical_context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate detailed step-by-step proof walkthrough.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            theorem: Theorem information</span>
+<span class="sd">            config: Generation configuration</span>
+<span class="sd">            mathematical_context: Additional mathematical context</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Plain text step-by-step explanation</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ClaudeError: If generation fails</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_config</span>
+
+        <span class="n">request</span> <span class="o">=</span> <span class="n">GenerationRequest</span><span class="p">(</span>
+            <span class="n">generation_type</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="n">STEP_BY_STEP</span><span class="p">,</span>
+            <span class="n">theorem_name</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">theorem_statement</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">statement</span><span class="p">,</span>
+            <span class="n">theorem_dependencies</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">dependencies</span><span class="p">,</span>
+            <span class="n">proof_text</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">proof</span><span class="p">,</span>
+            <span class="n">docstring</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">docstring</span><span class="p">,</span>
+            <span class="n">mathematical_context</span><span class="o">=</span><span class="n">mathematical_context</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_response</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">response</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ClaudeAPIError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to generate step-by-step explanation: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">error_message</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span>
+
+        <span class="k">raise</span> <span class="n">ClaudeAPIError</span><span class="p">(</span><span class="s2">&quot;Unexpected response format for step-by-step explanation&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AIGenerator.generate_streaming">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.generator.AIGenerator.generate_streaming">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_streaming</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">theorem</span><span class="p">:</span> <span class="n">TheoremInfo</span><span class="p">,</span>
+        <span class="n">generation_type</span><span class="p">:</span> <span class="n">GenerationType</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">GenerationConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mathematical_context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate response with streaming support.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            theorem: Theorem information</span>
+<span class="sd">            generation_type: Type of generation to perform</span>
+<span class="sd">            config: Generation configuration</span>
+<span class="sd">            mathematical_context: Additional mathematical context</span>
+
+<span class="sd">        Yields:</span>
+<span class="sd">            Chunks of generated text as they arrive</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ClaudeError: If generation fails</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_config</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">stream</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Enable streaming</span>
+
+        <span class="n">request</span> <span class="o">=</span> <span class="n">GenerationRequest</span><span class="p">(</span>
+            <span class="n">generation_type</span><span class="o">=</span><span class="n">generation_type</span><span class="p">,</span>
+            <span class="n">theorem_name</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">theorem_statement</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">statement</span><span class="p">,</span>
+            <span class="n">theorem_dependencies</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">dependencies</span><span class="p">,</span>
+            <span class="n">proof_text</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">proof</span><span class="p">,</span>
+            <span class="n">docstring</span><span class="o">=</span><span class="n">theorem</span><span class="o">.</span><span class="n">docstring</span><span class="p">,</span>
+            <span class="n">mathematical_context</span><span class="o">=</span><span class="n">mathematical_context</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Generate prompt</span>
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">prompt_templates</span><span class="o">.</span><span class="n">render_prompt</span><span class="p">(</span>
+            <span class="n">generation_type</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">generation_type</span><span class="p">,</span>
+            <span class="n">theorem_name</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">,</span>
+            <span class="n">theorem_statement</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">theorem_statement</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+            <span class="n">dependencies</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">theorem_dependencies</span><span class="p">,</span>
+            <span class="n">proof_text</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">proof_text</span><span class="p">,</span>
+            <span class="n">docstring</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">docstring</span><span class="p">,</span>
+            <span class="n">mathematical_context</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">mathematical_context</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Build Claude command for streaming</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_ai_command</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Start subprocess with streaming</span>
+            <span class="n">process</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
+                <span class="n">cmd</span><span class="p">,</span>
+                <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">bufsize</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># Line buffered</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Send prompt</span>
+            <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">stdin</span><span class="p">:</span>
+                <span class="n">process</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+                <span class="n">process</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+            <span class="c1"># Yield output as it comes</span>
+            <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">readline</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>  <span class="c1"># Skip empty lines</span>
+                        <span class="k">yield</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+            <span class="c1"># Wait for completion and check for errors</span>
+            <span class="n">return_code</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">return_code</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">stderr_output</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">process</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">stderr</span> <span class="k">else</span> <span class="s2">&quot;Unknown error&quot;</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="n">ClaudeAPIError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Claude command failed: </span><span class="si">{</span><span class="n">stderr_output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">SubprocessError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ClaudeAPIError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to start Claude process: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;process&quot;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+                <span class="n">process</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">GenerationRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenerationResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate response for a given request.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            request: Generation request</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Generation response</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Generate prompt</span>
+            <span class="n">prompt</span> <span class="o">=</span> <span class="n">prompt_templates</span><span class="o">.</span><span class="n">render_prompt</span><span class="p">(</span>
+                <span class="n">generation_type</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">generation_type</span><span class="p">,</span>
+                <span class="n">theorem_name</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">,</span>
+                <span class="n">theorem_statement</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">theorem_statement</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+                <span class="n">dependencies</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">theorem_dependencies</span><span class="p">,</span>
+                <span class="n">proof_text</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">proof_text</span><span class="p">,</span>
+                <span class="n">docstring</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">docstring</span><span class="p">,</span>
+                <span class="n">mathematical_context</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">mathematical_context</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Call Claude subprocess</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_ai</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+
+            <span class="n">generation_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+
+            <span class="k">return</span> <span class="n">GenerationResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">,</span>
+                <span class="n">content</span><span class="o">=</span><span class="n">output</span><span class="p">,</span>
+                <span class="n">generation_time_ms</span><span class="o">=</span><span class="n">generation_time</span><span class="p">,</span>
+                <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">ClaudeTimeoutError</span><span class="p">:</span>
+            <span class="c1"># Re-raise timeout errors</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">generation_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+
+            <span class="k">return</span> <span class="n">GenerationResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">,</span>
+                <span class="n">content</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="n">generation_time_ms</span><span class="o">=</span><span class="n">generation_time</span><span class="p">,</span>
+                <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">error_message</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_call_ai</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">GenerationConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Call Claude subprocess with the given prompt and configuration.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            prompt: Prompt to send to Claude</span>
+<span class="sd">            config: Generation configuration</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Generated text response</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ClaudeError: If subprocess call fails</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_ai_command</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Calculate timeout (add buffer for subprocess overhead)</span>
+            <span class="n">timeout</span> <span class="o">=</span> <span class="mi">120</span>  <span class="c1"># Default 2 minutes</span>
+            <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">max_tokens</span> <span class="o">&gt;</span> <span class="mi">4000</span><span class="p">:</span>
+                <span class="n">timeout</span> <span class="o">=</span> <span class="mi">180</span>  <span class="c1"># 3 minutes for longer responses</span>
+
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="n">cmd</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">error_msg</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">stderr</span> <span class="k">else</span> <span class="s2">&quot;Unknown error&quot;</span>
+                <span class="k">raise</span> <span class="n">ClaudeAPIError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Claude command failed: </span><span class="si">{</span><span class="n">error_msg</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">TimeoutExpired</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AITimeoutError</span><span class="p">(</span>
+                <span class="s2">&quot;AI request timed out&quot;</span><span class="p">,</span>
+                <span class="n">details</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;timeout&quot;</span><span class="p">:</span> <span class="n">timeout</span><span class="p">,</span> <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()},</span>
+                <span class="n">error_code</span><span class="o">=</span><span class="s2">&quot;ai_timeout&quot;</span><span class="p">,</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+        <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">SubprocessError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GeneratorError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to call AI: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">details</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;command&quot;</span><span class="p">:</span> <span class="n">cmd</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">error_code</span><span class="o">=</span><span class="s2">&quot;ai_call_failed&quot;</span><span class="p">,</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_ai_command</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">GenerationConfig</span><span class="p">,</span> <span class="n">stream</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the Claude CLI command with configuration.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: Generation configuration</span>
+<span class="sd">            stream: Whether to enable streaming</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Command list for subprocess</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ai_executable</span><span class="p">]</span>
+
+        <span class="c1"># Model selection</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-m&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">value</span><span class="p">])</span>
+
+        <span class="c1"># Temperature</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-t&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">temperature</span><span class="p">)])</span>
+
+        <span class="c1"># Max tokens</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;--max-tokens&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">max_tokens</span><span class="p">)])</span>
+
+        <span class="c1"># System message if provided</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">system_message</span><span class="p">:</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-s&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">system_message</span><span class="p">])</span>
+
+        <span class="c1"># Stop sequences</span>
+        <span class="k">for</span> <span class="n">stop_seq</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">stop_sequences</span><span class="p">:</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;--stop&quot;</span><span class="p">,</span> <span class="n">stop_seq</span><span class="p">])</span>
+
+        <span class="c1"># Streaming</span>
+        <span class="k">if</span> <span class="n">stream</span> <span class="ow">or</span> <span class="n">config</span><span class="o">.</span><span class="n">stream</span><span class="p">:</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;--stream&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Use prompt mode</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;-p&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cmd</span>
+
+<div class="viewcode-block" id="AIGenerator.check_ai_available">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.generator.AIGenerator.check_ai_available">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_ai_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if Claude executable is available.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if Claude is available, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ai_executable</span><span class="p">,</span> <span class="s2">&quot;--version&quot;</span><span class="p">],</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">subprocess</span><span class="o">.</span><span class="n">SubprocessError</span><span class="p">,</span> <span class="ne">FileNotFoundError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="AIGenerator.get_ai_version">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.generator.AIGenerator.get_ai_version">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_ai_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get Claude CLI version.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Version string if available, None otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ai_executable</span><span class="p">,</span> <span class="s2">&quot;--version&quot;</span><span class="p">],</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">subprocess</span><span class="o">.</span><span class="n">SubprocessError</span><span class="p">,</span> <span class="ne">FileNotFoundError</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="AIGenerator.validate_setup">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.generator.AIGenerator.validate_setup">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that Claude is properly set up.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if setup is valid, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_ai_available</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Claude executable not found: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ai_executable</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="c1"># Test basic functionality with a simple prompt</span>
+            <span class="n">test_prompt</span> <span class="o">=</span> <span class="s2">&quot;Respond with exactly: &#39;Claude is working&#39;&quot;</span>
+            <span class="n">test_config</span> <span class="o">=</span> <span class="n">GenerationConfig</span><span class="o">.</span><span class="n">fast</span><span class="p">()</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_ai</span><span class="p">(</span><span class="n">test_prompt</span><span class="p">,</span> <span class="n">test_config</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s2">&quot;Claude is working&quot;</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Claude setup validation successful&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Claude test response unexpected: </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Claude test call failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Claude setup validation failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+</div>
+
+
+
+<span class="c1"># Backward compatibility alias</span>
+<span class="n">ClaudeGenerator</span> <span class="o">=</span> <span class="n">AIGenerator</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Proof Sketcher Team.
+      <span class="lastupdated">Last updated on Jul 01, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

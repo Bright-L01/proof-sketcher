@@ -1,0 +1,733 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>proof_sketcher.animator.formula_extractor &mdash; Proof Sketcher 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=bcd76cb2" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Proof Sketcher
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Proof Sketcher</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">proof_sketcher.animator.formula_extractor</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for proof_sketcher.animator.formula_extractor</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Formula extraction and conversion from Lean to LaTeX.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">FormulaExtractionError</span><span class="p">,</span> <span class="n">TransformationType</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FormulaTransformation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a transformation between two formulas.&quot;&quot;&quot;</span>
+
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">target</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">transformation_type</span><span class="p">:</span> <span class="n">TransformationType</span>
+    <span class="n">highlighted_parts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">explanation</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">intermediate_steps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="LeanToLatexConverter">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.animator.LeanToLatexConverter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LeanToLatexConverter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts Lean mathematical expressions to LaTeX.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="LeanToLatexConverter.__init__">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.animator.LeanToLatexConverter.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the converter with symbol mappings.&quot;&quot;&quot;</span>
+        <span class="c1"># Unicode to LaTeX mappings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">symbol_map</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="c1"># Quantifiers</span>
+            <span class="s2">&quot;∀&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\forall&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;∃&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\exists&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;∄&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\nexists&quot;</span><span class="p">,</span>
+            <span class="c1"># Logic operators</span>
+            <span class="s2">&quot;→&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\to&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;↔&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\leftrightarrow&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;¬&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\neg&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;∧&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\land&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;∨&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\lor&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;⊤&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\top&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;⊥&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\bot&quot;</span><span class="p">,</span>
+            <span class="c1"># Set operations</span>
+            <span class="s2">&quot;∈&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\in&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;∉&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\notin&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;⊆&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\subseteq&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;⊇&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\supseteq&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;⊂&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\subset&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;⊃&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\supset&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;∪&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\cup&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;∩&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\cap&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;∅&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\emptyset&quot;</span><span class="p">,</span>
+            <span class="c1"># Arithmetic</span>
+            <span class="s2">&quot;≤&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\leq&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;≥&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\geq&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;≠&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\neq&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;≈&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\approx&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;≡&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\equiv&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;±&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\pm&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;∞&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\infty&quot;</span><span class="p">,</span>
+            <span class="c1"># Number sets</span>
+            <span class="s2">&quot;ℕ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\mathbb</span><span class="si">{N}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ℤ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\mathbb</span><span class="si">{Z}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ℚ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\mathbb</span><span class="si">{Q}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ℝ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\mathbb</span><span class="si">{R}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ℂ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\mathbb</span><span class="si">{C}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="c1"># Greek letters (common ones)</span>
+            <span class="s2">&quot;α&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\alpha&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;β&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\beta&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;γ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\gamma&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;δ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\delta&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ε&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\epsilon&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;θ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\theta&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;λ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\lambda&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;μ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\mu&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;π&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\pi&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;σ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\sigma&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;τ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\tau&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;φ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\phi&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ψ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\psi&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ω&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\omega&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Γ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\Gamma&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Δ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\Delta&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Θ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\Theta&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Λ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\Lambda&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Π&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\Pi&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Σ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\Sigma&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Φ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\Phi&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Ψ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\Psi&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Ω&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\Omega&quot;</span><span class="p">,</span>
+            <span class="c1"># Other mathematical symbols</span>
+            <span class="s2">&quot;∑&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\sum&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;∏&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\prod&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;∫&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\int&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;∂&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\partial&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;∇&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\nabla&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;√&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\sqrt&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Function name mappings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">function_map</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;Nat.add&quot;</span><span class="p">:</span> <span class="s2">&quot;+&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Nat.mul&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\cdot&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Nat.sub&quot;</span><span class="p">:</span> <span class="s2">&quot;-&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Nat.div&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\div&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Nat.mod&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\bmod&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Nat.pow&quot;</span><span class="p">:</span> <span class="s2">&quot;^&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Nat.factorial&quot;</span><span class="p">:</span> <span class="s2">&quot;!&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Int.add&quot;</span><span class="p">:</span> <span class="s2">&quot;+&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Int.mul&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\cdot&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Int.sub&quot;</span><span class="p">:</span> <span class="s2">&quot;-&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Int.div&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\div&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Real.add&quot;</span><span class="p">:</span> <span class="s2">&quot;+&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Real.mul&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\cdot&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Real.sub&quot;</span><span class="p">:</span> <span class="s2">&quot;-&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Real.div&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\div&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Real.pow&quot;</span><span class="p">:</span> <span class="s2">&quot;^&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Real.sqrt&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\sqrt&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Real.sin&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\sin&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Real.cos&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\cos&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Real.tan&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\tan&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Real.log&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\log&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Real.exp&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\exp&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;List.length&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\text</span><span class="si">{length}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;List.append&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\text{++}&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Set.union&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\cup&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Set.inter&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\cap&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Set.diff&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\setminus&quot;</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="LeanToLatexConverter.convert">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.animator.LeanToLatexConverter.convert">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lean_expr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert a Lean expression to LaTeX.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            lean_expr: Lean mathematical expression</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            LaTeX representation of the expression</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Start with the original expression</span>
+            <span class="n">latex</span> <span class="o">=</span> <span class="n">lean_expr</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="c1"># Handle type annotations (remove for cleaner display)</span>
+            <span class="n">latex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clean_type_annotations</span><span class="p">(</span><span class="n">latex</span><span class="p">)</span>
+
+            <span class="c1"># Convert function applications</span>
+            <span class="n">latex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_function_applications</span><span class="p">(</span><span class="n">latex</span><span class="p">)</span>
+
+            <span class="c1"># Convert quantifiers</span>
+            <span class="n">latex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_quantifiers</span><span class="p">(</span><span class="n">latex</span><span class="p">)</span>
+
+            <span class="c1"># Convert infix operators</span>
+            <span class="n">latex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_infix_operators</span><span class="p">(</span><span class="n">latex</span><span class="p">)</span>
+
+            <span class="c1"># Convert Unicode symbols</span>
+            <span class="n">latex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_unicode_symbols</span><span class="p">(</span><span class="n">latex</span><span class="p">)</span>
+
+            <span class="c1"># Handle parentheses and spacing</span>
+            <span class="n">latex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_improve_formatting</span><span class="p">(</span><span class="n">latex</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">latex</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">FormulaExtractionError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to convert Lean expression &#39;</span><span class="si">{</span><span class="n">lean_expr</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clean_type_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove or simplify type annotations.&quot;&quot;&quot;</span>
+        <span class="c1"># Remove simple type annotations like (n : Nat)</span>
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;\(([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*[A-Za-z][A-Za-z0-9_.]*\)&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1&quot;</span><span class="p">,</span> <span class="n">expr</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Remove standalone type declarations</span>
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;:\s*[A-Za-z][A-Za-z0-9_.]*(?=\s|$)&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">expr</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_function_applications</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert function applications to mathematical notation.&quot;&quot;&quot;</span>
+        <span class="c1"># Convert known functions</span>
+        <span class="k">for</span> <span class="n">lean_func</span><span class="p">,</span> <span class="n">latex_func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">lean_func</span> <span class="ow">in</span> <span class="n">expr</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">latex_func</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\cdot&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\div&quot;</span><span class="p">]:</span>
+                    <span class="c1"># Infix operators</span>
+                    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">rf</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">lean_func</span><span class="p">)</span><span class="si">}</span><span class="s2">\s+([^\s]+)\s+([^\s]+)&quot;</span>
+                    <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="sa">rf</span><span class="s2">&quot;\1 </span><span class="si">{</span><span class="n">latex_func</span><span class="si">}</span><span class="s2"> \2&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">latex_func</span> <span class="o">==</span> <span class="s2">&quot;^&quot;</span><span class="p">:</span>
+                    <span class="c1"># Exponentiation</span>
+                    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">rf</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">lean_func</span><span class="p">)</span><span class="si">}</span><span class="s2">\s+([^\s]+)\s+([^\s]+)&quot;</span>
+                    <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1^{\2}&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">latex_func</span> <span class="o">==</span> <span class="s2">&quot;!&quot;</span><span class="p">:</span>
+                    <span class="c1"># Factorial (postfix)</span>
+                    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">rf</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">lean_func</span><span class="p">)</span><span class="si">}</span><span class="s2">\s+([^\s]+)&quot;</span>
+                    <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1!&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">latex_func</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\sqrt&quot;</span><span class="p">):</span>
+                    <span class="c1"># Square root</span>
+                    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">rf</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">lean_func</span><span class="p">)</span><span class="si">}</span><span class="s2">\s+([^\s]+)&quot;</span>
+                    <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">sqrt{\1}&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Function notation</span>
+                    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">rf</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">lean_func</span><span class="p">)</span><span class="si">}</span><span class="s2">\s+([^\s]+)&quot;</span>
+                    <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="sa">rf</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">latex_func</span><span class="si">}</span><span class="s2">(\1)&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">expr</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_quantifiers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert quantifier expressions.&quot;&quot;&quot;</span>
+
+        <span class="c1"># Universal quantifier: ∀ x : T, P(x)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">convert_universal</span><span class="p">(</span><span class="n">match</span><span class="p">):</span>
+            <span class="n">var</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">rest</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+            <span class="c1"># Add parentheses to function applications like P x -&gt; P(x)</span>
+            <span class="n">rest</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+                <span class="sa">r</span><span class="s2">&quot;\b([A-Z][a-zA-Z0-9_]*)\s+([a-z][a-zA-Z0-9_]*)\b&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1(\2)&quot;</span><span class="p">,</span> <span class="n">rest</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">forall </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">rest</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;∀\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*(?::\s*[^,]+)?,\s*(.+)&quot;</span><span class="p">,</span>
+            <span class="n">convert_universal</span><span class="p">,</span>
+            <span class="n">expr</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Existential quantifier: ∃ x : T, P(x)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">convert_existential</span><span class="p">(</span><span class="n">match</span><span class="p">):</span>
+            <span class="n">var</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">rest</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+            <span class="c1"># Add parentheses to function applications like P x -&gt; P(x)</span>
+            <span class="n">rest</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+                <span class="sa">r</span><span class="s2">&quot;\b([A-Z][a-zA-Z0-9_]*)\s+([a-z][a-zA-Z0-9_]*)\b&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1(\2)&quot;</span><span class="p">,</span> <span class="n">rest</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">exists </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">rest</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;∃\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*(?::\s*[^,]+)?,\s*(.+)&quot;</span><span class="p">,</span>
+            <span class="n">convert_existential</span><span class="p">,</span>
+            <span class="n">expr</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Lambda expressions: λ x, expr</span>
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;λ\s*([a-zA-Z_][a-zA-Z0-9_]*),\s*(.+)&quot;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">lambda \1. \2&quot;</span><span class="p">,</span>
+            <span class="n">expr</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">expr</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_infix_operators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert infix operators.&quot;&quot;&quot;</span>
+        <span class="c1"># Handle equality chains</span>
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\w+)\s*=\s*(\w+)\s*=\s*(\w+)&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1 = \2 = \3&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+
+        <span class="c1"># Handle implications</span>
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\w+)\s*→\s*(\w+)&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1 </span><span class="se">\\</span><span class="s2">to \2&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+
+        <span class="c1"># Handle biconditionals</span>
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\w+)\s*↔\s*(\w+)&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1 </span><span class="se">\\</span><span class="s2">leftrightarrow \2&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">expr</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_unicode_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert Unicode symbols to LaTeX.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">unicode_char</span><span class="p">,</span> <span class="n">latex_cmd</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">expr</span> <span class="o">=</span> <span class="n">expr</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">unicode_char</span><span class="p">,</span> <span class="n">latex_cmd</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">expr</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_improve_formatting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Improve LaTeX formatting.&quot;&quot;&quot;</span>
+        <span class="c1"># Add proper spacing around operators</span>
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\w)(\+|\-|\*|/)(\w)&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1 \2 \3&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+
+        <span class="c1"># Handle subscripts (convert _ to LaTeX subscript)</span>
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\w+)_(\w+)&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1_{\2}&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+
+        <span class="c1"># Handle function calls with proper parentheses</span>
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\w+)\s*\(\s*([^)]+)\s*\)&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;\1(\2)&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">expr</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ProofStepAnalyzer</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analyzes proof steps to identify transformations.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the analyzer.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">converter</span> <span class="o">=</span> <span class="n">LeanToLatexConverter</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transformation_patterns</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="c1"># Simplification patterns</span>
+            <span class="sa">r</span><span class="s2">&quot;simp&quot;</span><span class="p">:</span> <span class="n">TransformationType</span><span class="o">.</span><span class="n">SIMPLIFICATION</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;norm_num&quot;</span><span class="p">:</span> <span class="n">TransformationType</span><span class="o">.</span><span class="n">SIMPLIFICATION</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;ring&quot;</span><span class="p">:</span> <span class="n">TransformationType</span><span class="o">.</span><span class="n">SIMPLIFICATION</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;abel&quot;</span><span class="p">:</span> <span class="n">TransformationType</span><span class="o">.</span><span class="n">SIMPLIFICATION</span><span class="p">,</span>
+            <span class="c1"># Rewriting patterns</span>
+            <span class="sa">r</span><span class="s2">&quot;rw\s*\[&quot;</span><span class="p">:</span> <span class="n">TransformationType</span><span class="o">.</span><span class="n">REWRITE</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;rewrite&quot;</span><span class="p">:</span> <span class="n">TransformationType</span><span class="o">.</span><span class="n">REWRITE</span><span class="p">,</span>
+            <span class="c1"># Substitution patterns</span>
+            <span class="sa">r</span><span class="s2">&quot;subst&quot;</span><span class="p">:</span> <span class="n">TransformationType</span><span class="o">.</span><span class="n">SUBSTITUTION</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;apply&quot;</span><span class="p">:</span> <span class="n">TransformationType</span><span class="o">.</span><span class="n">SUBSTITUTION</span><span class="p">,</span>
+            <span class="c1"># Induction patterns</span>
+            <span class="sa">r</span><span class="s2">&quot;induction&quot;</span><span class="p">:</span> <span class="n">TransformationType</span><span class="o">.</span><span class="n">INDUCTION_STEP</span><span class="p">,</span>
+            <span class="c1"># Case analysis</span>
+            <span class="sa">r</span><span class="s2">&quot;cases&quot;</span><span class="p">:</span> <span class="n">TransformationType</span><span class="o">.</span><span class="n">CASE_SPLIT</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;by_cases&quot;</span><span class="p">:</span> <span class="n">TransformationType</span><span class="o">.</span><span class="n">CASE_SPLIT</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">analyze_transformation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">source_formula</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target_formula</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">proof_step</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FormulaTransformation</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze the transformation between two formulas.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            source_formula: Starting formula</span>
+<span class="sd">            target_formula: Ending formula</span>
+<span class="sd">            proof_step: Proof step/tactic that caused the transformation</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            FormulaTransformation describing the change</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Convert formulas to LaTeX</span>
+        <span class="n">source_latex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">converter</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">source_formula</span><span class="p">)</span>
+        <span class="n">target_latex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">converter</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">target_formula</span><span class="p">)</span>
+
+        <span class="c1"># Identify transformation type</span>
+        <span class="n">transformation_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_identify_transformation_type</span><span class="p">(</span><span class="n">proof_step</span><span class="p">)</span>
+
+        <span class="c1"># Find highlighted parts (what changed)</span>
+        <span class="n">highlighted_parts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_changes</span><span class="p">(</span><span class="n">source_formula</span><span class="p">,</span> <span class="n">target_formula</span><span class="p">)</span>
+
+        <span class="c1"># Generate explanation</span>
+        <span class="n">explanation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_explanation</span><span class="p">(</span>
+            <span class="n">source_formula</span><span class="p">,</span> <span class="n">target_formula</span><span class="p">,</span> <span class="n">proof_step</span><span class="p">,</span> <span class="n">transformation_type</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Generate intermediate steps if needed</span>
+        <span class="n">intermediate_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_intermediate_steps</span><span class="p">(</span>
+            <span class="n">source_latex</span><span class="p">,</span> <span class="n">target_latex</span><span class="p">,</span> <span class="n">transformation_type</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">FormulaTransformation</span><span class="p">(</span>
+            <span class="n">source</span><span class="o">=</span><span class="n">source_latex</span><span class="p">,</span>
+            <span class="n">target</span><span class="o">=</span><span class="n">target_latex</span><span class="p">,</span>
+            <span class="n">transformation_type</span><span class="o">=</span><span class="n">transformation_type</span><span class="p">,</span>
+            <span class="n">highlighted_parts</span><span class="o">=</span><span class="n">highlighted_parts</span><span class="p">,</span>
+            <span class="n">explanation</span><span class="o">=</span><span class="n">explanation</span><span class="p">,</span>
+            <span class="n">intermediate_steps</span><span class="o">=</span><span class="n">intermediate_steps</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_formula_components</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">formula</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract meaningful components from a formula for highlighting.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            formula: Mathematical formula</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of formula components</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Convert to LaTeX first</span>
+        <span class="n">latex_formula</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">converter</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">formula</span><span class="p">)</span>
+
+        <span class="n">components</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Extract terms separated by operators</span>
+        <span class="n">terms</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[+\-=&lt;&gt;≤≥≠]&quot;</span><span class="p">,</span> <span class="n">latex_formula</span><span class="p">)</span>
+        <span class="n">components</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">term</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">terms</span> <span class="k">if</span> <span class="n">term</span><span class="o">.</span><span class="n">strip</span><span class="p">()])</span>
+
+        <span class="c1"># Extract function calls</span>
+        <span class="n">function_calls</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">[a-z]+\{[^}]+\}&quot;</span><span class="p">,</span> <span class="n">latex_formula</span><span class="p">)</span>
+        <span class="n">components</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">function_calls</span><span class="p">)</span>
+
+        <span class="c1"># Extract variables</span>
+        <span class="n">variables</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\b[a-zA-Z]\b&quot;</span><span class="p">,</span> <span class="n">latex_formula</span><span class="p">)</span>
+        <span class="n">components</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">components</span><span class="p">))</span>  <span class="c1"># Remove duplicates</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_identify_transformation_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proof_step</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransformationType</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Identify the type of transformation from proof step.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">trans_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformation_patterns</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">proof_step</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">trans_type</span>
+
+        <span class="c1"># Default to simplification if no specific pattern found</span>
+        <span class="k">return</span> <span class="n">TransformationType</span><span class="o">.</span><span class="n">SIMPLIFICATION</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find what changed between source and target formulas.&quot;&quot;&quot;</span>
+        <span class="n">source_components</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extract_formula_components</span><span class="p">(</span><span class="n">source</span><span class="p">))</span>
+        <span class="n">target_components</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extract_formula_components</span><span class="p">(</span><span class="n">target</span><span class="p">))</span>
+
+        <span class="c1"># Components that changed (removed or added)</span>
+        <span class="n">changed_components</span> <span class="o">=</span> <span class="n">source_components</span><span class="o">.</span><span class="n">symmetric_difference</span><span class="p">(</span><span class="n">target_components</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">changed_components</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_explanation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">proof_step</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trans_type</span><span class="p">:</span> <span class="n">TransformationType</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate human-readable explanation of the transformation.&quot;&quot;&quot;</span>
+        <span class="n">explanations</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">TransformationType</span><span class="o">.</span><span class="n">SIMPLIFICATION</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Simplify using </span><span class="si">{</span><span class="n">proof_step</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">TransformationType</span><span class="o">.</span><span class="n">REWRITE</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Rewrite using the rule in </span><span class="si">{</span><span class="n">proof_step</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">TransformationType</span><span class="o">.</span><span class="n">SUBSTITUTION</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Substitute using </span><span class="si">{</span><span class="n">proof_step</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">TransformationType</span><span class="o">.</span><span class="n">INDUCTION_STEP</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Apply induction step: </span><span class="si">{</span><span class="n">proof_step</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">TransformationType</span><span class="o">.</span><span class="n">CASE_SPLIT</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Split into cases: </span><span class="si">{</span><span class="n">proof_step</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">TransformationType</span><span class="o">.</span><span class="n">EXPANSION</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Expand the expression: </span><span class="si">{</span><span class="n">proof_step</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">TransformationType</span><span class="o">.</span><span class="n">FACTORIZATION</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Factor the expression: </span><span class="si">{</span><span class="n">proof_step</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">TransformationType</span><span class="o">.</span><span class="n">EQUALITY_CHAIN</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Chain equalities: </span><span class="si">{</span><span class="n">proof_step</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">explanations</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">trans_type</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Transform using </span><span class="si">{</span><span class="n">proof_step</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_intermediate_steps</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trans_type</span><span class="p">:</span> <span class="n">TransformationType</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate intermediate steps for smooth animation.&quot;&quot;&quot;</span>
+        <span class="c1"># For now, return empty list - could be enhanced to show step-by-step</span>
+        <span class="n">intermediates</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># For complex transformations, we might want to generate intermediate states</span>
+        <span class="k">if</span> <span class="n">trans_type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">TransformationType</span><span class="o">.</span><span class="n">REWRITE</span><span class="p">,</span> <span class="n">TransformationType</span><span class="o">.</span><span class="n">SUBSTITUTION</span><span class="p">]:</span>
+            <span class="c1"># Could analyze the difference and create intermediate steps</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="n">intermediates</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ExtractedFormula</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents an extracted mathematical formula.&quot;&quot;&quot;</span>
+
+    <span class="n">latex</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">display_mode</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">position</span><span class="p">:</span> <span class="nb">int</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProcessedContent</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents processed mathematical content.&quot;&quot;&quot;</span>
+
+    <span class="n">formulas</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ExtractedFormula</span><span class="p">]</span>
+    <span class="n">lean_code</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<div class="viewcode-block" id="FormulaExtractor">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.animator.FormulaExtractor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FormulaExtractor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;High-level interface for formula extraction and conversion.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="FormulaExtractor.__init__">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.animator.FormulaExtractor.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the extractor.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">converter</span> <span class="o">=</span> <span class="n">LeanToLatexConverter</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">analyzer</span> <span class="o">=</span> <span class="n">ProofStepAnalyzer</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="FormulaExtractor.extract_from_proof_step">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.animator.FormulaExtractor.extract_from_proof_step">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_from_proof_step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">proof_step_text</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract before/after formulas from a proof step description.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            proof_step_text: Natural language description of proof step</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of (before_formula, after_formula). after_formula may be None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This would need to be enhanced with NLP to extract formulas from text</span>
+        <span class="c1"># For now, return basic parsing</span>
+
+        <span class="c1"># Look for mathematical expressions in the text</span>
+        <span class="n">math_expressions</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;[A-Za-z0-9+\-*/=&lt;&gt;≤≥≠∀∃→↔¬∧∨]+&quot;</span><span class="p">,</span> <span class="n">proof_step_text</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">math_expressions</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">math_expressions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">math_expressions</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">math_expressions</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">math_expressions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">proof_step_text</span><span class="p">,</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="FormulaExtractor.convert_lean_to_latex">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.animator.FormulaExtractor.convert_lean_to_latex">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">convert_lean_to_latex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lean_expr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert Lean expression to LaTeX.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">converter</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">lean_expr</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FormulaExtractor.analyze_proof_transformation">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.animator.FormulaExtractor.analyze_proof_transformation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">analyze_proof_transformation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">source_formula</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target_formula</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">proof_step</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FormulaTransformation</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze transformation between formulas.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">analyzer</span><span class="o">.</span><span class="n">analyze_transformation</span><span class="p">(</span>
+            <span class="n">source_formula</span><span class="p">,</span> <span class="n">target_formula</span><span class="p">,</span> <span class="n">proof_step</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FormulaExtractor.extract_key_formulas_from_theorem">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.animator.FormulaExtractor.extract_key_formulas_from_theorem">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_key_formulas_from_theorem</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">theorem_statement</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">proof_text</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract key formulas from theorem statement and proof.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            theorem_statement: The theorem statement</span>
+<span class="sd">            proof_text: The proof text</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of key formulas in LaTeX format</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">formulas</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Extract main theorem statement</span>
+        <span class="n">main_formula</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">converter</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">theorem_statement</span><span class="p">)</span>
+        <span class="n">formulas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">main_formula</span><span class="p">)</span>
+
+        <span class="c1"># Extract formulas from proof steps</span>
+        <span class="c1"># Look for expressions that look like mathematical formulas</span>
+        <span class="n">proof_formulas</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;[A-Za-z0-9_]+(?:\s*[+\-*/=&lt;&gt;≤≥≠]\s*[A-Za-z0-9_]+)+&quot;</span><span class="p">,</span> <span class="n">proof_text</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">formula</span> <span class="ow">in</span> <span class="n">proof_formulas</span><span class="p">:</span>
+            <span class="n">latex_formula</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">converter</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">formula</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">latex_formula</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">formulas</span><span class="p">:</span>
+                <span class="n">formulas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">latex_formula</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">formulas</span></div>
+
+
+<div class="viewcode-block" id="FormulaExtractor.extract_formulas">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.animator.FormulaExtractor.extract_formulas">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_formulas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ExtractedFormula</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract LaTeX formulas from text.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text: Text containing LaTeX formulas</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of extracted formulas</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">formulas</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Extract display math ($$...$$)</span>
+        <span class="n">display_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\$\$(.*?)\$\$&quot;</span>
+        <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">display_pattern</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+            <span class="n">formulas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">ExtractedFormula</span><span class="p">(</span>
+                    <span class="n">latex</span><span class="o">=</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                    <span class="n">display_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">position</span><span class="o">=</span><span class="n">match</span><span class="o">.</span><span class="n">start</span><span class="p">(),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Extract inline math ($...$)</span>
+        <span class="n">inline_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;(?&lt;!\$)\$(?!\$)(.*?)(?&lt;!\$)\$(?!\$)&quot;</span>
+        <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">inline_pattern</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+            <span class="n">formulas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">ExtractedFormula</span><span class="p">(</span>
+                    <span class="n">latex</span><span class="o">=</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                    <span class="n">display_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">position</span><span class="o">=</span><span class="n">match</span><span class="o">.</span><span class="n">start</span><span class="p">(),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">formulas</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">position</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FormulaExtractor.extract_lean_notation">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.animator.FormulaExtractor.extract_lean_notation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_lean_notation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract Lean notation from text (backtick delimited).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text: Text containing Lean notation</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of Lean expressions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;`([^`]+)`&quot;</span>
+        <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FormulaExtractor.process_proof_content">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.animator.FormulaExtractor.process_proof_content">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">process_proof_content</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProcessedContent</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process mixed mathematical content.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            content: Mixed content with LaTeX and Lean notation</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Processed content with extracted formulas and code</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Extract LaTeX formulas</span>
+        <span class="n">formulas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_formulas</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+
+        <span class="c1"># Extract Lean code</span>
+        <span class="n">lean_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract_lean_notation</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+
+        <span class="c1"># Clean text by removing formulas</span>
+        <span class="n">clean_text</span> <span class="o">=</span> <span class="n">content</span>
+        <span class="k">for</span> <span class="n">formula</span> <span class="ow">in</span> <span class="n">formulas</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">formula</span><span class="o">.</span><span class="n">display_mode</span><span class="p">:</span>
+                <span class="n">clean_text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\$\$.*?\$\$&quot;</span><span class="p">,</span> <span class="s2">&quot;[FORMULA]&quot;</span><span class="p">,</span> <span class="n">clean_text</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">clean_text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\$.*?\$&quot;</span><span class="p">,</span> <span class="s2">&quot;[FORMULA]&quot;</span><span class="p">,</span> <span class="n">clean_text</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ProcessedContent</span><span class="p">(</span><span class="n">formulas</span><span class="o">=</span><span class="n">formulas</span><span class="p">,</span> <span class="n">lean_code</span><span class="o">=</span><span class="n">lean_code</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">clean_text</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Proof Sketcher Team.
+      <span class="lastupdated">Last updated on Jul 01, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
