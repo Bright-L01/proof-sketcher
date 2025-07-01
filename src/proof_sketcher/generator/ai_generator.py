@@ -7,14 +7,11 @@ import time
 from typing import Iterator, Optional
 
 from ..core.exceptions import (
-    GeneratorError,
     AIExecutableError,
     AITimeoutError,
-    PromptError,
+    GeneratorError,
 )
 from ..core.interfaces import IGenerator
-from ..core.utils import retry_with_backoff
-
 from ..parser.models import TheoremInfo
 from .models import (
     GenerationConfig,
@@ -25,7 +22,6 @@ from .models import (
     ProofStep,
 )
 from .prompts import prompt_templates
-
 
 # Backward compatibility aliases
 ClaudeError = GeneratorError
@@ -57,7 +53,7 @@ class AIGenerator(IGenerator):
             raise AIExecutableError(
                 f"AI executable not found: {ai_executable}",
                 details={"executable": ai_executable},
-                error_code="ai_executable_not_found"
+                error_code="ai_executable_not_found",
             )
 
     def generate_proof_sketch(
@@ -459,13 +455,13 @@ class AIGenerator(IGenerator):
             raise AITimeoutError(
                 "AI request timed out",
                 details={"timeout": timeout, "config": config.model_dump()},
-                error_code="ai_timeout"
+                error_code="ai_timeout",
             ) from None
         except subprocess.SubprocessError as e:
             raise GeneratorError(
                 f"Failed to call AI: {e}",
                 details={"command": cmd, "error": str(e)},
-                error_code="ai_call_failed"
+                error_code="ai_call_failed",
             ) from e
 
     def _build_ai_command(
@@ -552,9 +548,7 @@ class AIGenerator(IGenerator):
         """
         try:
             if not self.check_ai_available():
-                self.logger.error(
-                    f"Claude executable not found: {self.ai_executable}"
-                )
+                self.logger.error(f"Claude executable not found: {self.ai_executable}")
                 return False
 
             # Test basic functionality with a simple prompt
