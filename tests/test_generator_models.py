@@ -4,12 +4,16 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from proof_sketcher.generator.models import (CacheEntry, GenerationConfig,
-                                             GenerationModel,
-                                             GenerationRequest,
-                                             GenerationResponse,
-                                             GenerationType, ProofSketch,
-                                             ProofStep)
+from proof_sketcher.generator.models import (
+    CacheEntry,
+    GenerationConfig,
+    GenerationModel,
+    GenerationRequest,
+    GenerationResponse,
+    GenerationType,
+    ProofSketch,
+    ProofStep,
+)
 
 
 class TestProofStep:

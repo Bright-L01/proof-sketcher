@@ -7,8 +7,13 @@ This module provides centralized configuration management with support for:
 - Runtime configuration updates
 """
 
-from .config import (ExportConfig, ProofSketcherConfig, get_config,
-                     reset_config, set_config)
+from .config import (
+    ExportConfig,
+    ProofSketcherConfig,
+    get_config,
+    reset_config,
+    set_config,
+)
 
 # Create alias for backward compatibility
 Config = ProofSketcherConfig

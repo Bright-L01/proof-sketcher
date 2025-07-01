@@ -1,14 +1,14 @@
 """Generator module for creating natural language explanations of Lean theorems.
 
-This module uses Claude AI to generate human-readable explanations of formal
+This module uses AI language models to generate human-readable explanations of formal
 mathematical theorems and their proofs. It produces structured explanations
 with step-by-step breakdowns and key insights.
 
 Key Components:
-    ClaudeGenerator: Main generator class using Claude API
+    AIGenerator: Main generator class using AI CLI tools
     ProofSketch: Data model for generated explanations
     GenerationConfig: Configuration for generation parameters
-    ResponseCache: Caching system for API responses
+    GenerationCache: Caching adapter for generation responses
 
 Features:
     - Natural language generation from formal proofs
@@ -19,18 +19,18 @@ Features:
     - Streaming output support
 
 Example:
-    >>> from proof_sketcher.generator import ClaudeGenerator
+    >>> from proof_sketcher.generator import AIGenerator
     >>> from proof_sketcher.parser import TheoremInfo
     >>>
     >>> # Create generator
-    >>> generator = ClaudeGenerator()
+    >>> generator = AIGenerator()
     >>>
     >>> # Generate explanation
     >>> theorem = TheoremInfo(name="add_comm", statement="a + b = b + a")
     >>> sketch = generator.generate_proof_sketch(theorem)
     >>>
-    >>> print(sketch.explanation)
-    >>> for step in sketch.steps:
+    >>> print(sketch.introduction)
+    >>> for step in sketch.key_steps:
     ...     print(f"- {step.description}")
 
 Generation Types:
@@ -41,14 +41,18 @@ Generation Types:
 For configuration options, see GenerationConfig documentation.
 """
 
-from .cache import CacheManager
-from .claude import ClaudeGenerator
+from .ai_generator import AIGenerator
+from .cache import CacheManager as GenerationCache
 from .models import GenerationConfig, ProofSketch, ProofStep
 
+# Backward compatibility aliases
+ClaudeGenerator = AIGenerator
+
 __all__ = [
-    "ClaudeGenerator",
+    "AIGenerator",
+    "ClaudeGenerator",  # Backward compatibility
     "ProofSketch",
     "ProofStep",
     "GenerationConfig",
-    "CacheManager",
+    "GenerationCache",
 ]

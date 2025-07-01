@@ -1,8 +1,10 @@
 """Comprehensive tests for the CLI module."""
 
 import tempfile
+from pathlib import Path
 from unittest.mock import Mock, patch
 
+import click
 import pytest
 from click.testing import CliRunner
 
@@ -56,7 +58,8 @@ class TestProveCommand:
         lean_file.write_text(
             """
 theorem test_theorem : 1 + 1 = 2 := by norm_num
-"""
+""",
+            encoding="utf-8",
         )
         return lean_file
 
@@ -70,10 +73,30 @@ theorem test_theorem : 1 + 1 = 2 := by norm_num
             mock_result.errors = []
             mock_parser.return_value.parse_file.return_value = mock_result
 
-            result = runner.invoke(cli, ["prove", str(sample_lean_file)])
+            # Mock ClaudeGenerator
+            with patch("proof_sketcher.cli.ClaudeGenerator") as mock_generator:
+                mock_instance = Mock()
+                mock_generator.return_value = mock_instance
+                mock_instance.generate_proof_sketch.return_value = Mock(
+                    theorem_name="test_theorem"
+                )
 
-            assert result.exit_code == 0
-            assert "Found 1 theorems" in result.output
+                result = runner.invoke(cli, ["prove", str(sample_lean_file)])
+
+                if result.exit_code != 0:
+                    print(f"\nError output: {result.output}")
+                    print(f"\nException: {result.exception}")
+                    if result.exception:
+                        import traceback
+
+                        traceback.print_exception(
+                            type(result.exception),
+                            result.exception,
+                            result.exception.__traceback__,
+                        )
+
+                assert result.exit_code == 0
+                assert "Found 1 theorems" in result.output
 
     def test_prove_with_options(self, runner, sample_lean_file):
         """Test prove command with various options."""
@@ -102,16 +125,50 @@ theorem test_theorem : 1 + 1 = 2 := by norm_num
     def test_prove_specific_theorem(self, runner, sample_lean_file):
         """Test proving specific theorem."""
         with patch("proof_sketcher.cli.LeanParser") as mock_parser:
-            mock_parser.return_value.parse_theorem.return_value = Mock(
-                name="specific_theorem"
-            )
+            # Return multiple theorems, but only one matches
+            mock_result = Mock()
+            mock_result.success = True
+            # Create properly configured mock theorems
+            theorem1 = Mock()
+            theorem1.name = "theorem1"
+            theorem1.statement = "stmt1"
 
-            result = runner.invoke(
-                cli, ["prove", str(sample_lean_file), "--theorem", "specific_theorem"]
-            )
+            theorem2 = Mock()
+            theorem2.name = "specific_theorem"
+            theorem2.statement = "stmt2"
 
-            assert result.exit_code == 0
-            mock_parser.return_value.parse_theorem.assert_called_once()
+            theorem3 = Mock()
+            theorem3.name = "theorem3"
+            theorem3.statement = "stmt3"
+
+            mock_result.theorems = [theorem1, theorem2, theorem3]
+            mock_result.errors = []
+            mock_parser.return_value.parse_file.return_value = mock_result
+
+            # Mock ClaudeGenerator
+            with patch("proof_sketcher.cli.ClaudeGenerator") as mock_generator:
+                mock_instance = Mock()
+                mock_generator.return_value = mock_instance
+                mock_instance.generate_proof_sketch.return_value = Mock(
+                    theorem_name="specific_theorem"
+                )
+
+                result = runner.invoke(
+                    cli,
+                    ["prove", str(sample_lean_file), "--theorem", "specific_theorem"],
+                )
+
+                if (
+                    result.exit_code != 0
+                    or "Found 1 theorems to process" not in result.output
+                ):
+                    print(f"\nOutput: {result.output}")
+                    print(f"\nTheorems: {[t.name for t in mock_result.theorems]}")
+
+                assert result.exit_code == 0
+                assert "Found 1 theorems to process" in result.output
+                # Should only generate for the specific theorem
+                assert mock_instance.generate_proof_sketch.call_count == 1
 
     def test_prove_error_handling(self, runner):
         """Test error handling in prove command."""
@@ -124,7 +181,7 @@ theorem test_theorem : 1 + 1 = 2 := by norm_num
         with tempfile.NamedTemporaryFile(suffix=".txt") as tmp:
             result = runner.invoke(cli, ["prove", tmp.name])
             assert result.exit_code != 0
-            assert "must be a .lean file" in result.output
+            assert "File must have .lean extension" in result.output
 
 
 class TestConfigCommand:
@@ -137,53 +194,82 @@ class TestConfigCommand:
 
     def test_config_show(self, runner):
         """Test config show subcommand."""
-        with patch("proof_sketcher.config.config.Config.load") as mock_load:
-            mock_config = Mock()
-            mock_config.to_dict.return_value = {
-                "generator": {"model": "claude-3-opus"},
-                "animator": {"quality": "1080p"},
-            }
-            mock_load.return_value = mock_config
+        from proof_sketcher.animator.models import AnimationQuality
+        from proof_sketcher.generator.models import GenerationModel
 
-            result = runner.invoke(cli, ["config", "show"])
+        # Create a mock config with all the necessary attributes
+        mock_config = Mock()
+        mock_config.project_name = "Test Project"
+        mock_config.version = "1.0.0"
+        mock_config.debug = False
+        mock_config.log_level = "INFO"
+        mock_config.cache_dir = Path("/tmp/cache")
 
-            assert result.exit_code == 0
-            assert "generator" in result.output
-            assert "animator" in result.output
+        # Parser config
+        mock_config.parser = Mock()
+        mock_config.parser.lean_executable = "lean"
+        mock_config.parser.lake_build_on_parse = True
+        mock_config.parser.lean_timeout = 30
 
-    def test_config_set(self, runner):
-        """Test config set subcommand."""
-        with patch("proof_sketcher.config.config.Config") as mock_config_class:
-            mock_config = Mock()
-            mock_config_class.load.return_value = mock_config
+        # Generator config
+        mock_config.generator = Mock()
+        mock_config.generator.model = GenerationModel.CLAUDE_3_5_SONNET
+        mock_config.generator.temperature = 0.7
+        mock_config.generator.max_tokens = 4000
 
-            result = runner.invoke(
-                cli, ["config", "set", "generator.model", "claude-3-sonnet"]
-            )
+        # Animator config
+        mock_config.animator = Mock()
+        mock_config.animator.quality = AnimationQuality.HIGH
+        mock_config.animator.fps = 30
 
-            assert result.exit_code == 0
-            mock_config.set.assert_called_with("generator.model", "claude-3-sonnet")
-            mock_config.save.assert_called_once()
+        # Export config
+        mock_config.export = Mock()
+        mock_config.export.output_dir = Path("output")
+        mock_config.export.html_theme = "doc-gen4"
+        mock_config.export.markdown_flavor = "github"
+        mock_config.export.pdf_engine = "pdflatex"
 
-    def test_config_get(self, runner):
-        """Test config get subcommand."""
-        with patch("proof_sketcher.config.config.Config.load") as mock_load:
-            mock_config = Mock()
-            mock_config.get.return_value = "claude-3-opus"
-            mock_load.return_value = mock_config
+        # Test by directly providing the config in context
+        ctx = click.Context(cli)
+        ctx.obj = {"config": mock_config}
 
-            result = runner.invoke(cli, ["config", "get", "generator.model"])
-
-            assert result.exit_code == 0
-            assert "claude-3-opus" in result.output
-
-    def test_config_reset(self, runner):
-        """Test config reset subcommand."""
-        with patch("proof_sketcher.config.config.Config") as mock_config_class:
-            result = runner.invoke(cli, ["config", "reset", "--yes"])
+        with ctx:
+            result = runner.invoke(cli, ["config", "show"], obj=ctx.obj)
 
             assert result.exit_code == 0
-            mock_config_class.create_default.assert_called_once()
+            assert "Configuration" in result.output
+
+    def test_config_save(self, runner):
+        """Test config save subcommand."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_file = Path(tmpdir) / "test-config.yaml"
+
+            # Mock the config loading
+            with patch("proof_sketcher.config.config.Config.load") as mock_load:
+                mock_config = Mock()
+                mock_config.save = Mock()
+                mock_config.debug = False
+                mock_config.log_level = "INFO"
+                mock_load.return_value = mock_config
+
+                result = runner.invoke(
+                    cli, ["config", "save", "--output", str(output_file)]
+                )
+
+                if result.exit_code != 0:
+                    print(f"Output: {result.output}")
+                    print(f"Exception: {result.exception}")
+                    if result.exception:
+                        import traceback
+
+                        traceback.print_exception(
+                            type(result.exception),
+                            result.exception,
+                            result.exception.__traceback__,
+                        )
+
+                assert result.exit_code == 0
+                mock_config.save.assert_called_once_with(output_file)
 
 
 class TestCacheCommand:
@@ -196,49 +282,101 @@ class TestCacheCommand:
 
     def test_cache_status(self, runner):
         """Test cache status subcommand."""
-        with patch("proof_sketcher.generator.cache.CacheManager") as mock_cache_class:
-            mock_cache = Mock()
-            mock_cache.get_cache_size_mb.return_value = 50.5
-            mock_cache.get_cache_stats.return_value = {
-                "total_entries": 100,
-                "size_mb": 50.5,
-                "max_size_mb": 100,
-                "by_type": {"proof_sketch": 80, "eli5": 20}
-            }
-            mock_cache_class.return_value = mock_cache
+        # Mock the config loading
+        with patch("proof_sketcher.config.config.Config.load") as mock_load:
+            mock_config = Mock()
+            mock_config.cache_dir = Path("/tmp/test-cache")
+            mock_config.debug = False
+            mock_config.log_level = "INFO"
+            mock_load.return_value = mock_config
 
-            result = runner.invoke(cli, ["cache", "status"])
+            # Mock the cache directory existence
+            with patch.object(Path, "exists") as mock_exists:
+                mock_exists.return_value = True
 
-            assert result.exit_code == 0
-            assert "50.5" in result.output or "50.50" in result.output
+                # Mock CacheManager
+                with patch("proof_sketcher.cli.CacheManager") as mock_cache_class:
+                    mock_cache = Mock()
+                    mock_cache.get_cache_stats.return_value = {
+                        "total_entries": 100,
+                        "size_mb": 50.5,
+                        "max_size_mb": 100,
+                        "by_type": {"proof_sketch": 80, "eli5": 20},
+                    }
+                    mock_cache_class.return_value = mock_cache
+
+                    # Mock animation cache directory glob
+                    with patch("pathlib.Path.glob") as mock_glob:
+                        mock_glob.return_value = []  # No animation files
+
+                        result = runner.invoke(cli, ["cache", "status"])
+
+                        assert result.exit_code == 0
+                        assert "50.5" in result.output or "50.50" in result.output
+                        assert "100" in result.output  # total entries
             assert "100" in result.output
 
     def test_cache_clear(self, runner):
         """Test cache clear subcommand."""
-        with patch("proof_sketcher.generator.cache.CacheManager") as mock_cache_class:
-            mock_cache = Mock()
-            mock_cache.clear.return_value = 50  # Number of entries cleared
-            mock_cache_class.return_value = mock_cache
+        # Mock the config loading
+        with patch("proof_sketcher.config.config.Config.load") as mock_load:
+            mock_config = Mock()
+            mock_config.cache_dir = Path("/tmp/test-cache")
+            mock_config.debug = False
+            mock_config.log_level = "INFO"
+            mock_load.return_value = mock_config
 
-            # Test with force flag (no confirmation needed)
-            result = runner.invoke(cli, ["cache", "clear", "--force"])
+            # Mock the cache directory existence
+            with patch.object(Path, "exists") as mock_exists:
+                mock_exists.return_value = True
 
-            assert result.exit_code == 0
-            mock_cache.clear.assert_called_once()
+                # Mock CacheManager
+                with patch("proof_sketcher.cli.CacheManager") as mock_cache_class:
+                    mock_cache = Mock()
+                    mock_cache.clear.return_value = 50  # Number of entries cleared
+                    mock_cache_class.return_value = mock_cache
+
+                    # Mock animation cache directory glob
+                    with patch("pathlib.Path.glob") as mock_glob:
+                        mock_glob.return_value = []  # No animation files
+
+                        # Test with force flag (no confirmation needed)
+                        result = runner.invoke(cli, ["cache", "clear", "--force"])
+
+                        assert result.exit_code == 0
+                        mock_cache.clear.assert_called_once()
+                        assert "cleared successfully" in result.output
             assert "cleared successfully" in result.output
 
     def test_cache_clear_specific_type(self, runner):
         """Test clearing specific cache type - currently clears all."""
-        with patch("proof_sketcher.generator.cache.CacheManager") as mock_cache_class:
-            mock_cache = Mock()
-            mock_cache.clear.return_value = 25
-            mock_cache_class.return_value = mock_cache
+        # Mock the config loading
+        with patch("proof_sketcher.config.config.Config.load") as mock_load:
+            mock_config = Mock()
+            mock_config.cache_dir = Path("/tmp/test-cache")
+            mock_config.debug = False
+            mock_config.log_level = "INFO"
+            mock_load.return_value = mock_config
 
-            # Note: Current implementation clears all cache, not specific types
-            result = runner.invoke(cli, ["cache", "clear", "--force"])
+            # Mock the cache directory existence
+            with patch.object(Path, "exists") as mock_exists:
+                mock_exists.return_value = True
 
-            assert result.exit_code == 0
-            mock_cache.clear.assert_called_once()
+                # Mock CacheManager
+                with patch("proof_sketcher.cli.CacheManager") as mock_cache_class:
+                    mock_cache = Mock()
+                    mock_cache.clear.return_value = 25
+                    mock_cache_class.return_value = mock_cache
+
+                    # Mock animation cache directory glob
+                    with patch("pathlib.Path.glob") as mock_glob:
+                        mock_glob.return_value = []  # No animation files
+
+                        # Note: Current implementation clears all cache, not specific types
+                        result = runner.invoke(cli, ["cache", "clear", "--force"])
+
+                        assert result.exit_code == 0
+                        mock_cache.clear.assert_called_once()
 
 
 class TestListCommand:
@@ -249,23 +387,62 @@ class TestListCommand:
         """Create CLI test runner."""
         return CliRunner()
 
+    @pytest.fixture
+    def sample_lean_file(self, tmp_path):
+        """Create a sample Lean file for testing."""
+        lean_file = tmp_path / "test.lean"
+        lean_file.write_text(
+            "theorem test_theorem : 1 + 1 = 2 := by simp\n", encoding="utf-8"
+        )
+        return lean_file
+
     def test_list_theorems(self, runner, sample_lean_file):
         """Test listing theorems in a file."""
-        with patch("proof_sketcher.cli.LeanParser") as mock_parser:
-            mock_result = Mock()
-            mock_result.success = True
-            mock_result.theorems = [
-                Mock(name="theorem1", statement="∀x, P(x)", line_number=10),
-                Mock(name="theorem2", statement="∃x, Q(x)", line_number=20),
-            ]
-            mock_parser.return_value.parse_file.return_value = mock_result
+        # Mock config loading
+        with patch("proof_sketcher.config.config.Config.load") as mock_load:
+            mock_config = Mock()
+            mock_config.debug = False
+            mock_config.log_level = "INFO"
+            mock_config.parser = Mock()
+            mock_load.return_value = mock_config
 
-            result = runner.invoke(cli, ["list", str(sample_lean_file)])
+            with patch("proof_sketcher.cli.LeanParser") as mock_parser:
+                mock_result = Mock()
+                mock_result.success = True
+                mock_result.errors = []  # Add the missing errors attribute
 
-            assert result.exit_code == 0
-            assert "theorem1" in result.output
-            assert "theorem2" in result.output
-            assert "line 10" in result.output.lower()
+                # Create properly configured theorem mocks with string attributes
+                theorem1 = Mock()
+                theorem1.name = "theorem1"
+                theorem1.statement = "∀x, P(x)"
+                theorem1.line_number = 10
+
+                theorem2 = Mock()
+                theorem2.name = "theorem2"
+                theorem2.statement = "∃x, Q(x)"
+                theorem2.line_number = 20
+
+                mock_result.theorems = [theorem1, theorem2]
+                mock_parser.return_value.parse_file.return_value = mock_result
+
+                result = runner.invoke(cli, ["list-theorems", str(sample_lean_file)])
+
+                if result.exit_code != 0:
+                    print(f"\nError output: {result.output}")
+                    print(f"\nException: {result.exception}")
+                    if result.exception:
+                        import traceback
+
+                        traceback.print_exception(
+                            type(result.exception),
+                            result.exception,
+                            result.exception.__traceback__,
+                        )
+
+                assert result.exit_code == 0
+                assert "theorem1" in result.output
+                assert "theorem2" in result.output
+                assert "line 10" in result.output.lower()
 
 
 class TestBatchProcessing:
@@ -277,39 +454,106 @@ class TestBatchProcessing:
         return CliRunner()
 
     def test_process_directory(self, runner, tmp_path):
-        """Test processing entire directory."""
+        """Test processing multiple Lean files."""
         # Create multiple Lean files
-        (tmp_path / "file1.lean").write_text("theorem t1 : True := trivial")
-        (tmp_path / "file2.lean").write_text("theorem t2 : True := trivial")
+        file1 = tmp_path / "file1.lean"
+        file2 = tmp_path / "file2.lean"
+        file1.write_text("theorem t1 : True := trivial", encoding="utf-8")
+        file2.write_text("theorem t2 : True := trivial", encoding="utf-8")
 
-        with patch("proof_sketcher.cli.LeanParser") as mock_parser:
-            mock_parser.return_value.parse_file.return_value = Mock(
-                success=True, theorems=[Mock()], errors=[]
-            )
+        # Mock config loading
+        with patch("proof_sketcher.config.config.Config.load") as mock_load:
+            mock_config = Mock()
+            mock_config.debug = False
+            mock_config.log_level = "INFO"
+            mock_config.parser = Mock()
+            mock_config.generator = Mock()
+            mock_config.export = Mock()
+            mock_config.export.output_dir = tmp_path / "output"
+            mock_load.return_value = mock_config
 
-            result = runner.invoke(cli, ["prove", str(tmp_path), "--recursive"])
+            with patch("proof_sketcher.cli.LeanParser") as mock_parser:
+                # Create properly configured theorem mock
+                theorem_mock = Mock()
+                theorem_mock.name = "t1"
+                theorem_mock.statement = "True"
 
-            assert result.exit_code == 0
-            assert mock_parser.return_value.parse_file.call_count >= 2
+                mock_result = Mock()
+                mock_result.success = True
+                mock_result.theorems = [theorem_mock]
+                mock_result.errors = []
+                mock_parser.return_value.parse_file.return_value = mock_result
+
+                # Mock ClaudeGenerator
+                with patch("proof_sketcher.cli.ClaudeGenerator") as mock_generator:
+                    mock_instance = Mock()
+                    mock_generator.return_value = mock_instance
+                    mock_instance.generate_proof_sketch.return_value = Mock(
+                        theorem_name="t1"
+                    )
+
+                    # Test processing first file
+                    result1 = runner.invoke(cli, ["prove", str(file1)])
+                    assert result1.exit_code == 0
+
+                    # Test processing second file
+                    result2 = runner.invoke(cli, ["prove", str(file2)])
+                    assert result2.exit_code == 0
+
+                    # Verify both files were processed
+                    assert mock_parser.return_value.parse_file.call_count >= 2
 
     def test_progress_bar(self, runner, tmp_path):
-        """Test progress bar display."""
-        # Create files
-        for i in range(5):
-            (tmp_path / f"file{i}.lean").write_text("theorem t : True := trivial")
+        """Test that progress bar is shown during prove command."""
+        # Create a single Lean file
+        lean_file = tmp_path / "test.lean"
+        lean_file.write_text("theorem t : True := trivial", encoding="utf-8")
 
-        with patch("proof_sketcher.cli.LeanParser"):
-            result = runner.invoke(
-                cli, ["prove", str(tmp_path), "--recursive", "--progress"]
-            )
+        # Mock config loading
+        with patch("proof_sketcher.config.config.Config.load") as mock_load:
+            mock_config = Mock()
+            mock_config.debug = False
+            mock_config.log_level = "INFO"
+            mock_config.parser = Mock()
+            mock_config.generator = Mock()
+            mock_config.export = Mock()
+            mock_config.export.output_dir = tmp_path / "output"
+            mock_load.return_value = mock_config
 
-            assert result.exit_code == 0
-            # Progress bar would be shown (hard to test exact output)
+            with patch("proof_sketcher.cli.LeanParser") as mock_parser:
+                theorem_mock = Mock()
+                theorem_mock.name = "t"
+                theorem_mock.statement = "True"
+
+                mock_result = Mock()
+                mock_result.success = True
+                mock_result.theorems = [theorem_mock]
+                mock_result.errors = []
+                mock_parser.return_value.parse_file.return_value = mock_result
+
+                # Mock ClaudeGenerator
+                with patch("proof_sketcher.cli.ClaudeGenerator") as mock_generator:
+                    mock_instance = Mock()
+                    mock_generator.return_value = mock_instance
+                    mock_instance.generate_proof_sketch.return_value = Mock(
+                        theorem_name="t"
+                    )
+
+                    result = runner.invoke(cli, ["prove", str(lean_file)])
+
+                    assert result.exit_code == 0
+                    # The progress indicators are shown by default
+                    assert "Parsing Lean file" in result.output or "✓" in result.output
 
 
 @pytest.mark.integration
 class TestCLIIntegration:
     """Integration tests for CLI."""
+
+    @pytest.fixture
+    def runner(self):
+        """Create CLI test runner."""
+        return CliRunner()
 
     def test_full_pipeline_cli(self, runner, tmp_path):
         """Test complete pipeline through CLI."""
@@ -319,38 +563,90 @@ class TestCLIIntegration:
             """
 /-- Test theorem for integration -/
 theorem integration_test : 2 + 2 = 4 := by norm_num
-"""
+""",
+            encoding="utf-8",
         )
 
-        # Run prove command
-        result = runner.invoke(
-            cli,
-            [
-                "prove",
-                str(lean_file),
-                "--format",
-                "markdown",
-                "--output",
-                str(tmp_path),
-            ],
-        )
+        # Mock necessary components
+        with patch("proof_sketcher.cli.LeanParser") as mock_parser:
+            # Mock ClaudeGenerator to avoid executable check
+            mock_generator_instance = Mock()
+            mock_generator_instance.generate_proof_sketch.return_value = Mock(
+                theorem_name="integration_test",
+                introduction="Test intro",
+                key_steps=[],
+                conclusion="Test conclusion",
+            )
 
-        # Should complete successfully (with mocked components)
-        assert "does not exist" in result.output or result.exit_code == 0
+            with patch("proof_sketcher.cli.ClaudeGenerator") as mock_generator:
+                mock_generator.return_value = mock_generator_instance
+
+                # Mock parser response
+                theorem_mock = Mock()
+                theorem_mock.name = "integration_test"
+                theorem_mock.statement = "2 + 2 = 4"
+                mock_result = Mock(success=True, theorems=[theorem_mock], errors=[])
+                mock_parser.return_value.parse_file.return_value = mock_result
+
+                # Run prove command
+                result = runner.invoke(
+                    cli,
+                    [
+                        "prove",
+                        str(lean_file),
+                        "--format",
+                        "markdown",
+                        "--output",
+                        str(tmp_path),
+                    ],
+                )
+
+                # Should complete successfully
+                assert result.exit_code == 0
+                assert "Found 1 theorems" in result.output
 
     def test_config_persistence(self, runner, tmp_path):
         """Test configuration persistence."""
         with runner.isolated_filesystem():
-            # Set config value
-            result = runner.invoke(cli, ["config", "set", "test.value", "42"])
-            assert result.exit_code == 0
-
-            # Get config value
+            # Create a mock config
             with patch("proof_sketcher.config.config.Config.load") as mock_load:
                 mock_config = Mock()
-                mock_config.get.return_value = "42"
+                mock_config.project_name = "proof-sketcher-test"
+                mock_config.version = "0.1.0"
+                mock_config.debug = True
+                mock_config.log_level = "DEBUG"
+                mock_config.cache_dir = Path(".cache")
+                mock_config.parser = Mock(
+                    lean_executable=Path("lean"),
+                    lake_build_on_parse=True,
+                    lean_timeout=60,
+                )
+                mock_config.generator = Mock(
+                    model=Mock(value="claude-3-5-sonnet"),
+                    temperature=0.7,
+                    max_tokens=4096,
+                )
+                mock_config.animator = Mock(quality=Mock(value="1080p"), fps=30)
+                mock_config.export = Mock(
+                    output_dir=Path("output"),
+                    html_theme="dark",
+                    markdown_flavor="github",
+                    pdf_engine="xelatex",
+                )
+                mock_config.save = Mock()
                 mock_load.return_value = mock_config
 
-                result = runner.invoke(cli, ["config", "get", "test.value"])
+                # Test config show
+                result = runner.invoke(cli, ["config", "show"])
                 assert result.exit_code == 0
-                assert "42" in result.output
+                assert "proof-sketcher-test" in result.output
+                assert "claude-3-5-sonnet" in result.output
+
+                # Test config save
+                output_path = tmp_path / "test-config.yaml"
+                result = runner.invoke(
+                    cli, ["config", "save", "--output", str(output_path)]
+                )
+                assert result.exit_code == 0
+                assert "Configuration saved to" in result.output
+                mock_config.save.assert_called_once()

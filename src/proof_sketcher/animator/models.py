@@ -301,6 +301,9 @@ class AnimationResponse(BaseModel):
         None, description="Error message if generation failed"
     )
     warnings: List[str] = Field(default_factory=list, description="Generation warnings")
+    cached: bool = Field(
+        False, description="Whether the result was retrieved from cache"
+    )
 
     # Additional outputs
     chapter_markers: List[Tuple[float, str]] = Field(

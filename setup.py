@@ -1,7 +1,8 @@
 """Setup script for Proof Sketcher."""
 
-from setuptools import setup, find_packages
 from pathlib import Path
+
+from setuptools import find_packages, setup
 
 # Read README for long description
 readme_path = Path(__file__).parent / "README.md"
@@ -17,7 +18,7 @@ setup(
     author_email="",
     url="https://github.com/your-org/proof-sketcher",
     license="MIT",
-    
+
     # Package configuration
     package_dir={"": "src"},
     packages=find_packages(where="src"),
@@ -29,10 +30,10 @@ setup(
             "templates/**/*.jinja2",
         ],
     },
-    
+
     # Python version requirement
     python_requires=">=3.9",
-    
+
     # Dependencies
     install_requires=[
         "click>=8.0",
@@ -47,7 +48,7 @@ setup(
         "aiofiles>=23.0",
         "jsonschema>=4.0",
     ],
-    
+
     # Optional dependencies
     extras_require={
         "dev": [
@@ -71,14 +72,14 @@ setup(
             "nbconvert>=7.0",
         ],
     },
-    
+
     # Entry points
     entry_points={
         "console_scripts": [
             "proof-sketcher=proof_sketcher.cli:cli",
         ],
     },
-    
+
     # Classifiers
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -97,7 +98,7 @@ setup(
         "Environment :: Console",
         "Operating System :: OS Independent",
     ],
-    
+
     # Keywords
     keywords=[
         "lean4", "theorem", "proof", "mathematics", "animation",

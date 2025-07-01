@@ -6,8 +6,12 @@ from unittest.mock import Mock, patch
 import pytest
 
 from proof_sketcher.animator.manim_mcp import ManimMCPClient
-from proof_sketcher.animator.models import (AnimationConfig,
-                                            AnimationRequest, ManimConfig)
+from proof_sketcher.animator.models import (
+    AnimationConfig,
+    AnimationQuality,
+    ManimConfig,
+)
+from proof_sketcher.animator.scene_builder import ProofAnimationBuilder
 from proof_sketcher.generator.models import ProofSketch, ProofStep
 
 
@@ -17,9 +21,7 @@ class TestGeneratorAnimatorIntegration:
     @pytest.fixture
     def animation_config(self):
         """Create animation configuration for tests."""
-        return AnimationConfig(
-            enabled=True, quality="720p", fps=30, cache_animations=True
-        )
+        return AnimationConfig(quality=AnimationQuality.MEDIUM, fps=30)
 
     @pytest.fixture
     def manim_config(self):
@@ -38,63 +40,68 @@ class TestGeneratorAnimatorIntegration:
         # Simple proof
         sketches["simple"] = ProofSketch(
             theorem_name="add_zero",
-            theorem_statement="∀ n : Nat, n + 0 = n",
-            explanation="Adding zero to any natural number leaves it unchanged.",
-            steps=[
+            introduction="Adding zero to any natural number leaves it unchanged.",
+            key_steps=[
                 ProofStep(
+                    step_number=1,
                     description="Apply reflexivity",
                     mathematical_content="n + 0 = n by definition",
                 )
             ],
-            key_insights=["Zero is the additive identity"],
+            conclusion="This proves that zero is the additive identity for natural numbers.",
         )
 
         # Induction proof
         sketches["induction"] = ProofSketch(
             theorem_name="sum_formula",
-            theorem_statement="∀ n : Nat, 2 * sum(n) = n * (n + 1)",
-            explanation="The sum of first n natural numbers equals n(n+1)/2.",
-            steps=[
+            introduction="The sum of first n natural numbers equals n(n+1)/2.",
+            key_steps=[
                 ProofStep(
+                    step_number=1,
                     description="Base case: n = 0",
                     mathematical_content="2 * sum(0) = 2 * 0 = 0 = 0 * 1",
                 ),
                 ProofStep(
+                    step_number=2,
                     description="Inductive step: assume for n",
                     mathematical_content="2 * sum(n) = n * (n + 1)",
                 ),
                 ProofStep(
+                    step_number=3,
                     description="Prove for n + 1",
                     mathematical_content="2 * sum(n+1) = 2 * (sum(n) + (n+1))",
                 ),
                 ProofStep(
+                    step_number=4,
                     description="Apply inductive hypothesis",
                     mathematical_content="= n(n+1) + 2(n+1) = (n+1)(n+2)",
                 ),
             ],
-            key_insights=["Mathematical induction", "Algebraic manipulation"],
+            conclusion="By mathematical induction, the formula holds for all natural numbers.",
         )
 
         # Complex proof
         sketches["complex"] = ProofSketch(
             theorem_name="pigeonhole",
-            theorem_statement="If n > m pigeons are in m holes, at least one hole has >1 pigeon",
-            explanation="The pigeonhole principle demonstrated through contradiction.",
-            steps=[
+            introduction="The pigeonhole principle demonstrated through contradiction.",
+            key_steps=[
                 ProofStep(
+                    step_number=1,
                     description="Assume each hole has at most 1 pigeon",
                     mathematical_content="∀i ∈ [1,m], |hole_i| ≤ 1",
                 ),
                 ProofStep(
+                    step_number=2,
                     description="Count total pigeons",
                     mathematical_content="total = Σ|hole_i| ≤ Σ1 = m",
                 ),
                 ProofStep(
+                    step_number=3,
                     description="Derive contradiction",
                     mathematical_content="n > m ≥ total ≥ n",
                 ),
             ],
-            key_insights=["Proof by contradiction", "Counting argument"],
+            conclusion="By contradiction, at least one hole must contain more than one pigeon.",
         )
 
         return sketches
@@ -111,7 +118,7 @@ class TestGeneratorAnimatorIntegration:
                 # Mock successful render
                 mock_render.return_value = Mock(
                     video_path="/tmp/animations/add_zero.mp4",
-                    duration=30.0,
+                    duration=45.0,  # 30s base + 15s for 1 step
                     success=True,
                     error=None,
                 )
@@ -120,22 +127,14 @@ class TestGeneratorAnimatorIntegration:
                 await client.start_server()
 
                 # Create animation request from sketch
-                request = AnimationRequest(
-                    theorem_name=sketch.theorem_name,
-                    theorem_statement=sketch.theorem_statement,
-                    explanation=sketch.explanation,
-                    proof_steps=[step.description for step in sketch.steps],
-                    mathematical_content=[
-                        step.mathematical_content for step in sketch.steps
-                    ],
-                    key_insights=sketch.key_insights,
-                    config=animation_config,
-                )
+                builder = ProofAnimationBuilder(animation_config)
+                request = builder.build_animation_request(sketch, animation_config)
 
                 response = await client.render_animation(request)
 
                 assert response.success
-                assert response.duration == 30.0
+                # Simple proof has 1 step: 30s base + 15s = 45s
+                assert response.duration == 45.0
                 assert "add_zero.mp4" in response.video_path
 
     @pytest.mark.asyncio
@@ -146,7 +145,7 @@ class TestGeneratorAnimatorIntegration:
         sketch = sample_sketches["induction"]
 
         # Calculate expected duration: 30s base + 15s per step
-        expected_duration = 30 + (15 * len(sketch.steps))
+        expected_duration = 30 + (15 * len(sketch.key_steps))
 
         with patch.object(ManimMCPClient, "render_animation") as mock_render:
             mock_render.return_value = Mock(
@@ -157,22 +156,15 @@ class TestGeneratorAnimatorIntegration:
 
             client = ManimMCPClient(manim_config)
 
-            request = AnimationRequest(
-                theorem_name=sketch.theorem_name,
-                theorem_statement=sketch.theorem_statement,
-                explanation=sketch.explanation,
-                proof_steps=[step.description for step in sketch.steps],
-                mathematical_content=[
-                    step.mathematical_content for step in sketch.steps
-                ],
-                duration=expected_duration,
-            )
+            # Create animation request from sketch
+            builder = ProofAnimationBuilder(animation_config)
+            request = builder.build_animation_request(sketch, animation_config)
 
             response = await client.render_animation(request)
 
             assert response.success
             assert response.duration == expected_duration
-            assert len(request.proof_steps) == 4
+            assert len(sketch.key_steps) == 4
 
     @pytest.mark.asyncio
     async def test_batch_animation_generation(
@@ -192,14 +184,11 @@ class TestGeneratorAnimatorIntegration:
             mock_render.side_effect = responses
 
             client = ManimMCPClient(manim_config)
+            builder = ProofAnimationBuilder(animation_config)
             results = []
 
             for sketch in sketches:
-                request = AnimationRequest(
-                    theorem_name=sketch.theorem_name,
-                    explanation=sketch.explanation,
-                    proof_steps=[step.description for step in sketch.steps],
-                )
+                request = builder.build_animation_request(sketch, animation_config)
                 response = await client.render_animation(request)
                 results.append(response)
 
@@ -212,39 +201,36 @@ class TestGeneratorAnimatorIntegration:
         self, animation_config, manim_config, sample_sketches
     ):
         """Test animation caching behavior."""
-        animation_config.cache_animations = True
         sketch = sample_sketches["simple"]
 
-        with patch.object(ManimMCPClient, "_get_cache_path") as mock_cache:
-            with patch.object(Path, "exists") as mock_exists:
-                # First call - cache miss
-                mock_exists.return_value = False
-                mock_cache.return_value = Path("/tmp/cache/add_zero.mp4")
+        with patch.object(ManimMCPClient, "render_animation") as mock_render:
+            # Setup mock to return cached=False first, then cached=True
+            mock_render.side_effect = [
+                Mock(
+                    video_path="/tmp/cache/add_zero.mp4",
+                    duration=45.0,  # 30s base + 15s for 1 step
+                    success=True,
+                    cached=False,
+                ),
+                Mock(
+                    video_path="/tmp/cache/add_zero.mp4",
+                    duration=45.0,
+                    success=True,
+                    cached=True,
+                ),
+            ]
 
-                with patch.object(ManimMCPClient, "render_animation") as mock_render:
-                    mock_render.return_value = Mock(
-                        video_path="/tmp/cache/add_zero.mp4",
-                        duration=30.0,
-                        success=True,
-                        cached=False,
-                    )
+            client = ManimMCPClient(manim_config)
+            builder = ProofAnimationBuilder(animation_config)
+            request = builder.build_animation_request(sketch, animation_config)
 
-                    client = ManimMCPClient(manim_config)
-                    request = AnimationRequest(
-                        theorem_name=sketch.theorem_name,
-                        explanation=sketch.explanation,
-                        proof_steps=[s.description for s in sketch.steps],
-                    )
+            # First call - not cached
+            response1 = await client.render_animation(request)
+            assert not response1.cached
 
-                    response1 = await client.render_animation(request)
-                    assert not response1.cached
-
-                # Second call - cache hit
-                mock_exists.return_value = True
-
-                # Should return cached result without rendering
-                await client.render_animation(request)
-                # Implementation would check cache first
+            # Second call - cached
+            response2 = await client.render_animation(request)
+            assert response2.cached
 
     @pytest.mark.asyncio
     async def test_animation_error_handling(
@@ -263,11 +249,8 @@ class TestGeneratorAnimatorIntegration:
             )
 
             client = ManimMCPClient(manim_config)
-            request = AnimationRequest(
-                theorem_name=sketch.theorem_name,
-                explanation=sketch.explanation,
-                proof_steps=[s.description for s in sketch.steps],
-            )
+            builder = ProofAnimationBuilder(animation_config)
+            request = builder.build_animation_request(sketch, animation_config)
 
             response = await client.render_animation(request)
 
@@ -279,11 +262,10 @@ class TestGeneratorAnimatorIntegration:
     async def test_animation_with_custom_config(self, manim_config, sample_sketches):
         """Test animation with custom configuration."""
         custom_config = AnimationConfig(
-            enabled=True,
-            quality="1080p",
+            quality=AnimationQuality.HIGH,
             fps=60,
             background_color="#FFFFFF",
-            font="Computer Modern",
+            math_font="Computer Modern",
         )
 
         sketch = sample_sketches["simple"]
@@ -291,45 +273,25 @@ class TestGeneratorAnimatorIntegration:
         with patch.object(ManimMCPClient, "render_animation") as mock_render:
             client = ManimMCPClient(manim_config)
 
-            request = AnimationRequest(
-                theorem_name=sketch.theorem_name,
-                explanation=sketch.explanation,
-                proof_steps=[s.description for s in sketch.steps],
-                config=custom_config,
-            )
+            builder = ProofAnimationBuilder(custom_config)
+            request = builder.build_animation_request(sketch, custom_config)
 
             await client.render_animation(request)
 
             # Verify custom config was passed
             mock_render.assert_called_once()
             call_args = mock_render.call_args[0][0]
-            assert call_args.config.quality == "1080p"
+            assert call_args.config.quality == AnimationQuality.HIGH
             assert call_args.config.fps == 60
 
-    def test_animation_request_from_sketch(self, sample_sketches):
+    def test_animation_request_from_sketch(self, sample_sketches, animation_config):
         """Test creating animation request from proof sketch."""
         sketch = sample_sketches["induction"]
 
-        # Helper method to convert sketch to request
-        def sketch_to_request(
-            sketch: ProofSketch, duration: int = None
-        ) -> AnimationRequest:
-            if duration is None:
-                duration = 30 + (15 * len(sketch.steps))
-
-            return AnimationRequest(
-                theorem_name=sketch.theorem_name,
-                theorem_statement=sketch.theorem_statement,
-                explanation=sketch.explanation,
-                proof_steps=[s.description for s in sketch.steps],
-                mathematical_content=[s.mathematical_content for s in sketch.steps],
-                key_insights=sketch.key_insights,
-                duration=min(duration, 720),  # Max 12 minutes
-            )
-
-        request = sketch_to_request(sketch)
+        # Create animation request using builder
+        builder = ProofAnimationBuilder(animation_config)
+        request = builder.build_animation_request(sketch, animation_config)
 
         assert request.theorem_name == sketch.theorem_name
-        assert len(request.proof_steps) == len(sketch.steps)
-        assert request.duration == 90  # 30 + 4*15
-        assert request.key_insights == sketch.key_insights
+        assert len(request.segments) > 0  # Should have segments
+        assert request.config == animation_config

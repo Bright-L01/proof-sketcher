@@ -6,8 +6,13 @@ from typing import List, Optional
 
 from ..generator.models import ProofSketch, ProofStep
 from .formula_extractor import FormulaExtractor, FormulaTransformation
-from .models import (AnimationConfig, AnimationRequest, AnimationScene,
-                     AnimationSegment, TransformationType)
+from .models import (
+    AnimationConfig,
+    AnimationRequest,
+    AnimationScene,
+    AnimationSegment,
+    TransformationType,
+)
 
 
 class ProofAnimationBuilder:

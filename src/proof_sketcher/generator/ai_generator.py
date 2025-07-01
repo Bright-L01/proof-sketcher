@@ -1,4 +1,4 @@
-"""Claude integration for natural language generation using subprocess."""
+"""AI integration for natural language generation using subprocess."""
 
 import json
 import logging
@@ -6,58 +6,58 @@ import subprocess
 import time
 from typing import Iterator, Optional
 
+from ..core.exceptions import (
+    GeneratorError,
+    AIExecutableError,
+    AITimeoutError,
+    PromptError,
+)
+from ..core.interfaces import IGenerator
+from ..core.utils import retry_with_backoff
+
 from ..parser.models import TheoremInfo
-from .models import (GenerationConfig, GenerationRequest, GenerationResponse,
-                     GenerationType, ProofSketch, ProofStep)
+from .models import (
+    GenerationConfig,
+    GenerationRequest,
+    GenerationResponse,
+    GenerationType,
+    ProofSketch,
+    ProofStep,
+)
 from .prompts import prompt_templates
 
 
-class ClaudeError(Exception):
-    """Base exception for Claude-related errors."""
-
-    pass
-
-
-class ClaudeExecutableError(ClaudeError):
-    """Raised when Claude executable is not available."""
-
-    pass
+# Backward compatibility aliases
+ClaudeError = GeneratorError
+ClaudeExecutableError = AIExecutableError
+ClaudeAPIError = GeneratorError
+ClaudeTimeoutError = AITimeoutError
 
 
-class ClaudeAPIError(ClaudeError):
-    """Raised when Claude API returns an error."""
-
-    pass
-
-
-class ClaudeTimeoutError(ClaudeError):
-    """Raised when Claude request times out."""
-
-    pass
-
-
-class ClaudeGenerator:
-    """Generator for natural language explanations using Claude via subprocess."""
+class AIGenerator(IGenerator):
+    """Generator for natural language explanations using AI CLI tools."""
 
     def __init__(
         self,
-        claude_executable: str = "claude",
+        ai_executable: str = "claude",  # Still defaults to claude for compatibility
         default_config: Optional[GenerationConfig] = None,
     ):
-        """Initialize the Claude generator.
+        """Initialize the AI generator.
 
         Args:
-            claude_executable: Path to the Claude CLI executable
+            ai_executable: Path to the AI CLI executable
             default_config: Default generation configuration
         """
-        self.claude_executable = claude_executable
+        self.ai_executable = ai_executable
         self.default_config = default_config or GenerationConfig()
         self.logger = logging.getLogger(__name__)
 
-        # Validate Claude is available
-        if not self.check_claude_available():
-            raise ClaudeExecutableError(
-                f"Claude executable not found: {claude_executable}"
+        # Validate AI tool is available
+        if not self.check_ai_available():
+            raise AIExecutableError(
+                f"AI executable not found: {ai_executable}",
+                details={"executable": ai_executable},
+                error_code="ai_executable_not_found"
             )
 
     def generate_proof_sketch(
@@ -333,7 +333,7 @@ class ClaudeGenerator:
         )
 
         # Build Claude command for streaming
-        cmd = self._build_claude_command(request.config, stream=True)
+        cmd = self._build_ai_command(request.config, stream=True)
 
         try:
             # Start subprocess with streaming
@@ -399,7 +399,7 @@ class ClaudeGenerator:
             )
 
             # Call Claude subprocess
-            output = self._call_claude(prompt, request.config)
+            output = self._call_ai(prompt, request.config)
 
             generation_time = (time.time() - start_time) * 1000
 
@@ -410,6 +410,9 @@ class ClaudeGenerator:
                 success=True,
             )
 
+        except ClaudeTimeoutError:
+            # Re-raise timeout errors
+            raise
         except Exception as e:
             generation_time = (time.time() - start_time) * 1000
 
@@ -421,7 +424,7 @@ class ClaudeGenerator:
                 error_message=str(e),
             )
 
-    def _call_claude(self, prompt: str, config: GenerationConfig) -> str:
+    def _call_ai(self, prompt: str, config: GenerationConfig) -> str:
         """Call Claude subprocess with the given prompt and configuration.
 
         Args:
@@ -434,7 +437,7 @@ class ClaudeGenerator:
         Raises:
             ClaudeError: If subprocess call fails
         """
-        cmd = self._build_claude_command(config)
+        cmd = self._build_ai_command(config)
 
         try:
             # Calculate timeout (add buffer for subprocess overhead)
@@ -453,11 +456,19 @@ class ClaudeGenerator:
             return result.stdout.strip()
 
         except subprocess.TimeoutExpired:
-            raise ClaudeTimeoutError("Claude request timed out") from None
+            raise AITimeoutError(
+                "AI request timed out",
+                details={"timeout": timeout, "config": config.model_dump()},
+                error_code="ai_timeout"
+            ) from None
         except subprocess.SubprocessError as e:
-            raise ClaudeAPIError(f"Failed to call Claude: {e}") from e
+            raise GeneratorError(
+                f"Failed to call AI: {e}",
+                details={"command": cmd, "error": str(e)},
+                error_code="ai_call_failed"
+            ) from e
 
-    def _build_claude_command(
+    def _build_ai_command(
         self, config: GenerationConfig, stream: bool = False
     ) -> list[str]:
         """Build the Claude CLI command with configuration.
@@ -469,7 +480,7 @@ class ClaudeGenerator:
         Returns:
             Command list for subprocess
         """
-        cmd = [self.claude_executable]
+        cmd = [self.ai_executable]
 
         # Model selection
         cmd.extend(["-m", config.model.value])
@@ -497,7 +508,7 @@ class ClaudeGenerator:
 
         return cmd
 
-    def check_claude_available(self) -> bool:
+    def check_ai_available(self) -> bool:
         """Check if Claude executable is available.
 
         Returns:
@@ -505,7 +516,7 @@ class ClaudeGenerator:
         """
         try:
             result = subprocess.run(
-                [self.claude_executable, "--version"],
+                [self.ai_executable, "--version"],
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -514,7 +525,7 @@ class ClaudeGenerator:
         except (subprocess.SubprocessError, FileNotFoundError):
             return False
 
-    def get_claude_version(self) -> Optional[str]:
+    def get_ai_version(self) -> Optional[str]:
         """Get Claude CLI version.
 
         Returns:
@@ -522,7 +533,7 @@ class ClaudeGenerator:
         """
         try:
             result = subprocess.run(
-                [self.claude_executable, "--version"],
+                [self.ai_executable, "--version"],
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -540,9 +551,9 @@ class ClaudeGenerator:
             True if setup is valid, False otherwise
         """
         try:
-            if not self.check_claude_available():
+            if not self.check_ai_available():
                 self.logger.error(
-                    f"Claude executable not found: {self.claude_executable}"
+                    f"Claude executable not found: {self.ai_executable}"
                 )
                 return False
 
@@ -551,7 +562,7 @@ class ClaudeGenerator:
             test_config = GenerationConfig.fast()
 
             try:
-                response = self._call_claude(test_prompt, test_config)
+                response = self._call_ai(test_prompt, test_config)
                 if "Claude is working" in response:
                     self.logger.info("Claude setup validation successful")
                     return True
@@ -566,3 +577,7 @@ class ClaudeGenerator:
         except Exception as e:
             self.logger.error(f"Claude setup validation failed: {e}")
             return False
+
+
+# Backward compatibility alias
+ClaudeGenerator = AIGenerator

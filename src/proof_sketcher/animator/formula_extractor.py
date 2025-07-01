@@ -56,6 +56,12 @@ class LeanToLatexConverter:
             "≡": r"\equiv",
             "±": r"\pm",
             "∞": r"\infty",
+            # Number sets
+            "ℕ": r"\mathbb{N}",
+            "ℤ": r"\mathbb{Z}",
+            "ℚ": r"\mathbb{Q}",
+            "ℝ": r"\mathbb{R}",
+            "ℂ": r"\mathbb{C}",
             # Greek letters (common ones)
             "α": r"\alpha",
             "β": r"\beta",
@@ -200,17 +206,43 @@ class LeanToLatexConverter:
 
     def _convert_quantifiers(self, expr: str) -> str:
         """Convert quantifier expressions."""
+
         # Universal quantifier: ∀ x : T, P(x)
+        def convert_universal(match):
+            var = match.group(1)
+            rest = match.group(2)
+            # Add parentheses to function applications like P x -> P(x)
+            rest = re.sub(
+                r"\b([A-Z][a-zA-Z0-9_]*)\s+([a-z][a-zA-Z0-9_]*)\b", r"\1(\2)", rest
+            )
+            return f"\\forall {var}, {rest}"
+
         expr = re.sub(
             r"∀\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*(?::\s*[^,]+)?,\s*(.+)",
-            r"\\forall \1, \2",
+            convert_universal,
             expr,
         )
 
         # Existential quantifier: ∃ x : T, P(x)
+        def convert_existential(match):
+            var = match.group(1)
+            rest = match.group(2)
+            # Add parentheses to function applications like P x -> P(x)
+            rest = re.sub(
+                r"\b([A-Z][a-zA-Z0-9_]*)\s+([a-z][a-zA-Z0-9_]*)\b", r"\1(\2)", rest
+            )
+            return f"\\exists {var}, {rest}"
+
         expr = re.sub(
             r"∃\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*(?::\s*[^,]+)?,\s*(.+)",
-            r"\\exists \1, \2",
+            convert_existential,
+            expr,
+        )
+
+        # Lambda expressions: λ x, expr
+        expr = re.sub(
+            r"λ\s*([a-zA-Z_][a-zA-Z0-9_]*),\s*(.+)",
+            r"\\lambda \1. \2",
             expr,
         )
 
@@ -396,6 +428,24 @@ class ProofStepAnalyzer:
         return intermediates
 
 
+@dataclass
+class ExtractedFormula:
+    """Represents an extracted mathematical formula."""
+
+    latex: str
+    display_mode: bool
+    position: int
+
+
+@dataclass
+class ProcessedContent:
+    """Represents processed mathematical content."""
+
+    formulas: List[ExtractedFormula]
+    lean_code: List[str]
+    text: str
+
+
 class FormulaExtractor:
     """High-level interface for formula extraction and conversion."""
 
@@ -472,3 +522,75 @@ class FormulaExtractor:
                 formulas.append(latex_formula)
 
         return formulas
+
+    def extract_formulas(self, text: str) -> List[ExtractedFormula]:
+        """Extract LaTeX formulas from text.
+
+        Args:
+            text: Text containing LaTeX formulas
+
+        Returns:
+            List of extracted formulas
+        """
+        formulas = []
+
+        # Extract display math ($$...$$)
+        display_pattern = r"\$\$(.*?)\$\$"
+        for match in re.finditer(display_pattern, text):
+            formulas.append(
+                ExtractedFormula(
+                    latex=match.group(1).strip(),
+                    display_mode=True,
+                    position=match.start(),
+                )
+            )
+
+        # Extract inline math ($...$)
+        inline_pattern = r"(?<!\$)\$(?!\$)(.*?)(?<!\$)\$(?!\$)"
+        for match in re.finditer(inline_pattern, text):
+            formulas.append(
+                ExtractedFormula(
+                    latex=match.group(1).strip(),
+                    display_mode=False,
+                    position=match.start(),
+                )
+            )
+
+        return sorted(formulas, key=lambda f: f.position)
+
+    def extract_lean_notation(self, text: str) -> List[str]:
+        """Extract Lean notation from text (backtick delimited).
+
+        Args:
+            text: Text containing Lean notation
+
+        Returns:
+            List of Lean expressions
+        """
+        pattern = r"`([^`]+)`"
+        return re.findall(pattern, text)
+
+    def process_proof_content(self, content: str) -> ProcessedContent:
+        """Process mixed mathematical content.
+
+        Args:
+            content: Mixed content with LaTeX and Lean notation
+
+        Returns:
+            Processed content with extracted formulas and code
+        """
+        # Extract LaTeX formulas
+        formulas = self.extract_formulas(content)
+
+        # Extract Lean code
+        lean_code = self.extract_lean_notation(content)
+
+        # Clean text by removing formulas
+        clean_text = content
+        for formula in formulas:
+            if formula.display_mode:
+                clean_text = re.sub(r"\$\$.*?\$\$", "[FORMULA]", clean_text, count=1)
+            else:
+                clean_text = re.sub(r"\$.*?\$", "[FORMULA]", clean_text, count=1)
+
+        return ProcessedContent(formulas=formulas, lean_code=lean_code, text=clean_text)

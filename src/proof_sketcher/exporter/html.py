@@ -8,8 +8,13 @@ from typing import List, Optional
 
 from ..generator.models import ProofSketch
 from .base import BaseExporterImpl
-from .models import (ExportContext, ExportFormat, ExportOptions, ExportResult,
-                     TemplateContext, TemplateType)
+from .models import (
+    ExportContext,
+    ExportFormat,
+    ExportOptions,
+    ExportResult,
+    TemplateType,
+)
 from .template_manager import TemplateManager
 
 
@@ -45,8 +50,8 @@ class HTMLExporter(BaseExporterImpl):
         # Generate output filename
         output_file = self._generate_filename(sketch.theorem_name, "html")
 
-        # Create template context
-        template_context = self._create_template_context(sketch, context)
+        # Create template context with HTML-specific additions
+        template_context = self._create_template_context_html(sketch, context)
 
         # Check for animation
         if context.include_animations and sketch.theorem_name in context.animations:
@@ -62,7 +67,7 @@ class HTMLExporter(BaseExporterImpl):
 
         # Render theorem template
         html_content = self.template_manager.render_template(
-            ExportFormat.HTML, TemplateType.THEOREM, template_context.dict()
+            ExportFormat.HTML, TemplateType.THEOREM, template_context
         )
 
         # Write output file
@@ -166,9 +171,9 @@ class HTMLExporter(BaseExporterImpl):
 
         return result
 
-    def _create_template_context(
+    def _create_template_context_html(
         self, sketch: ProofSketch, context: ExportContext
-    ) -> TemplateContext:
+    ) -> dict:
         """Create template context with HTML-specific additions.
 
         Args:
@@ -176,15 +181,16 @@ class HTMLExporter(BaseExporterImpl):
             context: Export context
 
         Returns:
-            Template context
+            Template context dictionary
         """
-        base_context = super()._create_context(sketch)
+        # Get base context from parent
+        base_context = super()._create_template_context(sketch, context)
 
         # Add HTML-specific fields
-        base_context.syntax_theme = (
+        base_context["syntax_theme"] = (
             self.options.syntax_highlighting and "monokai" or "none"
         )
-        base_context.math_renderer = "katex"  # or "mathjax"
+        base_context["math_renderer"] = "katex"  # or "mathjax"
 
         # Add navigation
         all_names = [s.theorem_name for s in context.sketches]
@@ -196,26 +202,24 @@ class HTMLExporter(BaseExporterImpl):
 
         if current_index > 0:
             prev_sketch = context.sketches[current_index - 1]
-            base_context.prev_theorem = {
+            base_context["prev_theorem"] = {
                 "name": prev_sketch.theorem_name,
                 "url": context.theorem_links.get(prev_sketch.theorem_name),
             }
 
         if 0 <= current_index < len(all_names) - 1:
             next_sketch = context.sketches[current_index + 1]
-            base_context.next_theorem = {
+            base_context["next_theorem"] = {
                 "name": next_sketch.theorem_name,
                 "url": context.theorem_links.get(next_sketch.theorem_name),
             }
 
-        base_context.index_url = "index.html"
+        base_context["index_url"] = "index.html"
 
         # Add dependencies with links
         if self.options.generate_links:
-            base_context.dependencies = [
-                {"name": dep, "url": context.theorem_links.get(dep, f"#{dep}")}
-                for dep in sketch.dependencies
-            ]
+            # ProofSketch doesn't have dependencies attribute
+            base_context["dependencies"] = []
 
         return base_context
 

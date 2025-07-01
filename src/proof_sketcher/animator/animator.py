@@ -11,8 +11,13 @@ from ..generator.models import ProofSketch
 from ..parser.models import TheoremInfo
 from .formula_extractor import FormulaExtractor
 from .manim_mcp import ManimMCPManager
-from .models import (AnimationConfig, AnimationRequest, AnimationResponse,
-                     AnimationTimeoutError, ManimConfig)
+from .models import (
+    AnimationConfig,
+    AnimationRequest,
+    AnimationResponse,
+    AnimationTimeoutError,
+    ManimConfig,
+)
 from .scene_builder import ProofAnimationBuilder
 
 
@@ -81,7 +86,11 @@ class ManimAnimator:
             generation_time = (time.time() - start_time) * 1000
             response.generation_time_ms = generation_time
 
-            duration_str = f"{response.actual_duration:.1f}s" if response.actual_duration is not None else "N/A"
+            duration_str = (
+                f"{response.actual_duration:.1f}s"
+                if response.actual_duration is not None
+                else "N/A"
+            )
             self.logger.info(
                 f"Animation generation completed for {proof_sketch.theorem_name}: "
                 f"success={response.success}, duration={duration_str}"
@@ -414,8 +423,7 @@ class ManimAnimator:
         # Create minimal request for fallback
         import uuid
 
-        from .models import (AnimationScene, AnimationSegment,
-                             TransformationType)
+        from .models import AnimationScene, AnimationSegment, TransformationType
 
         fallback_scene = AnimationScene(
             scene_id=f"{proof_sketch.theorem_name}_fallback",

@@ -52,6 +52,7 @@ You are a mathematics professor creating a clear, structured proof sketch. Your 
 **Statement:** {{ theorem_statement | format_statement }}
 {% if dependencies %}**Dependencies:** {{ dependencies | format_dependencies }}{% endif %}
 {% if docstring %}**Context:** {{ docstring }}{% endif %}
+{% if mathematical_context %}**Mathematical Context:** {{ mathematical_context }}{% endif %}
 {% if proof_text %}**Lean Proof:** {{ proof_text }}{% endif %}
 
 ## Task
@@ -106,6 +107,7 @@ You are explaining mathematics to someone who is curious but doesn't have advanc
 **Statement:** {{ theorem_statement | format_statement }}
 {% if dependencies %}**Builds on:** {{ dependencies | format_dependencies }}{% endif %}
 {% if docstring %}**Context:** {{ docstring }}{% endif %}
+{% if mathematical_context %}**Mathematical Context:** {{ mathematical_context }}{% endif %}
 
 ## Task
 Create an ELI5 explanation that:
@@ -150,9 +152,10 @@ You are a Lean 4 expert explaining proof tactics to someone learning formal math
 
 ## Theorem Information
 **Theorem:** {{ theorem_name }}
-**Statement:** {{ theorem_statement }}
+**Statement:** {{ theorem_statement | format_statement }}
 {% if proof_text %}**Proof:** {{ proof_text }}{% endif %}
 {% if dependencies %}**Dependencies:** {{ dependencies | format_dependencies }}{% endif %}
+{% if mathematical_context %}**Mathematical Context:** {{ mathematical_context }}{% endif %}
 
 ## Task
 Explain the proof tactics used in this theorem:
@@ -190,6 +193,7 @@ You are a mathematics tutor providing a detailed step-by-step walkthrough of a p
 **Statement:** {{ theorem_statement | format_statement }}
 {% if dependencies %}**Prerequisites:** {{ dependencies | format_dependencies }}{% endif %}
 {% if docstring %}**Context:** {{ docstring }}{% endif %}
+{% if mathematical_context %}**Mathematical Context:** {{ mathematical_context }}{% endif %}
 {% if proof_text %}**Formal Proof:** {{ proof_text }}{% endif %}
 
 ## Task
