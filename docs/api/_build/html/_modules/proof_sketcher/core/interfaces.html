@@ -1,0 +1,385 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>proof_sketcher.core.interfaces &mdash; Proof Sketcher 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=bcd76cb2" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Proof Sketcher
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Proof Sketcher</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">proof_sketcher.core.interfaces</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for proof_sketcher.core.interfaces</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Core interfaces and protocols for Proof Sketcher.</span>
+
+<span class="sd">This module defines abstract base classes and protocols that establish</span>
+<span class="sd">contracts for implementations across the application.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..animator.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnimationConfig</span><span class="p">,</span> <span class="n">AnimationResponse</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..exporter.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExportResult</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..generator.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerationConfig</span><span class="p">,</span> <span class="n">ProofSketch</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..parser.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParseResult</span><span class="p">,</span> <span class="n">TheoremInfo</span>
+
+
+<span class="c1"># Parser Interfaces</span>
+<div class="viewcode-block" id="IParser">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IParser">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">IParser</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Protocol for theorem parsers.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IParser.parse_file">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IParser.parse_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ParseResult&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Parse a file and extract theorems.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_path: Path to the file to parse</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ParseResult containing extracted theorems</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="IParser.parse_theorem">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IParser.parse_theorem">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_theorem</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">theorem_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;TheoremInfo&quot;</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Parse a specific theorem from a file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_path: Path to the file containing the theorem</span>
+<span class="sd">            theorem_name: Name of the theorem to extract</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            TheoremInfo if found, None otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<span class="c1"># Generator Interfaces</span>
+<div class="viewcode-block" id="IGenerator">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IGenerator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">IGenerator</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract base class for proof explanation generators.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IGenerator.generate_proof_sketch">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IGenerator.generate_proof_sketch">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_proof_sketch</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">theorem</span><span class="p">:</span> <span class="s2">&quot;TheoremInfo&quot;</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;GenerationConfig&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mathematical_context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ProofSketch&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a proof sketch for a theorem.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            theorem: Theorem information</span>
+<span class="sd">            config: Optional generation configuration</span>
+<span class="sd">            mathematical_context: Optional mathematical context</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Generated proof sketch</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IGenerator.generate_eli5_explanation">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IGenerator.generate_eli5_explanation">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_eli5_explanation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">theorem</span><span class="p">:</span> <span class="s2">&quot;TheoremInfo&quot;</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;GenerationConfig&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate an ELI5 explanation for a theorem.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            theorem: Theorem information</span>
+<span class="sd">            config: Optional generation configuration</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Simple explanation text</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<span class="c1"># Animator Interfaces</span>
+<div class="viewcode-block" id="IAnimator">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IAnimator">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">IAnimator</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Protocol for proof animators.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IAnimator.animate_proof">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IAnimator.animate_proof">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">animate_proof</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">proof_sketch</span><span class="p">:</span> <span class="s2">&quot;ProofSketch&quot;</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;AnimationConfig&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AnimationResponse&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an animation for a proof sketch.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            proof_sketch: Proof sketch to animate</span>
+<span class="sd">            config: Optional animation configuration</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Animation response with paths to generated files</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<span class="c1"># Exporter Interfaces</span>
+<div class="viewcode-block" id="IExporter">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IExporter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">IExporter</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract base class for exporters.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IExporter.export_single">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IExporter.export_single">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">export_single</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">proof_sketch</span><span class="p">:</span> <span class="s2">&quot;ProofSketch&quot;</span><span class="p">,</span>
+        <span class="n">animation_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ExportResult&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export a single proof sketch.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            proof_sketch: Proof sketch to export</span>
+<span class="sd">            animation_path: Optional path to animation file</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Export result with created files</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IExporter.export_batch">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IExporter.export_batch">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">export_batch</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">proof_sketches</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;ProofSketch&quot;</span><span class="p">],</span>
+        <span class="n">animations</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ExportResult&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export multiple proof sketches.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            proof_sketches: List of proof sketches to export</span>
+<span class="sd">            animations: Optional mapping of theorem names to animation paths</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Export result with created files</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<span class="c1"># Cache Interfaces</span>
+<div class="viewcode-block" id="ICache">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.ICache">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ICache</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Protocol for cache implementations.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ICache.get">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.ICache.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve a value from cache.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key: Cache key</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Cached value if found, None otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="ICache.set">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.ICache.set">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store a value in cache.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key: Cache key</span>
+<span class="sd">            value: Value to cache</span>
+<span class="sd">            ttl: Optional time-to-live in seconds</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="ICache.delete">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.ICache.delete">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a value from cache.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key: Cache key</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if deleted, False if not found</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="ICache.clear">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.ICache.clear">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear all cached values.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Number of items cleared</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<span class="c1"># Configuration Interfaces</span>
+<div class="viewcode-block" id="IConfigurable">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IConfigurable">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">IConfigurable</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interface for configurable components.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IConfigurable.get_config">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IConfigurable.get_config">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseModel</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get current configuration.&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IConfigurable.update_config">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IConfigurable.update_config">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update configuration.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: New configuration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IConfigurable.validate_config">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.core.IConfigurable.validate_config">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate current configuration.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of validation errors, empty if valid</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Proof Sketcher Team.
+      <span class="lastupdated">Last updated on Jul 01, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
