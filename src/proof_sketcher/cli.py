@@ -50,16 +50,44 @@ def setup_logging(config: ProofSketcherConfig) -> None:
 
 @click.group()
 @click.version_option(version=__version__, prog_name="Proof Sketcher")
-@click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
+@click.option(
+    "--verbose", 
+    "-v", 
+    is_flag=True, 
+    help="Enable verbose logging for detailed debugging information"
+)
 @click.option(
     "--config",
     "-c",
     type=click.Path(exists=True, path_type=Path),
-    help="Path to configuration file",
+    help="Path to configuration file (default: .proof-sketcher.yaml)",
 )
 @click.pass_context
 def cli(ctx: click.Context, verbose: bool, config: Optional[Path]) -> None:
-    """Proof Sketcher: Transform Lean 4 theorems into natural language explanations."""
+    """Proof Sketcher: Transform Lean 4 theorems into natural language explanations.
+    
+    Transform formal mathematical proofs into accessible explanations with beautiful
+    visualizations. Supports multiple output formats and classical mathematics.
+    
+    \b
+    Quick Examples:
+      # List theorems in a file
+      python -m proof_sketcher list-theorems examples/group_theory.lean
+      
+      # Generate explanation for a specific theorem
+      python -m proof_sketcher prove file.lean --theorem add_comm --format markdown
+      
+      # Generate all formats with animations
+      python -m proof_sketcher prove file.lean --format all --animate
+    
+    \b
+    Getting Started:
+      1. Install Claude CLI: curl -fsSL https://claude.ai/install.sh | sh
+      2. Try examples: python -m proof_sketcher list-theorems examples/classical/simple_examples.lean
+      3. Read docs: See docs/QUICKSTART_GUIDE.md
+    
+    For more help: https://github.com/Bright-L01/proof-sketcher/docs
+    """
     ctx.ensure_object(dict)
 
     # Load configuration
@@ -78,17 +106,29 @@ def cli(ctx: click.Context, verbose: bool, config: Optional[Path]) -> None:
 @cli.command()
 @click.argument("lean_file", type=click.Path(exists=True, path_type=Path))
 @click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output directory"
+    "--output", 
+    "-o", 
+    type=click.Path(path_type=Path), 
+    help="Output directory (default: ./output)"
 )
 @click.option(
     "--format",
     "-f",
     type=click.Choice(["html", "markdown", "pdf", "jupyter", "all"]),
     default="html",
-    help="Output format",
+    help="Export format: html (interactive), markdown (GitHub), pdf (print), jupyter (notebooks), all (everything)",
 )
-@click.option("--animate", is_flag=True, help="Generate animations")
-@click.option("--theorem", "-t", multiple=True, help="Process specific theorems only")
+@click.option(
+    "--animate", 
+    is_flag=True, 
+    help="Generate mathematical animations using Manim (requires Node.js and MCP server)"
+)
+@click.option(
+    "--theorem", 
+    "-t", 
+    multiple=True, 
+    help="Process only specific theorems by name (can be used multiple times)"
+)
 @click.pass_context
 def prove(
     ctx: click.Context,
@@ -98,13 +138,52 @@ def prove(
     animate: bool,
     theorem: tuple,
 ) -> None:
-    """Process a Lean file and generate explanations."""
+    """Process a Lean file and generate natural language explanations.
+    
+    Parses Lean 4 theorems and generates accessible explanations using Claude AI.
+    Supports multiple export formats and optional mathematical animations.
+    
+    \b
+    Examples:
+      # Basic usage - generate HTML explanation
+      python -m proof_sketcher prove theorems.lean
+      
+      # Generate explanation for specific theorem in Markdown
+      python -m proof_sketcher prove file.lean --theorem "add_comm" --format markdown
+      
+      # Generate all formats with animations
+      python -m proof_sketcher prove file.lean --format all --animate --output docs/
+      
+      # Process multiple specific theorems
+      python -m proof_sketcher prove file.lean -t "theorem1" -t "theorem2" -f pdf
+    
+    \b
+    Prerequisites:
+      • Claude CLI must be installed and configured
+      • For animations: Node.js and Manim MCP server
+      • For PDF: LaTeX distribution (TeX Live, MiKTeX)
+    
+    \b
+    Supported File Types:
+      • .lean files with valid Lean 4 syntax
+      • Files must contain theorem declarations
+      • Supports mathlib4 imports and dependencies
+    
+    The generated explanations include:
+      • Natural language proof sketches
+      • Step-by-step breakdowns  
+      • Mathematical context and intuition
+      • Cross-references to dependencies
+    """
     logging.getLogger(__name__)
     config: ProofSketcherConfig = ctx.obj["config"]
 
-    # Validate file extension
+    # Validate file extension with helpful error message
     if not lean_file.suffix == ".lean":
-        raise click.BadParameter("File must have .lean extension")
+        console.print(f"[red]Error: Invalid file extension '{lean_file.suffix}'[/red]")
+        console.print("[yellow]Proof Sketcher only processes Lean 4 files with .lean extension[/yellow]")
+        console.print(f"[dim]Suggestion: Rename '{lean_file}' to '{lean_file.stem}.lean'[/dim]")
+        raise click.Abort()
 
     # Set output directory
     if output is None:
@@ -131,7 +210,13 @@ def prove(
                 console.print(f"  • {error}")
 
         if not result.theorems:
-            console.print("[yellow]No theorems found in file[/yellow]")
+            console.print("[red]❌ No theorems found in file[/red]")
+            console.print("\n[yellow]Possible causes:[/yellow]")
+            console.print("  • File contains no theorem declarations")
+            console.print("  • Syntax errors preventing parsing")
+            console.print("  • Missing required imports (e.g., import Mathlib.Data.Nat.Basic)")
+            console.print("\n[dim]Try: python -m proof_sketcher list-theorems path/to/working_file.lean[/dim]")
+            console.print("[dim]See: docs/TROUBLESHOOTING.md for more help[/dim]")
             return
 
         # Filter theorems if specific ones requested
@@ -139,9 +224,13 @@ def prove(
         if theorem:
             theorems_to_process = [t for t in result.theorems if t.name in theorem]
             if not theorems_to_process:
-                console.print(
-                    f"[red]None of the specified theorems found: {theorem}[/red]"
-                )
+                console.print(f"[red]❌ None of the specified theorems found: {', '.join(theorem)}[/red]")
+                console.print("\n[yellow]Available theorems in this file:[/yellow]")
+                for i, thm in enumerate(result.theorems[:10], 1):
+                    console.print(f"  {i}. {thm.name}")
+                if len(result.theorems) > 10:
+                    console.print(f"  ... and {len(result.theorems) - 10} more")
+                console.print(f"\n[dim]Use: python -m proof_sketcher list-theorems {lean_file} to see all theorems[/dim]")
                 return
 
         console.print(
@@ -177,7 +266,15 @@ def prove(
                 progress.update(gen_task, advance=1)
 
         if not sketches:
-            console.print("[red]No theorems were successfully processed[/red]")
+            console.print("[red]❌ No theorems were successfully processed[/red]")
+            console.print("\n[yellow]Common issues:[/yellow]")
+            console.print("  • Claude CLI not installed or configured")
+            console.print("  • Network connectivity issues")
+            console.print("  • Invalid theorem syntax")
+            console.print("\n[yellow]Quick fixes:[/yellow]")
+            console.print("  1. Check Claude CLI: claude --version")
+            console.print("  2. Test connection: claude 'Hello, world!'")
+            console.print("  3. See troubleshooting: docs/TROUBLESHOOTING.md")
             return
 
         # Export results
@@ -261,14 +358,52 @@ async def _generate_animation(
 
 @cli.group()
 def config() -> None:
-    """Manage Proof Sketcher configuration."""
+    """Manage Proof Sketcher configuration settings.
+    
+    Configure how Proof Sketcher processes files, generates explanations,
+    creates animations, and exports results. Settings can be managed through
+    configuration files, environment variables, or command-line options.
+    
+    \b
+    Configuration Sources (in priority order):
+      1. Command-line options (highest priority)
+      2. Environment variables (PROOF_SKETCHER_*)
+      3. Configuration file (.proof-sketcher.yaml)
+      4. Default values (lowest priority)
+    
+    \b
+    Quick Commands:
+      # View current configuration
+      python -m proof_sketcher config show
+      
+      # Save current settings to file
+      python -m proof_sketcher config save
+      
+      # Save to specific location
+      python -m proof_sketcher config save -o my-config.yaml
+    """
     pass
 
 
 @config.command()
 @click.pass_context
 def show(ctx: click.Context) -> None:
-    """Show current configuration."""
+    """Display current configuration settings in a formatted table.
+    
+    Shows all active configuration values including parser settings,
+    generator options, animation preferences, and export configurations.
+    Useful for debugging and verifying your setup.
+    
+    \b
+    Categories Displayed:
+      • Global: Project name, version, debug settings
+      • Parser: Lean executable, timeouts, build options
+      • Generator: AI model, temperature, token limits
+      • Animation: Quality, FPS, style preferences
+      • Export: Output directories, themes, engines
+    
+    Configuration values are resolved from all sources (CLI, env, files).
+    """
     config: ProofSketcherConfig = ctx.obj["config"]
 
     # Create configuration table
@@ -335,15 +470,65 @@ def save(ctx: click.Context, output: Optional[Path]) -> None:
 
 @cli.group()
 def cache() -> None:
-    """Manage theorem and animation cache."""
+    """Manage theorem and animation cache for improved performance.
+    
+    Proof Sketcher caches generated explanations and animations to avoid
+    regenerating identical content. Use these commands to monitor and
+    manage the cache system.
+    
+    \b
+    Cache Benefits:
+      • Faster repeated explanations
+      • Reduced API usage and costs
+      • Offline access to previously generated content
+      • Consistent results across runs
+    
+    \b
+    Quick Commands:
+      # Check cache usage
+      python -m proof_sketcher cache status
+      
+      # Clear all cached data
+      python -m proof_sketcher cache clear
+      
+      # List cached theorems
+      python -m proof_sketcher cache list
+    """
     pass
 
 
 @cache.command()
-@click.option("--force", "-f", is_flag=True, help="Force clear without confirmation")
+@click.option(
+    "--force", 
+    "-f", 
+    is_flag=True, 
+    help="Skip confirmation prompt and clear immediately"
+)
 @click.pass_context
 def clear(ctx: click.Context, force: bool) -> None:
-    """Clear all cached data."""
+    """Clear all cached explanations and animations.
+    
+    Removes all cached theorem explanations, animations, and related data.
+    This will free up disk space but means previously generated content
+    will need to be regenerated on next use.
+    
+    \b
+    Examples:
+      # Clear with confirmation prompt
+      python -m proof_sketcher cache clear
+      
+      # Clear without confirmation (use with caution)
+      python -m proof_sketcher cache clear --force
+    
+    \b
+    What Gets Cleared:
+      • Generated theorem explanations
+      • Cached animations and videos
+      • Temporary files and metadata
+      • All cached response data
+    
+    Use 'cache status' before clearing to see what will be removed.
+    """
     config: ProofSketcherConfig = ctx.obj["config"]
     cache_dir = config.cache_dir
 
@@ -382,7 +567,22 @@ def clear(ctx: click.Context, force: bool) -> None:
 @cache.command()
 @click.pass_context
 def status(ctx: click.Context) -> None:
-    """Show cache status and statistics."""
+    """Display comprehensive cache status and storage statistics.
+    
+    Shows detailed information about cached content including:
+    storage usage, number of cached items, cache health, and
+    recommendations for cache management.
+    
+    \b
+    Information Displayed:
+      • Cache directory location and size
+      • Number of cached explanations by type
+      • Animation cache statistics
+      • Total storage usage
+      • Cache configuration settings
+    
+    Use this command to monitor cache growth and decide when to clear.
+    """
     config: ProofSketcherConfig = ctx.obj["config"]
     cache_dir = config.cache_dir
 
@@ -513,12 +713,43 @@ def list(ctx: click.Context, pattern: Optional[str]) -> None:
 @click.argument("lean_file", type=click.Path(exists=True, path_type=Path))
 @click.pass_context
 def list_theorems(ctx: click.Context, lean_file: Path) -> None:
-    """List all theorems in a Lean file."""
+    """List all theorems found in a Lean file with their statements and locations.
+    
+    This command parses a Lean 4 file and extracts all theorem declarations,
+    displaying them in a formatted table with their statements and line numbers.
+    Useful for exploring unfamiliar Lean files or selecting specific theorems.
+    
+    \b
+    Examples:
+      # List all theorems in a file
+      python -m proof_sketcher list-theorems examples/group_theory.lean
+      
+      # Explore classical mathematics examples
+      python -m proof_sketcher list-theorems examples/classical/real_analysis.lean
+      
+      # Check a file before processing
+      python -m proof_sketcher list-theorems my_theorems.lean
+    
+    \b
+    Output Format:
+      • Name: Theorem identifier
+      • Statement: Theorem statement (truncated if long)
+      • Line: Line number in source file
+    
+    \b
+    Troubleshooting:
+      • File must have .lean extension
+      • File must contain valid Lean 4 syntax
+      • Use --verbose flag for detailed parsing information
+    """
     config: ProofSketcherConfig = ctx.obj["config"]
 
-    # Validate file extension
+    # Validate file extension with helpful error message
     if not lean_file.suffix == ".lean":
-        raise click.BadParameter("File must have .lean extension")
+        console.print(f"[red]Error: Invalid file extension '{lean_file.suffix}'[/red]")
+        console.print("[yellow]Proof Sketcher only processes Lean 4 files with .lean extension[/yellow]")
+        console.print(f"[dim]Suggestion: Rename '{lean_file}' to '{lean_file.stem}.lean'[/dim]")
+        raise click.Abort()
 
     console.print(f"[bold blue]Parsing {lean_file.name}...[/bold blue]\n")
 
@@ -533,7 +764,14 @@ def list_theorems(ctx: click.Context, lean_file: Path) -> None:
         console.print()
 
     if not result.theorems:
-        console.print("[yellow]No theorems found in file[/yellow]")
+        console.print("[red]❌ No theorems found in file[/red]")
+        console.print("\n[yellow]This might mean:[/yellow]")
+        console.print("  • File contains no theorem declarations")
+        console.print("  • File has syntax errors preventing parsing")
+        console.print("  • File is missing required imports")
+        console.print("\n[yellow]Example valid theorem:[/yellow]")
+        console.print("[dim]  theorem add_zero (n : ℕ) : n + 0 = n := by simp[/dim]")
+        console.print("\n[dim]For more examples, see: examples/classical/simple_examples.lean[/dim]")
         return
 
     # Create table for theorems
