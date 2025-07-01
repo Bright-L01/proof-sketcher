@@ -16,7 +16,7 @@ from rich.table import Table
 from . import __version__
 from .animator.manim_mcp import ManimMCPClient
 from .animator.models import AnimationRequest
-from .config.config import ProofSketcherConfig, get_config, set_config
+from .config.config import ProofSketcherConfig, set_config
 from .exporter import (
     ExportContext,
     ExportFormat,
@@ -26,8 +26,8 @@ from .exporter import (
     MarkdownExporter,
     PDFExporter,
 )
-from .generator.cache import CacheManager
 from .generator import AIGenerator as ClaudeGenerator
+from .generator.cache import CacheManager
 from .parser.lean_parser import LeanParser
 
 # Set up rich console and logging
@@ -63,7 +63,7 @@ def cli(ctx: click.Context, verbose: bool, config: Optional[Path]) -> None:
     ctx.ensure_object(dict)
 
     # Load configuration
-    proof_config = Config.load(config)
+    proof_config = ProofSketcherConfig.load(config)
     if verbose:
         proof_config.debug = True
         proof_config.log_level = "DEBUG"

@@ -44,32 +44,29 @@ class ParseError(BaseModel):
     column: Optional[int] = Field(None, description="Column where error occurred")
     error_type: str = Field("parse_error", description="Type of error")
     severity: str = Field("error", description="Severity level (error, warning, info)")
-    
+
     @classmethod
     def from_exception(cls, exc: Exception) -> "ParseError":
         """Create ParseError from an exception.
-        
+
         Args:
             exc: Exception to convert
-            
+
         Returns:
             ParseError instance
         """
         from ..core.exceptions import ParserError
-        
+
         if isinstance(exc, ParserError):
             return cls(
                 message=exc.message,
                 error_type=exc.error_code or "parse_error",
                 line_number=exc.details.get("line_number"),
                 column=exc.details.get("column"),
-                severity=exc.details.get("severity", "error")
+                severity=exc.details.get("severity", "error"),
             )
         else:
-            return cls(
-                message=str(exc),
-                error_type=exc.__class__.__name__.lower()
-            )
+            return cls(message=str(exc), error_type=exc.__class__.__name__.lower())
 
 
 class FileMetadata(BaseModel):

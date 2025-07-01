@@ -10,14 +10,11 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 from ..core.exceptions import (
-    ParserError,
-    LeanExecutableError,
-    LeanTimeoutError,
     ConfigValidationError,
+    LeanTimeoutError,
+    ParserError,
 )
 from ..core.interfaces import IParser
-from ..core.utils import ensure_directory, get_timestamp
-
 from .config import ParserConfig
 from .models import FileMetadata, ParseError, ParseResult, TheoremInfo
 
@@ -41,7 +38,7 @@ class LeanParser(IParser):
             raise ConfigValidationError(
                 message=f"Invalid parser configuration: {', '.join(config_errors)}",
                 details={"errors": config_errors},
-                error_code="parser_config_invalid"
+                error_code="parser_config_invalid",
             )
 
     def parse_file(self, file_path: Path) -> ParseResult:
@@ -114,7 +111,7 @@ class LeanParser(IParser):
             parser_error = ParserError(
                 message=f"Parsing failed: {str(e)}",
                 details={"file_path": str(file_path)},
-                error_code="parse_failed"
+                error_code="parse_failed",
             )
             return ParseResult(
                 success=False,
@@ -174,10 +171,10 @@ class LeanParser(IParser):
                             "theorem": theorem_name,
                             "file_path": str(file_path),
                             "timeout": self.config.lean_timeout,
-                            "attempts": self.config.retry_config.max_attempts
+                            "attempts": self.config.retry_config.max_attempts,
                         },
-                        error_code="lean_timeout"
-                    )
+                        error_code="lean_timeout",
+                    ) from None
 
             except Exception as e:
                 if attempt < self.config.retry_config.max_attempts - 1:
