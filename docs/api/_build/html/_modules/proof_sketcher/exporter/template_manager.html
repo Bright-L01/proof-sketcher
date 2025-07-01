@@ -1,0 +1,444 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>proof_sketcher.exporter.template_manager &mdash; Proof Sketcher 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=bcd76cb2" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Proof Sketcher
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Proof Sketcher</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">proof_sketcher.exporter.template_manager</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for proof_sketcher.exporter.template_manager</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Template management for exporters.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">jinja2</span><span class="w"> </span><span class="kn">import</span> <span class="n">Environment</span><span class="p">,</span> <span class="n">FileSystemLoader</span><span class="p">,</span> <span class="n">Template</span><span class="p">,</span> <span class="n">TemplateNotFound</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExportFormat</span><span class="p">,</span> <span class="n">TemplateType</span>
+
+
+<div class="viewcode-block" id="TemplateManager">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.exporter.TemplateManager">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TemplateManager</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Manages templates for different export formats.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TemplateManager.__init__">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.exporter.TemplateManager.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">template_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize template manager.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            template_dir: Base directory for templates</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">template_dir</span> <span class="o">=</span> <span class="n">template_dir</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_default_template_dir</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_environments</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">ExportFormat</span><span class="p">,</span> <span class="n">Environment</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_template_cache</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Template</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="TemplateManager.get_template">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.exporter.TemplateManager.get_template">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_template</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="nb">format</span><span class="p">:</span> <span class="n">ExportFormat</span><span class="p">,</span>
+        <span class="n">template_type</span><span class="p">:</span> <span class="n">TemplateType</span><span class="p">,</span>
+        <span class="n">custom_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Template</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a template for the specified format and type.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            format: Export format</span>
+<span class="sd">            template_type: Type of template</span>
+<span class="sd">            custom_name: Custom template name (overrides default)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Loaded template</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TemplateNotFound: If template doesn&#39;t exist</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">template_name</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">custom_name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">template_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_extension</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="n">cache_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">format</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">template_name</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="c1"># Check cache</span>
+        <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_template_cache</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_template_cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
+
+        <span class="c1"># Get environment for format</span>
+        <span class="n">env</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_environment</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span>
+
+        <span class="c1"># Load template</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">template</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">template_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_template_cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">template</span>
+            <span class="k">return</span> <span class="n">template</span>
+        <span class="k">except</span> <span class="n">TemplateNotFound</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Template not found: </span><span class="si">{</span><span class="n">template_name</span><span class="si">}</span><span class="s2"> for format </span><span class="si">{</span><span class="nb">format</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="TemplateManager.render_template">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.exporter.TemplateManager.render_template">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">render_template</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="nb">format</span><span class="p">:</span> <span class="n">ExportFormat</span><span class="p">,</span>
+        <span class="n">template_type</span><span class="p">:</span> <span class="n">TemplateType</span><span class="p">,</span>
+        <span class="n">context</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">custom_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Render a template with the given context.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            format: Export format</span>
+<span class="sd">            template_type: Type of template</span>
+<span class="sd">            context: Template context</span>
+<span class="sd">            custom_name: Custom template name</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Rendered template string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="nb">format</span><span class="p">,</span> <span class="n">template_type</span><span class="p">,</span> <span class="n">custom_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="o">**</span><span class="n">context</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TemplateManager.get_asset_dir">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.exporter.TemplateManager.get_asset_dir">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_asset_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="n">ExportFormat</span><span class="p">,</span> <span class="n">asset_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get directory for static assets.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            format: Export format</span>
+<span class="sd">            asset_type: Type of asset (css, js, images)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Path to asset directory if exists</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">asset_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_dir</span> <span class="o">/</span> <span class="nb">format</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="s2">&quot;assets&quot;</span> <span class="o">/</span> <span class="n">asset_type</span>
+        <span class="k">return</span> <span class="n">asset_dir</span> <span class="k">if</span> <span class="n">asset_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="TemplateManager.register_custom_template">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.exporter.TemplateManager.register_custom_template">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_custom_template</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="n">ExportFormat</span><span class="p">,</span> <span class="n">template_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">template_content</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Register a custom template programmatically.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            format: Export format</span>
+<span class="sd">            template_name: Template name</span>
+<span class="sd">            template_content: Template content</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">env</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_environment</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">template_content</span><span class="p">)</span>
+        <span class="n">cache_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">format</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">template_name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_template_cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">template</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_environment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="n">ExportFormat</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Environment</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get or create Jinja2 environment for format.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            format: Export format</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Jinja2 environment</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environments</span><span class="p">:</span>
+            <span class="n">template_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_dir</span> <span class="o">/</span> <span class="nb">format</span><span class="o">.</span><span class="n">value</span>
+
+            <span class="c1"># Create environment with custom settings</span>
+            <span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">(</span>
+                <span class="n">loader</span><span class="o">=</span><span class="n">FileSystemLoader</span><span class="p">(</span><span class="n">template_path</span><span class="p">),</span>
+                <span class="n">autoescape</span><span class="o">=</span><span class="nb">format</span> <span class="o">==</span> <span class="n">ExportFormat</span><span class="o">.</span><span class="n">HTML</span><span class="p">,</span>
+                <span class="n">trim_blocks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">lstrip_blocks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Add custom filters</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_custom_filters</span><span class="p">(</span><span class="nb">format</span><span class="p">))</span>
+
+            <span class="c1"># Add custom globals</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">globals</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_custom_globals</span><span class="p">(</span><span class="nb">format</span><span class="p">))</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_environments</span><span class="p">[</span><span class="nb">format</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environments</span><span class="p">[</span><span class="nb">format</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_extension</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="n">ExportFormat</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get file extension for template format.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            format: Export format</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            File extension</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">extensions</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">ExportFormat</span><span class="o">.</span><span class="n">HTML</span><span class="p">:</span> <span class="s2">&quot;html.jinja2&quot;</span><span class="p">,</span>
+            <span class="n">ExportFormat</span><span class="o">.</span><span class="n">MARKDOWN</span><span class="p">:</span> <span class="s2">&quot;md.jinja2&quot;</span><span class="p">,</span>
+            <span class="n">ExportFormat</span><span class="o">.</span><span class="n">PDF</span><span class="p">:</span> <span class="s2">&quot;tex.jinja2&quot;</span><span class="p">,</span>
+            <span class="n">ExportFormat</span><span class="o">.</span><span class="n">JUPYTER</span><span class="p">:</span> <span class="s2">&quot;ipynb.jinja2&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">extensions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">format</span><span class="p">,</span> <span class="s2">&quot;txt.jinja2&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_default_template_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get default template directory.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Path to template directory</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Look for templates in package</span>
+        <span class="n">package_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
+        <span class="n">template_dir</span> <span class="o">=</span> <span class="n">package_dir</span> <span class="o">/</span> <span class="s2">&quot;templates&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">template_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="c1"># Fall back to project root</span>
+            <span class="n">project_root</span> <span class="o">=</span> <span class="n">package_dir</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span>
+            <span class="n">template_dir</span> <span class="o">=</span> <span class="n">project_root</span> <span class="o">/</span> <span class="s2">&quot;templates&quot;</span>
+
+        <span class="k">return</span> <span class="n">template_dir</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_custom_filters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="n">ExportFormat</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get custom Jinja2 filters for format.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            format: Export format</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary of custom filters</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filters</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;latex_escape&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_latex_escape</span><span class="p">,</span>
+            <span class="s2">&quot;markdown_escape&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_markdown_escape</span><span class="p">,</span>
+            <span class="s2">&quot;slugify&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_slugify</span><span class="p">,</span>
+            <span class="s2">&quot;format_date&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_date</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="n">ExportFormat</span><span class="o">.</span><span class="n">HTML</span><span class="p">:</span>
+            <span class="n">filters</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;highlight_code&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_highlight_code_html</span><span class="p">,</span>
+                    <span class="s2">&quot;render_math&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_math_html</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="n">ExportFormat</span><span class="o">.</span><span class="n">MARKDOWN</span><span class="p">:</span>
+            <span class="n">filters</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span><span class="s2">&quot;indent&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_indent_text</span><span class="p">,</span> <span class="s2">&quot;code_block&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_code_block_md</span><span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="n">ExportFormat</span><span class="o">.</span><span class="n">PDF</span><span class="p">:</span>
+            <span class="n">filters</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;tex_math&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_tex_math</span><span class="p">,</span>
+                    <span class="s2">&quot;tex_verbatim&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_tex_verbatim</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">filters</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_custom_globals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="n">ExportFormat</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get custom Jinja2 globals for format.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            format: Export format</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary of custom globals</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="nb">format</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s2">&quot;now&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_current_time</span><span class="p">,</span>
+            <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.1.0&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="c1"># Filter implementations</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_latex_escape</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Escape text for LaTeX.&quot;&quot;&quot;</span>
+        <span class="n">replacements</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\textbackslash</span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;{&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\{&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;}&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\}&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\$&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;&amp;&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\&amp;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;#&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\#&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;^&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\^</span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;_&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\_&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;~&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\~</span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;%&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;\%&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span> <span class="ow">in</span> <span class="n">replacements</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_markdown_escape</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Escape text for Markdown.&quot;&quot;&quot;</span>
+        <span class="c1"># Escape markdown special characters</span>
+        <span class="n">chars_to_escape</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;`&quot;</span><span class="p">,</span> <span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;]&quot;</span><span class="p">,</span> <span class="s2">&quot;(&quot;</span><span class="p">,</span> <span class="s2">&quot;)&quot;</span><span class="p">,</span> <span class="s2">&quot;#&quot;</span><span class="p">,</span> <span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;!&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">chars_to_escape</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">char</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\\</span><span class="si">{</span><span class="n">char</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_slugify</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert text to URL-safe slug.&quot;&quot;&quot;</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[^\w\s-]&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[-\s]+&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_format_date</span><span class="p">(</span><span class="n">timestamp</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Format ISO timestamp.&quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_highlight_code_html</span><span class="p">(</span><span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lean&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Highlight code for HTML output.&quot;&quot;&quot;</span>
+        <span class="c1"># Simple implementation - in production, use pygments</span>
+        <span class="n">escaped</span> <span class="o">=</span> <span class="n">code</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&amp;&quot;</span><span class="p">,</span> <span class="s2">&quot;&amp;amp;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&lt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&amp;lt;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&amp;gt;&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&lt;pre&gt;&lt;code class=&quot;language-</span><span class="si">{</span><span class="n">language</span><span class="si">}</span><span class="s1">&quot;&gt;</span><span class="si">{</span><span class="n">escaped</span><span class="si">}</span><span class="s1">&lt;/code&gt;&lt;/pre&gt;&#39;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_math_html</span><span class="p">(</span><span class="n">math</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">display</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Render math for HTML (KaTeX/MathJax compatible).&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&lt;div class=&quot;math display&quot;&gt;</span><span class="se">\\</span><span class="s1">[</span><span class="si">{</span><span class="n">math</span><span class="si">}</span><span class="se">\\</span><span class="s1">]&lt;/div&gt;&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&lt;span class=&quot;math inline&quot;&gt;</span><span class="se">\\</span><span class="s1">(</span><span class="si">{</span><span class="n">math</span><span class="si">}</span><span class="se">\\</span><span class="s1">)&lt;/span&gt;&#39;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_indent_text</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Indent text by specified level.&quot;&quot;&quot;</span>
+        <span class="n">indent</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="n">level</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="n">line</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">text</span><span class="o">.</span><span class="n">splitlines</span><span class="p">())</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_format_code_block_md</span><span class="p">(</span><span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lean&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Format code block for Markdown.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;```</span><span class="si">{</span><span class="n">language</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">code</span><span class="si">}</span><span class="se">\n</span><span class="s2">```&quot;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_format_tex_math</span><span class="p">(</span><span class="n">math</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">display</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Format math for LaTeX.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">display</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">[</span><span class="si">{</span><span class="n">math</span><span class="si">}</span><span class="se">\\</span><span class="s2">]&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;$</span><span class="si">{</span><span class="n">math</span><span class="si">}</span><span class="s2">$&quot;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_format_tex_verbatim</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Format verbatim text for LaTeX.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">begin</span><span class="se">{{</span><span class="s2">verbatim</span><span class="se">}}\n</span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="se">\n\\</span><span class="s2">end</span><span class="se">{{</span><span class="s2">verbatim</span><span class="se">}}</span><span class="s2">&quot;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_current_time</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get current time as ISO string.&quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+        <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Proof Sketcher Team.
+      <span class="lastupdated">Last updated on Jul 01, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

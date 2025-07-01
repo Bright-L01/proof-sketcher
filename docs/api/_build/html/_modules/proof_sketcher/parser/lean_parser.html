@@ -1,0 +1,798 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>proof_sketcher.parser.lean_parser &mdash; Proof Sketcher 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=bcd76cb2" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Proof Sketcher
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Proof Sketcher</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">proof_sketcher.parser.lean_parser</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for proof_sketcher.parser.lean_parser</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Lean AST extraction using subprocess calls to Lean compiler.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..core.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ConfigValidationError</span><span class="p">,</span>
+    <span class="n">LeanTimeoutError</span><span class="p">,</span>
+    <span class="n">ParserError</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..core.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">IParser</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParserConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileMetadata</span><span class="p">,</span> <span class="n">ParseError</span><span class="p">,</span> <span class="n">ParseResult</span><span class="p">,</span> <span class="n">TheoremInfo</span>
+
+
+<div class="viewcode-block" id="LeanParser">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.parser.LeanParser">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LeanParser</span><span class="p">(</span><span class="n">IParser</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parser for extracting theorem information from Lean files.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="LeanParser.__init__">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.parser.LeanParser.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ParserConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the Lean parser.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: Parser configuration. Uses default if None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="ow">or</span> <span class="n">ParserConfig</span><span class="o">.</span><span class="n">default</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extractor_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;ExtractTheorem.lean&quot;</span>
+
+        <span class="c1"># Validate configuration</span>
+        <span class="n">config_errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">config_errors</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigValidationError</span><span class="p">(</span>
+                <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Invalid parser configuration: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config_errors</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">details</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="n">config_errors</span><span class="p">},</span>
+                <span class="n">error_code</span><span class="o">=</span><span class="s2">&quot;parser_config_invalid&quot;</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LeanParser.parse_file">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.parser.LeanParser.parse_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParseResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Parse a Lean file and extract all theorem information.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_path: Path to the Lean file to parse</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ParseResult containing theorems, errors, and metadata</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Validate file exists and is readable</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">ParseResult</span><span class="p">(</span>
+                    <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">errors</span><span class="o">=</span><span class="p">[</span><span class="n">ParseError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)],</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">&quot;.lean&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ParseResult</span><span class="p">(</span>
+                    <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">errors</span><span class="o">=</span><span class="p">[</span>
+                        <span class="n">ParseError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;File is not a Lean file: </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="p">],</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Read file content for metadata and fallback parsing</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_metadata</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+
+            <span class="c1"># Detect and setup Lake project if needed</span>
+            <span class="n">lake_setup_errors</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">auto_detect_lake</span><span class="p">:</span>
+                <span class="n">lake_errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_lake_project</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+                <span class="n">lake_setup_errors</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">lake_errors</span><span class="p">)</span>
+
+            <span class="c1"># Extract theorems using basic parsing first (for theorem names)</span>
+            <span class="n">basic_theorems</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_theorems_basic</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+
+            <span class="c1"># Enhance with Lean extractor if available</span>
+            <span class="n">enhanced_theorems</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">extraction_errors</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_can_use_lean_extractor</span><span class="p">():</span>
+                <span class="n">enhanced_theorems</span><span class="p">,</span> <span class="n">extraction_errors</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_extract_all_theorems_with_lean</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">basic_theorems</span><span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Use enhanced results if available, otherwise fall back</span>
+            <span class="n">final_theorems</span> <span class="o">=</span> <span class="n">enhanced_theorems</span> <span class="k">if</span> <span class="n">enhanced_theorems</span> <span class="k">else</span> <span class="n">basic_theorems</span>
+
+            <span class="c1"># Combine all errors</span>
+            <span class="n">all_errors</span> <span class="o">=</span> <span class="n">lake_setup_errors</span> <span class="o">+</span> <span class="n">extraction_errors</span>
+
+            <span class="n">parse_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+
+            <span class="k">return</span> <span class="n">ParseResult</span><span class="p">(</span>
+                <span class="n">theorems</span><span class="o">=</span><span class="n">final_theorems</span><span class="p">,</span>
+                <span class="n">errors</span><span class="o">=</span><span class="n">all_errors</span><span class="p">,</span>
+                <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+                <span class="n">parse_time_ms</span><span class="o">=</span><span class="n">parse_time</span><span class="p">,</span>
+                <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to parse file </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">parser_error</span> <span class="o">=</span> <span class="n">ParserError</span><span class="p">(</span>
+                <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Parsing failed: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">details</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;file_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">)},</span>
+                <span class="n">error_code</span><span class="o">=</span><span class="s2">&quot;parse_failed&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">ParseResult</span><span class="p">(</span>
+                <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">errors</span><span class="o">=</span><span class="p">[</span><span class="n">ParseError</span><span class="o">.</span><span class="n">from_exception</span><span class="p">(</span><span class="n">parser_error</span><span class="p">)],</span>
+                <span class="n">parse_time_ms</span><span class="o">=</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LeanParser.parse_theorem">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.parser.LeanParser.parse_theorem">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_theorem</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">theorem_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TheoremInfo</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract information for a single theorem using Lean extractor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_path: Path to the Lean file</span>
+<span class="sd">            theorem_name: Name of the theorem to extract</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            TheoremInfo if successful, None otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_can_use_lean_extractor</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Cannot use Lean extractor, falling back to basic parsing&quot;</span>
+            <span class="p">)</span>
+            <span class="c1"># Fall back to basic parsing for single theorem</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+            <span class="n">basic_theorems</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_theorems_basic</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">theorem</span> <span class="ow">in</span> <span class="n">basic_theorems</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">theorem</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">theorem_name</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">theorem</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Setup Lake project if needed</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">auto_detect_lake</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_setup_lake_project</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+        <span class="c1"># Extract using Lean with retry logic</span>
+        <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">retry_config</span><span class="o">.</span><span class="n">max_attempts</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">theorem_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_single_theorem_with_lean</span><span class="p">(</span>
+                    <span class="n">file_path</span><span class="p">,</span> <span class="n">theorem_name</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">theorem_info</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">theorem_info</span>
+
+            <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">TimeoutExpired</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">retry_config</span><span class="o">.</span><span class="n">max_attempts</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">delay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">retry_config</span><span class="o">.</span><span class="n">get_delay</span><span class="p">(</span><span class="n">attempt</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Timeout extracting </span><span class="si">{</span><span class="n">theorem_name</span><span class="si">}</span><span class="s2">, retrying in </span><span class="si">{</span><span class="n">delay</span><span class="si">}</span><span class="s2">s...&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final timeout extracting </span><span class="si">{</span><span class="n">theorem_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="n">LeanTimeoutError</span><span class="p">(</span>
+                        <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Lean extraction timed out for theorem </span><span class="si">{</span><span class="n">theorem_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="n">details</span><span class="o">=</span><span class="p">{</span>
+                            <span class="s2">&quot;theorem&quot;</span><span class="p">:</span> <span class="n">theorem_name</span><span class="p">,</span>
+                            <span class="s2">&quot;file_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span>
+                            <span class="s2">&quot;timeout&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lean_timeout</span><span class="p">,</span>
+                            <span class="s2">&quot;attempts&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">retry_config</span><span class="o">.</span><span class="n">max_attempts</span><span class="p">,</span>
+                        <span class="p">},</span>
+                        <span class="n">error_code</span><span class="o">=</span><span class="s2">&quot;lean_timeout&quot;</span><span class="p">,</span>
+                    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">retry_config</span><span class="o">.</span><span class="n">max_attempts</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">delay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">retry_config</span><span class="o">.</span><span class="n">get_delay</span><span class="p">(</span><span class="n">attempt</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Error extracting </span><span class="si">{</span><span class="n">theorem_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">, retrying in </span><span class="si">{</span><span class="n">delay</span><span class="si">}</span><span class="s2">s...&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final error extracting </span><span class="si">{</span><span class="n">theorem_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="LeanParser.validate_lean_setup">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.parser.LeanParser.validate_lean_setup">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_lean_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that Lean and Lake are properly set up.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if setup is valid, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Check Lean executable</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_lean_available</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Lean executable not found: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lean_executable</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="c1"># Check Lake executable if auto-detection is enabled</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">auto_detect_lake</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_lake_available</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Lake executable not found: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lake_executable</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="c1"># This is a warning, not an error, as Lake is optional</span>
+
+            <span class="c1"># Check extractor script</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">extractor_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Lean extractor script not found: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">extractor_path</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="c1"># Test basic Lean functionality</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                    <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lean_executable</span><span class="p">,</span> <span class="s2">&quot;--version&quot;</span><span class="p">],</span>
+                    <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">version_check_timeout</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Lean version check failed: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Lean version: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">TimeoutExpired</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Lean version check timed out&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Setup validation failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_can_use_lean_extractor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if Lean extractor can be used.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_lean_available</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">extractor_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_lake_project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ParseError</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Setup Lake project if one is detected.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_path: Path to the Lean file</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of errors encountered during setup</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Look for lakefile.lean in current directory and parents</span>
+            <span class="n">current_dir</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">parent</span>
+            <span class="n">lakefile_path</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="p">[</span><span class="n">current_dir</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">current_dir</span><span class="o">.</span><span class="n">parents</span><span class="p">):</span>
+                <span class="n">potential_lakefile</span> <span class="o">=</span> <span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;lakefile.lean&quot;</span>
+                <span class="k">if</span> <span class="n">potential_lakefile</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                    <span class="n">lakefile_path</span> <span class="o">=</span> <span class="n">potential_lakefile</span>
+                    <span class="k">break</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">lakefile_path</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No Lake project detected&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">errors</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Lake project detected at </span><span class="si">{</span><span class="n">lakefile_path</span><span class="o">.</span><span class="n">parent</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Check if Lake is available</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_lake_available</span><span class="p">():</span>
+                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">ParseError</span><span class="p">(</span>
+                        <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Lake project detected but Lake executable not available: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lake_executable</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="n">error_type</span><span class="o">=</span><span class="s2">&quot;lake_error&quot;</span><span class="p">,</span>
+                        <span class="n">severity</span><span class="o">=</span><span class="s2">&quot;warning&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">errors</span>
+
+            <span class="c1"># Build project if configured to do so</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lake_build_on_parse</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Building Lake project...&quot;</span><span class="p">)</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lake_executable</span><span class="p">,</span> <span class="s2">&quot;build&quot;</span><span class="p">],</span>
+                        <span class="n">cwd</span><span class="o">=</span><span class="n">lakefile_path</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span>
+                        <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lake_timeout</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="n">ParseError</span><span class="p">(</span>
+                                <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Lake build failed: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                <span class="n">error_type</span><span class="o">=</span><span class="s2">&quot;lake_build_error&quot;</span><span class="p">,</span>
+                                <span class="n">severity</span><span class="o">=</span><span class="s2">&quot;warning&quot;</span><span class="p">,</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Lake build completed successfully&quot;</span><span class="p">)</span>
+
+                <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">TimeoutExpired</span><span class="p">:</span>
+                    <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">ParseError</span><span class="p">(</span>
+                            <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Lake build timed out&quot;</span><span class="p">,</span>
+                            <span class="n">error_type</span><span class="o">=</span><span class="s2">&quot;lake_timeout&quot;</span><span class="p">,</span>
+                            <span class="n">severity</span><span class="o">=</span><span class="s2">&quot;warning&quot;</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">ParseError</span><span class="p">(</span>
+                    <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Lake setup failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">error_type</span><span class="o">=</span><span class="s2">&quot;lake_setup_error&quot;</span><span class="p">,</span>
+                    <span class="n">severity</span><span class="o">=</span><span class="s2">&quot;warning&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">errors</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_all_theorems_with_lean</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">basic_theorems</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TheoremInfo</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">TheoremInfo</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">ParseError</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract all theorems using Lean extractor with retry logic.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_path: Path to the Lean file</span>
+<span class="sd">            basic_theorems: Basic theorems from regex parsing</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of (enhanced_theorems, errors)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">enhanced_theorems</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">basic_theorem</span> <span class="ow">in</span> <span class="n">basic_theorems</span><span class="p">:</span>
+            <span class="n">enhanced</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># Try to enhance with Lean extractor</span>
+            <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">retry_config</span><span class="o">.</span><span class="n">max_attempts</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">enhanced</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_single_theorem_with_lean</span><span class="p">(</span>
+                        <span class="n">file_path</span><span class="p">,</span> <span class="n">basic_theorem</span><span class="o">.</span><span class="n">name</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">enhanced</span><span class="p">:</span>
+                        <span class="c1"># Preserve some info from basic parsing</span>
+                        <span class="n">enhanced</span><span class="o">.</span><span class="n">line_number</span> <span class="o">=</span> <span class="n">basic_theorem</span><span class="o">.</span><span class="n">line_number</span>
+                        <span class="n">enhanced</span><span class="o">.</span><span class="n">proof</span> <span class="o">=</span> <span class="n">basic_theorem</span><span class="o">.</span><span class="n">proof</span>
+                        <span class="k">break</span>
+
+                <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">TimeoutExpired</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">retry_config</span><span class="o">.</span><span class="n">max_attempts</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">delay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">retry_config</span><span class="o">.</span><span class="n">get_delay</span><span class="p">(</span><span class="n">attempt</span><span class="p">)</span>
+                        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="n">ParseError</span><span class="p">(</span>
+                                <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Timeout extracting </span><span class="si">{</span><span class="n">basic_theorem</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                <span class="n">error_type</span><span class="o">=</span><span class="s2">&quot;lean_timeout&quot;</span><span class="p">,</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">retry_config</span><span class="o">.</span><span class="n">max_attempts</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">delay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">retry_config</span><span class="o">.</span><span class="n">get_delay</span><span class="p">(</span><span class="n">attempt</span><span class="p">)</span>
+                        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="n">ParseError</span><span class="p">(</span>
+                                <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Failed to extract </span><span class="si">{</span><span class="n">basic_theorem</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                <span class="n">error_type</span><span class="o">=</span><span class="s2">&quot;lean_extraction_error&quot;</span><span class="p">,</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+
+            <span class="c1"># Use enhanced if available, otherwise basic</span>
+            <span class="n">enhanced_theorems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">enhanced</span> <span class="k">if</span> <span class="n">enhanced</span> <span class="k">else</span> <span class="n">basic_theorem</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">enhanced_theorems</span><span class="p">,</span> <span class="n">errors</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_single_theorem_with_lean</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">theorem_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TheoremInfo</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract single theorem using Lean extractor.&quot;&quot;&quot;</span>
+        <span class="n">working_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">working_dir</span> <span class="ow">or</span> <span class="n">file_path</span><span class="o">.</span><span class="n">parent</span>
+
+        <span class="c1"># Check if we&#39;re in a Lake project</span>
+        <span class="n">lake_project</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_lake_project</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">lake_project</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_lake_available</span><span class="p">():</span>
+            <span class="c1"># Use lake env to run with proper imports</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lake_executable</span><span class="p">,</span>
+                    <span class="s2">&quot;env&quot;</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lean_executable</span><span class="p">,</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extractor_path</span><span class="p">),</span>
+                    <span class="s2">&quot;--&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;--file&quot;</span><span class="p">,</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span>
+                    <span class="s2">&quot;--theorem&quot;</span><span class="p">,</span>
+                    <span class="n">theorem_name</span><span class="p">,</span>
+                <span class="p">],</span>
+                <span class="n">cwd</span><span class="o">=</span><span class="n">lake_project</span><span class="p">,</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lean_timeout</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Run directly</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lean_executable</span><span class="p">,</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extractor_path</span><span class="p">),</span>
+                    <span class="s2">&quot;--&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;--file&quot;</span><span class="p">,</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span>
+                    <span class="s2">&quot;--theorem&quot;</span><span class="p">,</span>
+                    <span class="n">theorem_name</span><span class="p">,</span>
+                <span class="p">],</span>
+                <span class="n">cwd</span><span class="o">=</span><span class="n">working_dir</span><span class="p">,</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lean_timeout</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">json_output</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
+                <span class="c1"># Check if we got valid theorem data</span>
+                <span class="k">if</span> <span class="n">json_output</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">json_output</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">TheoremInfo</span><span class="p">(</span>
+                        <span class="n">name</span><span class="o">=</span><span class="n">json_output</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
+                        <span class="n">statement</span><span class="o">=</span><span class="n">json_output</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">],</span>
+                        <span class="n">dependencies</span><span class="o">=</span><span class="n">json_output</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dependencies&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+                        <span class="n">docstring</span><span class="o">=</span><span class="n">json_output</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;docString&quot;</span><span class="p">),</span>
+                        <span class="n">visibility</span><span class="o">=</span><span class="s2">&quot;public&quot;</span><span class="p">,</span>
+                        <span class="n">tactics</span><span class="o">=</span><span class="n">json_output</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tactics&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+                        <span class="n">proof</span><span class="o">=</span><span class="n">json_output</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Incomplete theorem data for </span><span class="si">{</span><span class="n">theorem_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">json_output</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to parse JSON output for </span><span class="si">{</span><span class="n">theorem_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FileMetadata</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create metadata for the parsed file.&quot;&quot;&quot;</span>
+        <span class="n">stat</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span>
+        <span class="n">imports</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_imports</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">FileMetadata</span><span class="p">(</span>
+            <span class="n">file_path</span><span class="o">=</span><span class="n">file_path</span><span class="p">,</span>
+            <span class="n">file_size</span><span class="o">=</span><span class="n">stat</span><span class="o">.</span><span class="n">st_size</span><span class="p">,</span>
+            <span class="n">last_modified</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">),</span>
+            <span class="n">imports</span><span class="o">=</span><span class="n">imports</span><span class="p">,</span>
+            <span class="n">total_lines</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">content</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_lake_project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find the Lake project root for a given file.&quot;&quot;&quot;</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">while</span> <span class="n">current</span> <span class="o">!=</span> <span class="n">current</span><span class="o">.</span><span class="n">parent</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">current</span> <span class="o">/</span> <span class="s2">&quot;lakefile.lean&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">current</span>
+            <span class="n">current</span> <span class="o">=</span> <span class="n">current</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_imports</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract import statements from Lean content.&quot;&quot;&quot;</span>
+        <span class="n">imports</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">content</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;import &quot;</span><span class="p">):</span>
+                <span class="n">import_name</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">7</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">imports</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">import_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">imports</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_theorems_basic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TheoremInfo</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Basic theorem extraction using regex patterns (fallback).&quot;&quot;&quot;</span>
+        <span class="n">theorems</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+
+        <span class="n">theorem_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^(theorem|lemma)\s+(\w+)(?:\s*[:\(]|$)&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">line_num</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span> <span class="ow">or</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;--&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="n">match</span> <span class="o">=</span> <span class="n">theorem_pattern</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                <span class="n">theorem_name</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">statement</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_statement</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">line_num</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">proof</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_proof</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">line_num</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+                <span class="n">theorem</span> <span class="o">=</span> <span class="n">TheoremInfo</span><span class="p">(</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">theorem_name</span><span class="p">,</span>
+                    <span class="n">statement</span><span class="o">=</span><span class="n">statement</span><span class="p">,</span>
+                    <span class="n">proof</span><span class="o">=</span><span class="n">proof</span><span class="p">,</span>
+                    <span class="n">line_number</span><span class="o">=</span><span class="n">line_num</span><span class="p">,</span>
+                    <span class="n">visibility</span><span class="o">=</span><span class="s2">&quot;public&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="n">theorems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">theorem</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">theorems</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_statement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lines</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">start_line</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract theorem statement from lines starting at given position.&quot;&quot;&quot;</span>
+        <span class="n">statement_parts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">current_line</span> <span class="o">=</span> <span class="n">start_line</span>
+
+        <span class="k">while</span> <span class="n">current_line</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">current_line</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">current_line</span> <span class="o">==</span> <span class="n">start_line</span><span class="p">:</span>
+                <span class="c1"># Extract everything after theorem declaration</span>
+                <span class="c1"># Look for the main type annotation colon (after parameters)</span>
+                <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^(theorem|lemma)\s+(\w+)\s*(.*)$&quot;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                    <span class="n">rest</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+                    <span class="c1"># If there are parameters, include them in the statement</span>
+                    <span class="k">if</span> <span class="n">rest</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">):</span>
+                        <span class="n">paren_count</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">char</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rest</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;(&quot;</span><span class="p">:</span>
+                                <span class="n">paren_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                            <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;)&quot;</span><span class="p">:</span>
+                                <span class="n">paren_count</span> <span class="o">-=</span> <span class="mi">1</span>
+                                <span class="k">if</span> <span class="n">paren_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                                    <span class="n">idx</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+                                    <span class="k">break</span>
+
+                        <span class="c1"># Include parameters and everything after the type annotation colon</span>
+                        <span class="n">params</span> <span class="o">=</span> <span class="n">rest</span><span class="p">[:</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                        <span class="n">after_params</span> <span class="o">=</span> <span class="n">rest</span><span class="p">[</span><span class="n">idx</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">after_params</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">):</span>
+                            <span class="c1"># Include parameters in statement</span>
+                            <span class="n">line</span> <span class="o">=</span> <span class="n">params</span> <span class="o">+</span> <span class="s2">&quot; : &quot;</span> <span class="o">+</span> <span class="n">after_params</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">line</span> <span class="o">=</span> <span class="n">rest</span>
+                    <span class="k">elif</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">rest</span><span class="p">:</span>
+                        <span class="c1"># No parameters, just split on first colon</span>
+                        <span class="n">line</span> <span class="o">=</span> <span class="n">rest</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">line</span> <span class="o">=</span> <span class="n">rest</span>
+
+            <span class="n">statement_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s2">&quot;:=&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="n">statement_parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:=&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">break</span>
+
+            <span class="n">current_line</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">current_line</span> <span class="o">-</span> <span class="n">start_line</span> <span class="o">&gt;</span> <span class="mi">20</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">statement_parts</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_proof</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lines</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">start_line</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract proof body if available.&quot;&quot;&quot;</span>
+        <span class="n">proof_parts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">current_line</span> <span class="o">=</span> <span class="n">start_line</span>
+        <span class="n">found_proof_start</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">brace_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="n">current_line</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">current_line</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="s2">&quot;:=&quot;</span> <span class="ow">in</span> <span class="n">line</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">found_proof_start</span><span class="p">:</span>
+                <span class="n">found_proof_start</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">proof_start</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:=&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">proof_start</span><span class="p">:</span>
+                    <span class="n">proof_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">proof_start</span><span class="p">)</span>
+                    <span class="n">brace_count</span> <span class="o">+=</span> <span class="n">proof_start</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;{&quot;</span><span class="p">)</span> <span class="o">-</span> <span class="n">proof_start</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">found_proof_start</span><span class="p">:</span>
+                <span class="n">proof_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="n">brace_count</span> <span class="o">+=</span> <span class="n">line</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;{&quot;</span><span class="p">)</span> <span class="o">-</span> <span class="n">line</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">brace_count</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="p">(</span>
+                    <span class="ow">not</span> <span class="n">line</span> <span class="ow">or</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span><span class="s2">&quot;theorem&quot;</span><span class="p">,</span> <span class="s2">&quot;lemma&quot;</span><span class="p">))</span>
+                <span class="p">):</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+                        <span class="n">proof_parts</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                    <span class="k">break</span>
+
+            <span class="n">current_line</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">current_line</span> <span class="o">-</span> <span class="n">start_line</span> <span class="o">&gt;</span> <span class="mi">50</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">proof_parts</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">proof_parts</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="LeanParser.check_lean_available">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.parser.LeanParser.check_lean_available">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_lean_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if Lean executable is available.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lean_executable</span><span class="p">,</span> <span class="s2">&quot;--version&quot;</span><span class="p">],</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">version_check_timeout</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">subprocess</span><span class="o">.</span><span class="n">SubprocessError</span><span class="p">,</span> <span class="ne">FileNotFoundError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="LeanParser.check_lake_available">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.parser.LeanParser.check_lake_available">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_lake_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if Lake executable is available.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lake_executable</span><span class="p">,</span> <span class="s2">&quot;--version&quot;</span><span class="p">],</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">version_check_timeout</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">subprocess</span><span class="o">.</span><span class="n">SubprocessError</span><span class="p">,</span> <span class="ne">FileNotFoundError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="LeanParser.get_lean_version">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.parser.LeanParser.get_lean_version">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_lean_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the version of the Lean executable.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lean_executable</span><span class="p">,</span> <span class="s2">&quot;--version&quot;</span><span class="p">],</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">version_check_timeout</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">subprocess</span><span class="o">.</span><span class="n">SubprocessError</span><span class="p">,</span> <span class="ne">FileNotFoundError</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="LeanParser.get_lake_version">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.parser.LeanParser.get_lake_version">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_lake_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the version of the Lake executable.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">lake_executable</span><span class="p">,</span> <span class="s2">&quot;--version&quot;</span><span class="p">],</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">version_check_timeout</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">subprocess</span><span class="o">.</span><span class="n">SubprocessError</span><span class="p">,</span> <span class="ne">FileNotFoundError</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Proof Sketcher Team.
+      <span class="lastupdated">Last updated on Jul 01, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

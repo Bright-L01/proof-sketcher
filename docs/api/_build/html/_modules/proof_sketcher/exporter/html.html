@@ -1,0 +1,420 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>proof_sketcher.exporter.html &mdash; Proof Sketcher 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=bcd76cb2" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Proof Sketcher
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Proof Sketcher</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">proof_sketcher.exporter.html</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for proof_sketcher.exporter.html</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;HTML exporter for generating web documentation.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..generator.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProofSketch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseExporterImpl</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ExportContext</span><span class="p">,</span>
+    <span class="n">ExportFormat</span><span class="p">,</span>
+    <span class="n">ExportOptions</span><span class="p">,</span>
+    <span class="n">ExportResult</span><span class="p">,</span>
+    <span class="n">TemplateType</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.template_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">TemplateManager</span>
+
+
+<div class="viewcode-block" id="HTMLExporter">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.exporter.HTMLExporter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">HTMLExporter</span><span class="p">(</span><span class="n">BaseExporterImpl</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Exporter for HTML format with doc-gen4 compatibility.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="HTMLExporter.__init__">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.exporter.HTMLExporter.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ExportOptions</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">template_manager</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TemplateManager</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize HTML exporter.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            options: Export options</span>
+<span class="sd">            template_manager: Template manager</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">ExportFormat</span><span class="o">.</span><span class="n">HTML</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">template_manager</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_export_sketch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sketch</span><span class="p">:</span> <span class="n">ProofSketch</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ExportContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export a single proof sketch to HTML.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sketch: Proof sketch to export</span>
+<span class="sd">            context: Export context</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of created files</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">created_files</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Generate output filename</span>
+        <span class="n">output_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_filename</span><span class="p">(</span><span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">,</span> <span class="s2">&quot;html&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Create template context with HTML-specific additions</span>
+        <span class="n">template_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_template_context_html</span><span class="p">(</span><span class="n">sketch</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+
+        <span class="c1"># Check for animation</span>
+        <span class="k">if</span> <span class="n">context</span><span class="o">.</span><span class="n">include_animations</span> <span class="ow">and</span> <span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span> <span class="ow">in</span> <span class="n">context</span><span class="o">.</span><span class="n">animations</span><span class="p">:</span>
+            <span class="n">animation_path</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">animations</span><span class="p">[</span><span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">]</span>
+
+            <span class="c1"># Copy animation to output directory</span>
+            <span class="k">if</span> <span class="n">animation_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">animation_dest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_copy_animation</span><span class="p">(</span>
+                    <span class="n">animation_path</span><span class="p">,</span> <span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span>
+                <span class="p">)</span>
+                <span class="n">template_context</span><span class="p">[</span><span class="s2">&quot;animation_path&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">animation_dest</span><span class="o">.</span><span class="n">name</span>
+                <span class="n">created_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">animation_dest</span><span class="p">)</span>
+
+        <span class="c1"># Render theorem template</span>
+        <span class="n">html_content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_manager</span><span class="o">.</span><span class="n">render_template</span><span class="p">(</span>
+            <span class="n">ExportFormat</span><span class="o">.</span><span class="n">HTML</span><span class="p">,</span> <span class="n">TemplateType</span><span class="o">.</span><span class="n">THEOREM</span><span class="p">,</span> <span class="n">template_context</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Write output file</span>
+        <span class="n">output_file</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">html_content</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="n">created_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exported </span><span class="si">{</span><span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">output_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">created_files</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_index</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">sketches</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ProofSketch</span><span class="p">],</span> <span class="n">context</span><span class="p">:</span> <span class="n">ExportContext</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an index HTML file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sketches: List of proof sketches</span>
+<span class="sd">            context: Export context</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Path to index file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">index_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">/</span> <span class="s2">&quot;index.html&quot;</span>
+
+        <span class="c1"># Prepare theorem list for index</span>
+        <span class="n">theorem_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">sketch</span> <span class="ow">in</span> <span class="n">sketches</span><span class="p">:</span>
+            <span class="n">theorem_data</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">,</span>
+                <span class="s2">&quot;statement&quot;</span><span class="p">:</span> <span class="n">sketch</span><span class="o">.</span><span class="n">theorem_statement</span><span class="p">,</span>
+                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">theorem_links</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">,</span> <span class="s2">&quot;#&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;summary&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="n">sketch</span><span class="o">.</span><span class="n">explanation</span><span class="p">[:</span><span class="mi">200</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sketch</span><span class="o">.</span><span class="n">explanation</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">200</span>
+                    <span class="k">else</span> <span class="n">sketch</span><span class="o">.</span><span class="n">explanation</span>
+                <span class="p">),</span>
+                <span class="s2">&quot;step_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">sketch</span><span class="o">.</span><span class="n">steps</span><span class="p">),</span>
+                <span class="s2">&quot;has_animation&quot;</span><span class="p">:</span> <span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span> <span class="ow">in</span> <span class="n">context</span><span class="o">.</span><span class="n">animations</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="n">theorem_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">theorem_data</span><span class="p">)</span>
+
+        <span class="c1"># Sort by name</span>
+        <span class="n">theorem_list</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+
+        <span class="c1"># Create index context</span>
+        <span class="n">index_context</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;project_name&quot;</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">project_name</span><span class="p">,</span>
+            <span class="s2">&quot;theorem_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">sketches</span><span class="p">),</span>
+            <span class="s2">&quot;theorems&quot;</span><span class="p">:</span> <span class="n">theorem_list</span><span class="p">,</span>
+            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="k">if</span> <span class="n">context</span><span class="o">.</span><span class="n">include_timestamps</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;has_animations&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">animations</span><span class="p">),</span>
+            <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">author</span><span class="p">,</span>
+            <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">version</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Render index template</span>
+        <span class="n">index_html</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_manager</span><span class="o">.</span><span class="n">render_template</span><span class="p">(</span>
+            <span class="n">ExportFormat</span><span class="o">.</span><span class="n">HTML</span><span class="p">,</span> <span class="n">TemplateType</span><span class="o">.</span><span class="n">INDEX</span><span class="p">,</span> <span class="n">index_context</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Write index file</span>
+        <span class="n">index_file</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">index_html</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created index at </span><span class="si">{</span><span class="n">index_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">index_file</span>
+
+<div class="viewcode-block" id="HTMLExporter.export_multiple">
+<a class="viewcode-back" href="../../../index.html#proof_sketcher.exporter.HTMLExporter.export_multiple">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">export_multiple</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">sketches</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ProofSketch</span><span class="p">],</span> <span class="n">context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ExportContext</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExportResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export multiple sketches with additional HTML features.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sketches: List of proof sketches</span>
+<span class="sd">            context: Export context</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Export result</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Call parent implementation</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">export_multiple</span><span class="p">(</span><span class="n">sketches</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+
+        <span class="c1"># Copy static assets</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">create_subdirs</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">asset_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_copy_assets</span><span class="p">()</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">files_created</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">asset_files</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to copy assets: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Generate search index</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">sketches</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">search_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_search_index</span><span class="p">(</span><span class="n">sketches</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">search_file</span><span class="p">:</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">files_created</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">search_file</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to generate search index: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_template_context_html</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">sketch</span><span class="p">:</span> <span class="n">ProofSketch</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ExportContext</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create template context with HTML-specific additions.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sketch: Proof sketch</span>
+<span class="sd">            context: Export context</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Template context dictionary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get base context from parent</span>
+        <span class="n">base_context</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_create_template_context</span><span class="p">(</span><span class="n">sketch</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+
+        <span class="c1"># Add HTML-specific fields</span>
+        <span class="n">base_context</span><span class="p">[</span><span class="s2">&quot;syntax_theme&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">syntax_highlighting</span> <span class="ow">and</span> <span class="s2">&quot;monokai&quot;</span> <span class="ow">or</span> <span class="s2">&quot;none&quot;</span>
+        <span class="p">)</span>
+        <span class="n">base_context</span><span class="p">[</span><span class="s2">&quot;math_renderer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;katex&quot;</span>  <span class="c1"># or &quot;mathjax&quot;</span>
+
+        <span class="c1"># Add navigation</span>
+        <span class="n">all_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">theorem_name</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">context</span><span class="o">.</span><span class="n">sketches</span><span class="p">]</span>
+        <span class="n">current_index</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">all_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span> <span class="ow">in</span> <span class="n">all_names</span>
+            <span class="k">else</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">current_index</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">prev_sketch</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">sketches</span><span class="p">[</span><span class="n">current_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">base_context</span><span class="p">[</span><span class="s2">&quot;prev_theorem&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">prev_sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">,</span>
+                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">theorem_links</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prev_sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">),</span>
+            <span class="p">}</span>
+
+        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">current_index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_names</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">next_sketch</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">sketches</span><span class="p">[</span><span class="n">current_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">base_context</span><span class="p">[</span><span class="s2">&quot;next_theorem&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">next_sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">,</span>
+                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">theorem_links</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">next_sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">),</span>
+            <span class="p">}</span>
+
+        <span class="n">base_context</span><span class="p">[</span><span class="s2">&quot;index_url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;index.html&quot;</span>
+
+        <span class="c1"># Add dependencies with links</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">generate_links</span><span class="p">:</span>
+            <span class="c1"># ProofSketch doesn&#39;t have dependencies attribute</span>
+            <span class="n">base_context</span><span class="p">[</span><span class="s2">&quot;dependencies&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">return</span> <span class="n">base_context</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_copy_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">theorem_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy animation file to output directory.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            source: Source animation file</span>
+<span class="sd">            theorem_name: Theorem name for naming</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Destination path</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">animations_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">/</span> <span class="s2">&quot;animations&quot;</span>
+        <span class="n">animations_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Generate unique filename</span>
+        <span class="n">extension</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">suffix</span>
+        <span class="n">dest_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_sanitize_filename</span><span class="p">(</span><span class="n">theorem_name</span><span class="p">)</span><span class="si">}</span><span class="s2">_animation</span><span class="si">{</span><span class="n">extension</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">dest_path</span> <span class="o">=</span> <span class="n">animations_dir</span> <span class="o">/</span> <span class="n">dest_filename</span>
+
+        <span class="c1"># Copy file</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copy2</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dest_path</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dest_path</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_search_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sketches</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ProofSketch</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate search index for client-side search.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sketches: List of proof sketches</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Path to search index file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">search_data</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">sketch</span> <span class="ow">in</span> <span class="n">sketches</span><span class="p">:</span>
+            <span class="c1"># Create search entry</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">,</span>
+                <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">sketch</span><span class="o">.</span><span class="n">theorem_name</span><span class="p">,</span>
+                <span class="s2">&quot;statement&quot;</span><span class="p">:</span> <span class="n">sketch</span><span class="o">.</span><span class="n">theorem_statement</span><span class="p">,</span>
+                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">sketch</span><span class="o">.</span><span class="n">explanation</span><span class="p">,</span>
+                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_output_url</span><span class="p">(</span><span class="n">sketch</span><span class="p">),</span>
+                <span class="s2">&quot;keywords&quot;</span><span class="p">:</span> <span class="n">sketch</span><span class="o">.</span><span class="n">key_insights</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="c1"># Add step descriptions to searchable content</span>
+            <span class="n">step_text</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">step</span><span class="o">.</span><span class="n">description</span> <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">sketch</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span>
+            <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">step_text</span>
+
+            <span class="n">search_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+
+        <span class="c1"># Write search index</span>
+        <span class="n">search_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">/</span> <span class="s2">&quot;search-index.json&quot;</span>
+        <span class="n">search_file</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">search_data</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">search_file</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_copy_assets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy HTML-specific assets.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of copied files</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">copied</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_copy_assets</span><span class="p">()</span>
+
+        <span class="c1"># Copy additional HTML resources</span>
+        <span class="n">resources</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;css/doc-gen4.css&quot;</span><span class="p">,</span> <span class="s2">&quot;css/doc-gen4.css&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;css/theorem.css&quot;</span><span class="p">,</span> <span class="s2">&quot;css/theorem.css&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;js/navigation.js&quot;</span><span class="p">,</span> <span class="s2">&quot;js/navigation.js&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;js/search.js&quot;</span><span class="p">,</span> <span class="s2">&quot;js/search.js&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;js/katex-auto-render.js&quot;</span><span class="p">,</span> <span class="s2">&quot;js/katex-auto-render.js&quot;</span><span class="p">),</span>
+        <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">src_rel</span><span class="p">,</span> <span class="n">dst_rel</span> <span class="ow">in</span> <span class="n">resources</span><span class="p">:</span>
+            <span class="n">src</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_manager</span><span class="o">.</span><span class="n">template_dir</span> <span class="o">/</span> <span class="s2">&quot;html&quot;</span> <span class="o">/</span> <span class="s2">&quot;assets&quot;</span> <span class="o">/</span> <span class="n">src_rel</span>
+            <span class="k">if</span> <span class="n">src</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">dst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">/</span> <span class="n">dst_rel</span>
+                <span class="n">dst</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">shutil</span><span class="o">.</span><span class="n">copy2</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
+                <span class="n">copied</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">copied</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Proof Sketcher Team.
+      <span class="lastupdated">Last updated on Jul 01, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
