@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class GenerationModel(str, Enum):
@@ -61,7 +61,8 @@ class ProofSketch(BaseModel):
         default_factory=list, description="Prerequisites to understand this proof"
     )
 
-    @validator("difficulty_level")
+    @field_validator("difficulty_level")
+    @classmethod
     def validate_difficulty(cls, v):
         """Validate difficulty level."""
         allowed = ["beginner", "intermediate", "advanced"]
@@ -118,7 +119,8 @@ class GenerationConfig(BaseModel):
     cache_responses: bool = Field(True, description="Whether to cache responses")
     cache_ttl_hours: int = Field(24, ge=1, description="Cache TTL in hours")
 
-    @validator("verbosity")
+    @field_validator("verbosity")
+    @classmethod
     def validate_verbosity(cls, v):
         """Validate verbosity level."""
         allowed = ["concise", "detailed", "verbose"]

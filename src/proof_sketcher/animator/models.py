@@ -6,7 +6,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class AnimationQuality(str, Enum):
@@ -81,7 +81,8 @@ class AnimationConfig(BaseModel):
         True, description="Add chapter markers for long videos"
     )
 
-    @validator("background_color", "text_color", "accent_color")
+    @field_validator("background_color", "text_color", "accent_color")
+    @classmethod
     def validate_hex_color(cls, v):
         """Validate hex color format."""
         if not v.startswith("#") or len(v) != 7:
