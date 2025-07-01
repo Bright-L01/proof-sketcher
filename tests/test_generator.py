@@ -195,16 +195,16 @@ class TestClaudeGenerator:
         mock_run.return_value = mock_result_fail
 
         # The generator should raise an error on failure
-        from proof_sketcher.generator.claude import ClaudeAPIError
+        from proof_sketcher.core.exceptions import GeneratorError
 
-        with pytest.raises(ClaudeAPIError):
+        with pytest.raises(GeneratorError):
             generator.generate_proof_sketch(sample_theorem)
 
         # Test that timeout is handled differently
         mock_run.side_effect = subprocess.TimeoutExpired("claude", 30)
-        from proof_sketcher.generator.claude import ClaudeTimeoutError
+        from proof_sketcher.core.exceptions import AITimeoutError
 
-        with pytest.raises(ClaudeTimeoutError):
+        with pytest.raises(AITimeoutError):
             generator.generate_proof_sketch(sample_theorem)
 
 
