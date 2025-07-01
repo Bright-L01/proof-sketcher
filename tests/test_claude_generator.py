@@ -23,7 +23,7 @@ from proof_sketcher.parser.models import TheoremInfo
 class TestClaudeGenerator:
     """Tests for ClaudeGenerator class."""
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_generator_initialization_success(self, mock_run):
         """Test successful generator initialization."""
         mock_run.return_value = Mock(returncode=0, stdout="Claude CLI v1.0.0")
@@ -32,7 +32,7 @@ class TestClaudeGenerator:
         assert generator.ai_executable == "claude"
         assert isinstance(generator.default_config, GenerationConfig)
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_generator_initialization_claude_not_found(self, mock_run):
         """Test generator initialization when Claude is not found."""
         mock_run.side_effect = FileNotFoundError()
@@ -40,7 +40,7 @@ class TestClaudeGenerator:
         with pytest.raises(ClaudeExecutableError):
             ClaudeGenerator()
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_generate_proof_sketch_success(self, mock_run):
         """Test successful proof sketch generation."""
 
@@ -92,7 +92,7 @@ class TestClaudeGenerator:
         assert sketch.difficulty_level == "beginner"
         assert sketch.mathematical_areas == ["arithmetic"]
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_generate_proof_sketch_with_wrapped_json(self, mock_run):
         """Test proof sketch generation with JSON wrapped in markdown."""
 
@@ -120,7 +120,7 @@ class TestClaudeGenerator:
         assert isinstance(sketch, ProofSketch)
         assert sketch.theorem_name == "test"
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_generate_proof_sketch_invalid_json(self, mock_run):
         """Test proof sketch generation with invalid JSON response."""
 
@@ -142,7 +142,7 @@ class TestClaudeGenerator:
         assert sketch.theorem_name == "test"
         assert "Invalid JSON response" in sketch.introduction
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_generate_eli5_explanation_success(self, mock_run):
         """Test successful ELI5 explanation generation."""
 
@@ -163,7 +163,7 @@ class TestClaudeGenerator:
 
         assert explanation == "This is a simple explanation for beginners."
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_generate_tactic_explanation_success(self, mock_run):
         """Test successful tactic explanation generation."""
 
@@ -188,7 +188,7 @@ class TestClaudeGenerator:
         assert "simp" in explanation
         assert "simplifies" in explanation
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_generate_step_by_step_success(self, mock_run):
         """Test successful step-by-step explanation generation."""
 
@@ -212,7 +212,7 @@ class TestClaudeGenerator:
         assert "Step 2" in explanation
         assert "Step 3" in explanation
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_generate_with_custom_config(self, mock_run):
         """Test generation with custom configuration."""
 
@@ -241,7 +241,7 @@ class TestClaudeGenerator:
         explanation = generator.generate_eli5_explanation(theorem, config)
         assert explanation == "Custom config response"
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_claude_api_error(self, mock_run):
         """Test handling of Claude API errors."""
 
@@ -259,7 +259,7 @@ class TestClaudeGenerator:
         with pytest.raises(ClaudeAPIError, match="API rate limit exceeded"):
             generator.generate_eli5_explanation(theorem)
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_claude_timeout_error(self, mock_run):
         """Test handling of Claude timeout errors."""
 
@@ -277,7 +277,7 @@ class TestClaudeGenerator:
         with pytest.raises(ClaudeTimeoutError):
             generator.generate_eli5_explanation(theorem)
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_streaming_generation(self, mock_run):
         """Test streaming generation functionality."""
 
@@ -306,7 +306,7 @@ class TestClaudeGenerator:
         ]
 
         with patch(
-            "proof_sketcher.generator.claude.subprocess.Popen",
+            "proof_sketcher.generator.ai_generator.subprocess.Popen",
             return_value=mock_process,
         ):
             chunks = list(
@@ -318,8 +318,8 @@ class TestClaudeGenerator:
         assert chunks[1] == "Second chunk of response"
         assert chunks[2] == "Final chunk of response"
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
-    def test_build_claude_command(self, mock_run):
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
+    def test_build_ai_command(self, mock_run):
         """Test Claude command building."""
         mock_run.return_value = Mock(returncode=0, stdout="Claude CLI v1.0.0")
 
@@ -333,7 +333,7 @@ class TestClaudeGenerator:
             stop_sequences=["END", "STOP"],
         )
 
-        cmd = generator._build_claude_command(config)
+        cmd = generator._build_ai_command(config)
 
         expected_elements = [
             "claude",
@@ -355,7 +355,7 @@ class TestClaudeGenerator:
         for element in expected_elements:
             assert element in cmd
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_check_ai_available(self, mock_run):
         """Test checking Claude availability."""
         # Test successful check
@@ -371,7 +371,7 @@ class TestClaudeGenerator:
         mock_run.side_effect = FileNotFoundError()
         assert generator.check_ai_available() is False
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_get_ai_version(self, mock_run):
         """Test getting Claude version."""
         mock_run.side_effect = [
@@ -384,7 +384,7 @@ class TestClaudeGenerator:
 
         assert version == "Claude CLI version 1.2.3"
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_validate_setup_success(self, mock_run):
         """Test successful setup validation."""
 
@@ -400,7 +400,7 @@ class TestClaudeGenerator:
         generator = ClaudeGenerator()
         assert generator.validate_setup() is True
 
-    @patch("proof_sketcher.generator.claude.subprocess.run")
+    @patch("proof_sketcher.generator.ai_generator.subprocess.run")
     def test_validate_setup_test_failure(self, mock_run):
         """Test setup validation with test call failure."""
 
