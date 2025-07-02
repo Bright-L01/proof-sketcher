@@ -83,7 +83,7 @@ theorem eq_trans (a b c : Nat) (h1 : a = b) (h2 : b = c) : a = c :=
 
         # Mock Claude availability check
         with patch.object(ClaudeGenerator, "check_claude_available", return_value=True):
-            generator = ClaudeGenerator(generator_config)
+            generator = ClaudeGenerator(default_config=generator_config)
 
         # Parse
         result = parser.parse_file(lean_files["simple"])
@@ -112,7 +112,7 @@ theorem eq_trans (a b c : Nat) (h1 : a = b) (h2 : b = c) : a = c :=
 
         # Mock Claude availability check
         with patch.object(ClaudeGenerator, "check_claude_available", return_value=True):
-            generator = ClaudeGenerator(generator_config)
+            generator = ClaudeGenerator(default_config=generator_config)
 
         # Parse
         result = parser.parse_file(lean_files["induction"])
@@ -140,7 +140,7 @@ theorem eq_trans (a b c : Nat) (h1 : a = b) (h2 : b = c) : a = c :=
 
         # Mock Claude availability check
         with patch.object(ClaudeGenerator, "check_claude_available", return_value=True):
-            generator = ClaudeGenerator(generator_config)
+            generator = ClaudeGenerator(default_config=generator_config)
 
         # Parse
         result = parser.parse_file(lean_files["multiple"])
@@ -174,7 +174,7 @@ theorem eq_trans (a b c : Nat) (h1 : a = b) (h2 : b = c) : a = c :=
 
         # Mock Claude availability check
         with patch.object(ClaudeGenerator, "check_claude_available", return_value=True):
-            generator = ClaudeGenerator(generator_config)
+            generator = ClaudeGenerator(default_config=generator_config)
 
         # Create theorem with imports
         theorem_content = """
@@ -217,7 +217,7 @@ theorem prime_exists (n : Nat) : ∃ p, Nat.Prime p ∧ p > n := by
 
         # Mock Claude availability check
         with patch.object(ClaudeGenerator, "check_claude_available", return_value=True):
-            generator = ClaudeGenerator(generator_config)
+            generator = ClaudeGenerator(default_config=generator_config)
 
         # Create file with mixed valid/invalid content
         mixed_file = tmp_path / "mixed.lean"
@@ -264,7 +264,7 @@ theorem another_valid : 2 = 2 := rfl
 
         # Mock Claude availability check
         with patch.object(ClaudeGenerator, "check_claude_available", return_value=True):
-            generator = ClaudeGenerator(generator_config)
+            generator = ClaudeGenerator(default_config=generator_config)
 
         # Set cache directories
         cache_dir = tmp_path / "cache"
