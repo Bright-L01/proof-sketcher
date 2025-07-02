@@ -66,7 +66,13 @@ class ParseError(BaseModel):
                 severity=exc.details.get("severity", "error"),
             )
         else:
-            return cls(message=str(exc), error_type=exc.__class__.__name__.lower())
+            return cls(
+                message=str(exc), 
+                error_type=exc.__class__.__name__.lower(),
+                line_number=None,
+                column=None,
+                severity="error"
+            )
 
 
 class FileMetadata(BaseModel):

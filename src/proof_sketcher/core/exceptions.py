@@ -116,6 +116,12 @@ class SceneGenerationError(AnimatorError):
     pass
 
 
+class FormulaExtractionError(AnimatorError):
+    """Raised when formula extraction fails."""
+
+    pass
+
+
 # Exporter Exceptions
 class ExporterError(ProofSketcherError):
     """Base exception for exporter-related errors."""

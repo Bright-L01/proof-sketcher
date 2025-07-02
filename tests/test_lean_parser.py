@@ -30,8 +30,9 @@ class TestLeanParserIntegration:
 
     def test_parser_initialization_invalid_config(self):
         """Test parser initialization with invalid config."""
+        from proof_sketcher.core.exceptions import ConfigValidationError
         config = ParserConfig(lean_timeout=-1.0)
-        with pytest.raises(ValueError, match="Invalid configuration"):
+        with pytest.raises(ConfigValidationError, match="lean_timeout must be positive"):
             LeanParser(config)
 
     def test_parse_file_nonexistent(self):
@@ -215,10 +216,11 @@ class TestLeanParserIntegration:
         config = ParserConfig(retry_config=RetryConfig(max_attempts=2, base_delay=0.1))
         parser = LeanParser(config)
 
+        from proof_sketcher.core.exceptions import LeanTimeoutError
+        
         with patch("time.sleep"):  # Speed up test
-            theorem = parser.parse_theorem(test_file, "test")
-
-        assert theorem is None
+            with pytest.raises(LeanTimeoutError, match="Lean extraction timed out"):
+                parser.parse_theorem(test_file, "test")
 
     @patch("proof_sketcher.parser.lean_parser.subprocess.run")
     def test_validate_lean_setup_success(self, mock_run):

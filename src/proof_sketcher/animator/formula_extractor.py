@@ -4,7 +4,8 @@ import re
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
-from .models import FormulaExtractionError, TransformationType
+from ..core.exceptions import FormulaExtractionError
+from .models import TransformationType
 
 
 @dataclass

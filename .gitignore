@@ -68,6 +68,18 @@ htmlcov/
 coverage.xml
 *.cover
 
+# Code quality tools
+.mypy_cache/
+.ruff_cache/
+.benchmarks/
+
+# Sphinx documentation builds
+docs/api/_build/
+
+# Runtime directories
+temp/
+animations/
+
 # Jupyter
 .ipynb_checkpoints
 *.ipynb

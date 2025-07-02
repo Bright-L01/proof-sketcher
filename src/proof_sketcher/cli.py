@@ -5,7 +5,7 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple, Union, Any
 
 import click
 from rich.console import Console
@@ -28,6 +28,7 @@ from .exporter import (
 )
 from .generator import AIGenerator as ClaudeGenerator
 from .generator.cache import CacheManager
+from .generator.offline import OfflineGenerator
 from .parser.lean_parser import LeanParser
 
 # Set up rich console and logging
@@ -129,6 +130,11 @@ def cli(ctx: click.Context, verbose: bool, config: Optional[Path]) -> None:
     multiple=True, 
     help="Process only specific theorems by name (can be used multiple times)"
 )
+@click.option(
+    "--offline",
+    is_flag=True,
+    help="Use offline mode - generate explanations from AST only, no AI required"
+)
 @click.pass_context
 def prove(
     ctx: click.Context,
@@ -136,20 +142,24 @@ def prove(
     output: Optional[Path],
     format: str,
     animate: bool,
-    theorem: tuple,
+    theorem: Tuple[str, ...],
+    offline: bool,
 ) -> None:
     """Process a Lean file and generate natural language explanations.
     
     Parses Lean 4 theorems and generates accessible explanations using Claude AI.
-    Supports multiple export formats and optional mathematical animations.
+    Supports multiple export formats, optional mathematical animations, and offline mode.
     
     \b
     Examples:
-      # Basic usage - generate HTML explanation
+      # Basic usage - generate HTML explanation with AI
       python -m proof_sketcher prove theorems.lean
       
       # Generate explanation for specific theorem in Markdown
       python -m proof_sketcher prove file.lean --theorem "add_comm" --format markdown
+      
+      # Offline mode - no AI required, uses AST analysis only
+      python -m proof_sketcher prove file.lean --offline --format markdown
       
       # Generate all formats with animations
       python -m proof_sketcher prove file.lean --format all --animate --output docs/
@@ -201,15 +211,15 @@ def prove(
         # Parse Lean file
         parse_task = progress.add_task("[cyan]Parsing Lean file...", total=1)
         parser = LeanParser(config.parser)
-        result = parser.parse_file(lean_file)
+        parse_result = parser.parse_file(lean_file)
         progress.update(parse_task, completed=1)
 
-        if result.errors:
+        if parse_result.errors:
             console.print("[bold red]⚠️  Parsing errors:[/bold red]")
-            for error in result.errors:
+            for error in parse_result.errors:
                 console.print(f"  • {error}")
 
-        if not result.theorems:
+        if not parse_result.theorems:
             console.print("[red]❌ No theorems found in file[/red]")
             console.print("\n[yellow]Possible causes:[/yellow]")
             console.print("  • File contains no theorem declarations")
@@ -220,16 +230,16 @@ def prove(
             return
 
         # Filter theorems if specific ones requested
-        theorems_to_process = result.theorems
+        theorems_to_process = parse_result.theorems
         if theorem:
-            theorems_to_process = [t for t in result.theorems if t.name in theorem]
+            theorems_to_process = [t for t in parse_result.theorems if t.name in theorem]
             if not theorems_to_process:
                 console.print(f"[red]❌ None of the specified theorems found: {', '.join(theorem)}[/red]")
                 console.print("\n[yellow]Available theorems in this file:[/yellow]")
-                for i, thm in enumerate(result.theorems[:10], 1):
+                for i, thm in enumerate(parse_result.theorems[:10], 1):
                     console.print(f"  {i}. {thm.name}")
-                if len(result.theorems) > 10:
-                    console.print(f"  ... and {len(result.theorems) - 10} more")
+                if len(parse_result.theorems) > 10:
+                    console.print(f"  ... and {len(parse_result.theorems) - 10} more")
                 console.print(f"\n[dim]Use: python -m proof_sketcher list-theorems {lean_file} to see all theorems[/dim]")
                 return
 
@@ -237,44 +247,68 @@ def prove(
             f"[bold green]✓ Found {len(theorems_to_process)} theorems to process[/bold green]"
         )
 
-        # Generate explanations
-        gen_task = progress.add_task(
-            "[cyan]Generating explanations...", total=len(theorems_to_process)
-        )
+        # Choose generator based on offline mode
+        generator: Union[OfflineGenerator, ClaudeGenerator]
+        if offline:
+            console.print("[bold yellow]🔧 Using offline mode - no AI required[/bold yellow]")
+            cache_dir = output / ".cache" if output else Path(".cache")
+            generator = OfflineGenerator(cache_dir=cache_dir)
+            gen_mode_text = "[cyan]Generating offline explanations..."
+        else:
+            generator = ClaudeGenerator(default_config=config.generator)
+            gen_mode_text = "[cyan]Generating explanations..."
 
-        generator = ClaudeGenerator(default_config=config.generator)
+        # Generate explanations
+        gen_task = progress.add_task(gen_mode_text, total=len(theorems_to_process))
         sketches = []
         animations = {}
 
         for thm in theorems_to_process:
             try:
-                # Generate explanation
-                sketch = generator.generate_proof_sketch(thm)
+                # Generate explanation (different method calls for different generators)
+                if offline:
+                    sketch = generator.generate_proof_sketch(thm)
+                else:
+                    sketch = generator.generate_proof_sketch(thm)
+                
                 sketches.append(sketch)
                 progress.update(gen_task, advance=1)
 
-                # Generate animation if requested
-                if animate:
+                # Generate animation if requested (skip in offline mode for Manim)
+                if animate and not offline:
                     anim_path = asyncio.run(
                         _generate_animation(thm.name, sketch, config, output)
                     )
                     if anim_path:
                         animations[thm.name] = anim_path
+                elif animate and offline:
+                    console.print(f"[yellow]⚠️ Skipping animation for {thm.name} in offline mode[/yellow]")
 
             except Exception as e:
-                console.print(f"[red]Failed to process {thm.name}: {e}[/red]")
+                if offline:
+                    console.print(f"[red]Failed to process {thm.name} in offline mode: {e}[/red]")
+                else:
+                    console.print(f"[red]Failed to process {thm.name}: {e}[/red]")
+                    console.print("[yellow]💡 Try using --offline flag for basic explanations without AI[/yellow]")
                 progress.update(gen_task, advance=1)
 
         if not sketches:
             console.print("[red]❌ No theorems were successfully processed[/red]")
-            console.print("\n[yellow]Common issues:[/yellow]")
-            console.print("  • Claude CLI not installed or configured")
-            console.print("  • Network connectivity issues")
-            console.print("  • Invalid theorem syntax")
-            console.print("\n[yellow]Quick fixes:[/yellow]")
-            console.print("  1. Check Claude CLI: claude --version")
-            console.print("  2. Test connection: claude 'Hello, world!'")
-            console.print("  3. See troubleshooting: docs/TROUBLESHOOTING.md")
+            if not offline:
+                console.print("\n[yellow]Common issues:[/yellow]")
+                console.print("  • Claude CLI not installed or configured")
+                console.print("  • Network connectivity issues")
+                console.print("  • Invalid theorem syntax")
+                console.print("\n[yellow]Quick fixes:[/yellow]")
+                console.print("  1. Check Claude CLI: claude --version")
+                console.print("  2. Test connection: claude 'Hello, world!'")
+                console.print("  3. Try offline mode: --offline flag")
+                console.print("  4. See troubleshooting: docs/TROUBLESHOOTING.md")
+            else:
+                console.print("\n[yellow]Offline mode issues:[/yellow]")
+                console.print("  • Lean file parsing failed")
+                console.print("  • Invalid theorem declarations")
+                console.print("  • Insufficient AST information")
             return
 
         # Export results
@@ -290,12 +324,12 @@ def prove(
             include_animations=animate,
         )
 
-        # Export based on format
-        export_options = ExportOptions(
-            output_dir=output,
-            include_animations=animate,
-            create_index=len(sketches) > 1,
-        )
+        # Export based on format  
+        export_options = ExportOptions.model_validate({
+            "output_dir": output,
+            "include_animations": animate,
+            "create_index": len(sketches) > 1
+        })
 
         if format == "all":
             formats = ["html", "markdown", "pdf", "jupyter"]
@@ -304,6 +338,7 @@ def prove(
 
         for fmt in formats:
             try:
+                exporter: Union[HTMLExporter, MarkdownExporter, PDFExporter, JupyterExporter]
                 if fmt == "html":
                     exporter = HTMLExporter(export_options)
                 elif fmt == "markdown":
@@ -312,6 +347,8 @@ def prove(
                     exporter = PDFExporter(export_options)
                 elif fmt == "jupyter":
                     exporter = JupyterExporter(export_options)
+                else:
+                    continue
 
                 result = exporter.export_multiple(sketches, export_context)
 
@@ -331,17 +368,44 @@ def prove(
 
 
 async def _generate_animation(
-    theorem_name: str, sketch, config, output_dir: Path
+    theorem_name: str, sketch: Any, config: Any, output_dir: Path
 ) -> Optional[Path]:
     """Generate animation for a theorem."""
     try:
         client = ManimMCPClient(config.manim)
         await client.start_server()
 
+        # Generate a simple request ID
+        import uuid
+        request_id = str(uuid.uuid4())[:8]
+        
+        # Create basic animation segments from proof steps  
+        from ..animator.models import AnimationSegment, AnimationScene, TransformationType
+        segments = []
+        if hasattr(sketch, 'key_steps') and sketch.key_steps:
+            scenes = []
+            for i, step in enumerate(sketch.key_steps):
+                scene = AnimationScene(
+                    scene_id=f"step_{i}",
+                    title=f"Step {step.step_number}",
+                    duration=15.0,
+                    initial_formula=f"Step {step.step_number}",
+                    final_formula=step.description,
+                    transformation_type=TransformationType.SUBSTITUTION
+                )
+                scenes.append(scene)
+            
+            segment = AnimationSegment(
+                segment_id="main",
+                title=theorem_name,
+                scenes=scenes
+            )
+            segments = [segment]
+        
         request = AnimationRequest(
             theorem_name=theorem_name,
-            explanation=sketch.explanation,
-            proof_steps=[step.description for step in sketch.steps],
+            request_id=request_id,
+            segments=segments,
             config=config.animator,
         )
 
@@ -611,21 +675,24 @@ def status(ctx: click.Context) -> None:
         console.print(f"  • Cache size: {gen_stats['size_mb']} MB")
         console.print(f"  • Maximum size: {gen_stats['max_size_mb']} MB")
 
-        if gen_stats.get("by_type"):
+        by_type = gen_stats.get("by_type")
+        if by_type and isinstance(by_type, dict):
             console.print("  • Cached by type:")
-            for gen_type, count in gen_stats["by_type"].items():
+            for gen_type, count in by_type.items():
                 console.print(f"    - {gen_type}: {count}")
 
         console.print("\n[bold]Animation Cache:[/bold]")
         console.print(f"  • Animations cached: {animation_count}")
         console.print(f"  • Cache size: {animation_size_mb:.2f} MB")
 
-        total_size_mb = gen_stats["size_mb"] + animation_size_mb
-        console.print("\n[bold]Total:[/bold]")
-        console.print(
-            f"  • Total entries: {gen_stats['total_entries'] + animation_count}"
-        )
-        console.print(f"  • Total size: {total_size_mb:.2f} MB")
+        size_mb = gen_stats.get("size_mb", 0)
+        total_entries = gen_stats.get("total_entries", 0)
+        if isinstance(size_mb, (int, float)) and isinstance(total_entries, (int, float)):
+            total_size_mb = float(size_mb) + animation_size_mb
+            total_entries_count = int(total_entries) + animation_count
+            console.print("\n[bold]Total:[/bold]")
+            console.print(f"  • Total entries: {total_entries_count}")
+            console.print(f"  • Total size: {total_size_mb:.2f} MB")
 
 
 @cache.command()
@@ -848,7 +915,7 @@ def version() -> None:
     console.print("\nFor updates: https://github.com/your-org/proof-sketcher")
 
 
-def main():
+def main() -> None:
     """Main entry point for the CLI."""
     cli()
 
