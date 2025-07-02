@@ -403,7 +403,7 @@ class TestCLIEdgeCases:
         result = runner.invoke(cli, ["list-theorems", str(text_file)])
 
         assert result.exit_code != 0
-        assert "File must have .lean extension" in result.output
+        assert "Invalid file extension '.txt'" in result.output
 
     def test_prove_no_theorems_in_file(self, runner, tmp_path):
         """Test prove command when no theorems are found."""

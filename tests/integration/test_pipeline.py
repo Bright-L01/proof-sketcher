@@ -58,7 +58,7 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
         assert result.errors == []
 
     @patch("subprocess.run")
-    @patch("proof_sketcher.generator.claude.ClaudeGenerator.check_claude_available")
+    @patch("proof_sketcher.generator.ai_generator.AIGenerator.check_claude_available")
     def test_generate_proof_sketch(self, mock_check, mock_run, config):
         """Test generating natural language explanation."""
         # Mock executable check to pass
@@ -96,7 +96,9 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
             name="test_theorem", statement="∀ n : Nat, n + 0 = n", proof="by induction"
         )
 
-        generator = ClaudeGenerator(config.generator)
+        with patch('subprocess.run') as mock_run_gen:
+            mock_run_gen.return_value = Mock(returncode=0)  # Mock successful executable check
+            generator = ClaudeGenerator(default_config=config.generator)
         sketch = generator.generate_proof_sketch(theorem)
 
         assert sketch.theorem_name == "test_theorem"
@@ -164,7 +166,7 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
         # Generate explanation (mocked)
         with patch("subprocess.run") as mock_run:
             with patch(
-                "proof_sketcher.generator.claude.ClaudeGenerator.check_claude_available"
+                "proof_sketcher.generator.ai_generator.AIGenerator.check_claude_available"
             ) as mock_check:
                 mock_check.return_value = True
 
@@ -190,7 +192,9 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
                     returncode=0,
                 )
 
-                generator = ClaudeGenerator(config.generator)
+                with patch('subprocess.run') as mock_run_gen:
+                    mock_run_gen.return_value = Mock(returncode=0)  # Mock successful executable check
+                    generator = ClaudeGenerator(default_config=config.generator)
                 sketch = generator.generate_proof_sketch(parse_result.theorems[0])
                 assert sketch.introduction == "Test explanation"
 
@@ -215,7 +219,7 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
         # Generate explanation
         with patch("subprocess.run") as mock_run:
             with patch(
-                "proof_sketcher.generator.claude.ClaudeGenerator.check_claude_available"
+                "proof_sketcher.generator.ai_generator.AIGenerator.check_claude_available"
             ) as mock_check:
                 mock_check.return_value = True
 
@@ -247,7 +251,9 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
                     returncode=0,
                 )
 
-                generator = ClaudeGenerator(config.generator)
+                with patch('subprocess.run') as mock_run_gen:
+                    mock_run_gen.return_value = Mock(returncode=0)  # Mock successful executable check
+                    generator = ClaudeGenerator(default_config=config.generator)
                 sketch = generator.generate_proof_sketch(theorem)
 
         # Generate animation
@@ -303,7 +309,7 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
         assert len(result.theorems) == 0  # No theorems are extracted from plain text
 
     @patch("subprocess.run")
-    @patch("proof_sketcher.generator.claude.ClaudeGenerator.check_claude_available")
+    @patch("proof_sketcher.generator.ai_generator.AIGenerator.check_claude_available")
     def test_error_handling_generation_failure(self, mock_check, mock_run, config):
         """Test handling of generation failures."""
         # Mock executable check to pass
@@ -316,7 +322,10 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
 
         theorem = TheoremInfo(name="test", statement="test")
 
-        generator = ClaudeGenerator(config.generator)
+        with patch('subprocess.run') as mock_run:
+            mock_run.return_value = Mock(returncode=0)  # Mock successful executable check
+            generator = ClaudeGenerator(default_config=config.generator)
+        
         # Since claude returns non-zero exit code, this should raise an exception
         with pytest.raises(Exception):
             generator.generate_proof_sketch(theorem)

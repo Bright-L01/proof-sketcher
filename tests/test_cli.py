@@ -181,7 +181,7 @@ theorem test_theorem : 1 + 1 = 2 := by norm_num
         with tempfile.NamedTemporaryFile(suffix=".txt") as tmp:
             result = runner.invoke(cli, ["prove", tmp.name])
             assert result.exit_code != 0
-            assert "File must have .lean extension" in result.output
+            assert "Invalid file extension '.txt'" in result.output
 
 
 class TestConfigCommand:

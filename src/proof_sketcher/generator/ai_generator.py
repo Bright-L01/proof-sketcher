@@ -417,7 +417,7 @@ class AIGenerator(IGenerator):
                 content="",
                 generation_time_ms=generation_time,
                 success=False,
-                error_message=str(e),
+                error_message=f"Unexpected error during generation: {type(e).__name__}: {str(e)}",
             )
 
     def _call_ai(self, prompt: str, config: GenerationConfig) -> str:
@@ -453,13 +453,25 @@ class AIGenerator(IGenerator):
 
         except subprocess.TimeoutExpired:
             raise AITimeoutError(
-                "AI request timed out",
+                "AI call timed out",
                 details={"timeout": timeout, "config": config.model_dump()},
                 error_code="ai_timeout",
             ) from None
+        except FileNotFoundError as e:
+            raise AIExecutableError(
+                f"AI executable not found: {self.ai_executable}",
+                details={"executable": self.ai_executable, "error": str(e)},
+                error_code="ai_executable_not_found",
+            ) from e
+        except PermissionError as e:
+            raise AIExecutableError(
+                f"Permission denied when running AI executable: {e}",
+                details={"executable": self.ai_executable, "error": str(e)},
+                error_code="ai_permission_denied",
+            ) from e
         except subprocess.SubprocessError as e:
             raise GeneratorError(
-                f"Failed to call AI: {e}",
+                f"AI command failed: {result.stderr.strip() if result.stderr else 'Unknown error'}",
                 details={"command": cmd, "error": str(e)},
                 error_code="ai_call_failed",
             ) from e
@@ -518,7 +530,7 @@ class AIGenerator(IGenerator):
                 timeout=10,
             )
             return result.returncode == 0
-        except (subprocess.SubprocessError, FileNotFoundError):
+        except (subprocess.SubprocessError, FileNotFoundError, PermissionError, OSError):
             return False
 
     # Backward compatibility alias

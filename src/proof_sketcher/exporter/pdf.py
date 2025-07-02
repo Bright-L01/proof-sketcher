@@ -188,7 +188,9 @@ class PDFExporter(BaseExporterImpl):
         Returns:
             Template context
         """
-        base_context = super()._create_context(sketch)
+        # Get base context as dict and convert to TemplateContext
+        base_dict = super()._create_template_context(sketch, context)
+        base_context = TemplateContext(**base_dict)
 
         # Escape LaTeX special characters in text fields
         base_context.explanation = self.template_manager._latex_escape(

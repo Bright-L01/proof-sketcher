@@ -80,6 +80,10 @@ class AnimationConfig(BaseModel):
     chapter_markers: bool = Field(
         True, description="Add chapter markers for long videos"
     )
+    
+    # Resource limits for production
+    max_memory_mb: int = Field(1024, ge=128, description="Maximum memory usage in MB")
+    max_processing_time: int = Field(300, ge=60, description="Maximum processing time in seconds")
 
     @field_validator("background_color", "text_color", "accent_color")
     @classmethod
@@ -445,25 +449,4 @@ class ManimConfig(BaseModel):
         arbitrary_types_allowed = True
 
 
-class AnimationError(Exception):
-    """Base exception for animation errors."""
-
-    pass
-
-
-class ManimServerError(AnimationError):
-    """Raised when Manim server encounters an error."""
-
-    pass
-
-
-class AnimationTimeoutError(AnimationError):
-    """Raised when animation generation times out."""
-
-    pass
-
-
-class FormulaExtractionError(AnimationError):
-    """Raised when formula extraction fails."""
-
-    pass
+# Exception classes are imported from core.exceptions

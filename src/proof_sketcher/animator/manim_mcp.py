@@ -1,41 +1,78 @@
 """Manim MCP server integration for animation generation."""
 
 import asyncio
+import json
 import logging
+import random
 import subprocess
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
+from urllib.parse import urljoin
 
 import aiohttp
+import tenacity
 
-from .models import AnimationRequest, AnimationResponse, AnimationScene, ManimConfig
+from ..core.exceptions import AnimatorError, AnimationTimeoutError
+from ..generator.models import ProofSketch
+from .mock_mcp import MockMCPTransport, MockMCPServer
+from .models import AnimationRequest, AnimationResponse, AnimationScene, AnimationStyle, ManimConfig, AnimationQuality
 
 
 class ManimMCPClient:
-    """Client for interacting with Manim MCP server."""
+    """Client for interacting with Manim MCP server with robust error handling."""
 
-    def __init__(self, config: Optional[ManimConfig] = None):
+    def __init__(self, config: Optional[ManimConfig] = None, use_mock: bool = False):
         """Initialize the MCP client.
 
         Args:
             config: Manim configuration. Uses default if None.
+            use_mock: Use mock server for testing
         """
         self.config = config or ManimConfig()
         self.logger = logging.getLogger(__name__)
         self.server_process: Optional[subprocess.Popen] = None
-        self.session_pool: List[aiohttp.ClientSession] = []
+        self.session: Optional[aiohttp.ClientSession] = None
         self.active_connections = 0
         self._health_check_task: Optional[asyncio.Task] = None
         self._shutdown_event = asyncio.Event()
+        self._request_id = 0
+        
+        # Mock server for testing
+        self.use_mock = use_mock
+        self.mock_transport: Optional[MockMCPTransport] = None
+        if use_mock:
+            self.mock_transport = MockMCPTransport()
+        
+        # Connection retry settings
+        self.max_retries = 3
+        self.base_delay = 1.0
+        self.max_delay = 30.0
+        
+        # Circuit breaker state
+        self.failure_count = 0
+        self.last_failure_time = 0
+        self.circuit_open = False
+        self.circuit_timeout = 60.0  # 1 minute
 
+    @tenacity.retry(
+        wait=tenacity.wait_exponential(multiplier=1, min=1, max=10),
+        stop=tenacity.stop_after_attempt(3),
+        retry=tenacity.retry_if_exception_type((ConnectionError, asyncio.TimeoutError))
+    )
     async def start_server(self) -> bool:
-        """Start the Manim MCP server.
+        """Start the Manim MCP server with retry logic.
 
         Returns:
             True if server started successfully, False otherwise
         """
+        # Handle mock mode
+        if self.use_mock and self.mock_transport:
+            await self.mock_transport.connect()
+            self.logger.info("Mock MCP server started")
+            return True
+            
         if self.is_server_running():
             self.logger.info("Manim server already running")
             return True
@@ -51,38 +88,122 @@ class ManimMCPClient:
             if self.config.temp_dir:
                 self.config.temp_dir.mkdir(parents=True, exist_ok=True)
 
+            # Check if manim is available
+            if not self._check_manim_available():
+                self.logger.error("Manim not found in PATH")
+                return False
+
             # Build server command
             cmd = self._build_server_command()
 
             self.logger.info(f"Starting Manim MCP server: {' '.join(cmd)}")
-
-            # Start server process
+            
+            # Start the server process
             self.server_process = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
             )
-
+            
             # Wait for server to be ready
-            if await self._wait_for_server_ready():
-                self.logger.info(
-                    f"Manim server started successfully on {self.config.get_server_url()}"
-                )
-
-                # Start health check task
-                if self.config.auto_restart:
-                    self._health_check_task = asyncio.create_task(
-                        self._health_check_loop()
-                    )
-
-                return True
-            else:
-                self.logger.error("Server failed to start within timeout")
-                await self.stop_server()
-                return False
-
+            await self._wait_for_server_ready()
+            
+            # Start health check monitoring
+            if self.config.enable_health_checks:
+                self._health_check_task = asyncio.create_task(self._health_check_loop())
+            
+            self.logger.info("Manim MCP server started successfully")
+            return True
+            
         except Exception as e:
             self.logger.error(f"Failed to start Manim server: {e}")
-            await self.stop_server()
+            if self.server_process:
+                self.server_process.terminate()
+                self.server_process = None
             return False
+
+    def _check_manim_available(self) -> bool:
+        """Check if Manim is available in PATH."""
+        try:
+            result = subprocess.run(
+                ["manim", "--version"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            return result.returncode == 0
+        except (subprocess.SubprocessError, FileNotFoundError):
+            return False
+
+    def _build_server_command(self) -> List[str]:
+        """Build the command to start the MCP server."""
+        # For now, we'll use a simple Python script approach
+        # In a real implementation, this would start the actual MCP server
+        cmd = [
+            "python", "-m", "manim_mcp_server",
+            "--host", self.config.host,
+            "--port", str(self.config.port)
+        ]
+        
+        if self.config.temp_dir:
+            cmd.extend(["--temp-dir", str(self.config.temp_dir)])
+        if self.config.output_dir:
+            cmd.extend(["--output-dir", str(self.config.output_dir)])
+        
+        return cmd
+
+    async def _wait_for_server_ready(self, timeout: float = 30.0) -> None:
+        """Wait for the server to be ready to accept connections."""
+        start_time = time.time()
+        
+        while time.time() - start_time < timeout:
+            try:
+                if await self.health_check():
+                    return
+            except Exception:
+                pass
+            
+            await asyncio.sleep(1.0)
+        
+        raise AnimationTimeoutError("Server failed to start within timeout")
+
+    async def _health_check_loop(self) -> None:
+        """Background task to monitor server health."""
+        while not self._shutdown_event.is_set():
+            try:
+                await asyncio.sleep(30)  # Check every 30 seconds
+                if not await self.health_check():
+                    self.logger.warning("Health check failed, server may be unresponsive")
+                    self._record_failure()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                self.logger.warning(f"Health check error: {e}")
+                self._record_failure()
+
+    def _record_failure(self) -> None:
+        """Record a failure for circuit breaker logic."""
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        
+        if self.failure_count >= 3:
+            self.circuit_open = True
+            self.logger.warning("Circuit breaker opened due to repeated failures")
+
+    def _is_circuit_open(self) -> bool:
+        """Check if circuit breaker is open."""
+        if not self.circuit_open:
+            return False
+        
+        # Check if timeout has passed
+        if time.time() - self.last_failure_time > self.circuit_timeout:
+            self.circuit_open = False
+            self.failure_count = 0
+            self.logger.info("Circuit breaker reset")
+            return False
+        
+        return True
 
     async def stop_server(self) -> None:
         """Stop the Manim MCP server."""

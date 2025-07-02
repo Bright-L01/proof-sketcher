@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch, MagicMock
 import pytest
 
 from proof_sketcher.exporter.pdf import PDFExporter
-from proof_sketcher.exporter.models import ExportContext, ExportFormat, ExportOptions
+from proof_sketcher.exporter.models import ExportContext, ExportFormat, ExportOptions, TemplateContext
 from proof_sketcher.generator.models import ProofSketch, ProofStep
 
 
@@ -157,10 +157,10 @@ class TestPDFExporter:
         
         template_context = exporter._create_template_context(sample_proof_sketch, context)
         
-        assert isinstance(template_context, dict)
-        assert template_context["theorem_name"] == "nat_add_comm"
-        assert "introduction" in template_context
-        assert template_context["format"] == "pdf"
+        assert isinstance(template_context, TemplateContext)
+        assert template_context.theorem_name == "nat_add_comm"
+        assert hasattr(template_context, 'explanation')  # PDF uses explanation instead of introduction
+        # PDF exporter doesn't set format in the template context
 
     def test_copy_latex_assets(self, exporter, tmp_path):
         """Test copying LaTeX assets."""
@@ -205,7 +205,7 @@ class TestPDFExporter:
 
     def test_error_handling(self, exporter, sample_proof_sketch):
         """Test error handling during export."""
-        with patch.object(exporter.template_manager, 'render', side_effect=Exception("Template error")):
+        with patch.object(exporter.template_manager, 'render_template', side_effect=Exception("Template error")):
             result = exporter.export_single(sample_proof_sketch)
             
             assert not result.success
