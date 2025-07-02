@@ -521,6 +521,11 @@ class AIGenerator(IGenerator):
         except (subprocess.SubprocessError, FileNotFoundError):
             return False
 
+    # Backward compatibility alias
+    def check_claude_available(self) -> bool:
+        """Check if Claude CLI is available (backward compatibility alias)."""
+        return self.check_ai_available()
+
     def get_ai_version(self) -> Optional[str]:
         """Get Claude CLI version.
 
