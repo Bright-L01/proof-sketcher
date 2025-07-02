@@ -177,8 +177,13 @@ class TestAIGeneratorCoverageImprovement:
                 conclusion="Therefore the theorem holds"
             )
             
+            mock_request = GenerationRequest(
+                generation_type=GenerationType.STEP_BY_STEP,
+                theorem_name="test_theorem",
+                theorem_statement="example statement"
+            )
             mock_response = GenerationResponse(
-                request=Mock(),
+                request=mock_request,
                 content=mock_proof_sketch,
                 success=True
             )

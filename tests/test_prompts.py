@@ -102,7 +102,7 @@ class TestPromptTemplates:
         assert "by simp" in rendered
         assert "Addition identity theorem" in rendered
         assert "detailed" in rendered
-        assert "JSON object" in rendered
+        assert "```json" in rendered
 
     def test_eli5_template_rendering(self):
         """Test ELI5 template rendering."""
@@ -123,9 +123,9 @@ class TestPromptTemplates:
         assert "a + b = b + a" in rendered
         assert "addition" in rendered
         assert "Addition is commutative" in rendered
-        assert "analogies" in rendered
-        assert "everyday examples" in rendered
-        assert "under 200 words" in rendered  # Concise verbosity
+        assert "ANALOGY BANK" in rendered
+        assert "real-world comparison" in rendered
+        assert "150-250 words" in rendered  # Concise verbosity
 
     def test_tactic_explanation_template_rendering(self):
         """Test tactic explanation template rendering."""
@@ -146,8 +146,8 @@ class TestPromptTemplates:
         assert "P(n) for all n" in rendered
         assert "by induction on n; simp; exact h" in rendered
         assert "Nat.induction" in rendered
-        assert "tactics used" in rendered
-        assert "reasoning about tactic selection" in rendered  # include_reasoning=True
+        assert "TACTICAL ANALYSIS" in rendered
+        assert "Reasoning-heavy" in rendered  # include_reasoning=True
 
     def test_step_by_step_template_rendering(self):
         """Test step-by-step template rendering."""
@@ -168,7 +168,7 @@ class TestPromptTemplates:
         assert "a = b and b = c implies a = c" in rendered  # Formatted
         assert "Eq.trans" in rendered
         assert "Transitivity of equality" in rendered
-        assert "step-by-step" in rendered
+        assert "STEP-BY-STEP" in rendered
         assert "verbose" in rendered
 
     def test_render_prompt_method(self):
@@ -222,7 +222,7 @@ class TestConvenienceFunctions:
         assert "by ring" in prompt
         assert "Commutativity of addition" in prompt
         assert "Basic arithmetic properties" in prompt
-        assert "JSON object" in prompt
+        assert "```json" in prompt
 
     def test_render_eli5_prompt(self):
         """Test ELI5 prompt rendering."""
@@ -235,8 +235,8 @@ class TestConvenienceFunctions:
         assert "Nat.add_comm" in prompt
         assert "Commutativity of addition" in prompt
         assert "Elementary arithmetic" in prompt
-        assert "analogies" in prompt
-        assert "ELI5" in prompt
+        assert "ANALOGY BANK" in prompt
+        assert "science communicator" in prompt
 
     def test_render_tactic_explanation_prompt(self):
         """Test tactic explanation prompt rendering."""
@@ -263,7 +263,7 @@ class TestConvenienceFunctions:
         assert "Nat.add_comm" in prompt
         assert "Commutativity of addition" in prompt
         assert "Proof techniques" in prompt
-        assert "step-by-step" in prompt
+        assert "Step-by-Step" in prompt
         assert "walkthrough" in prompt
 
     def test_prompt_rendering_with_minimal_theorem(self):
