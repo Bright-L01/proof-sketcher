@@ -3,7 +3,7 @@
 import hashlib
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -64,7 +64,7 @@ class ProofSketch(BaseModel):
 
     @field_validator("difficulty_level")
     @classmethod
-    def validate_difficulty(cls, v):
+    def validate_difficulty(cls, v: str) -> str:
         """Validate difficulty level."""
         allowed = ["beginner", "intermediate", "advanced"]
         if v not in allowed:
@@ -122,7 +122,7 @@ class GenerationConfig(BaseModel):
 
     @field_validator("verbosity")
     @classmethod
-    def validate_verbosity(cls, v):
+    def validate_verbosity(cls, v: str) -> str:
         """Validate verbosity level."""
         allowed = ["concise", "detailed", "verbose"]
         if v not in allowed:
@@ -138,6 +138,10 @@ class GenerationConfig(BaseModel):
             max_tokens=2000,
             verbosity="concise",
             include_reasoning=False,
+            stream=False,
+            system_message=None,
+            cache_responses=True,
+            cache_ttl_hours=24
         )
 
     @classmethod
@@ -149,6 +153,10 @@ class GenerationConfig(BaseModel):
             max_tokens=6000,
             verbosity="detailed",
             include_reasoning=True,
+            stream=False,
+            system_message=None,
+            cache_responses=True,
+            cache_ttl_hours=24
         )
 
     @classmethod
@@ -160,6 +168,10 @@ class GenerationConfig(BaseModel):
             max_tokens=4000,
             verbosity="verbose",
             include_reasoning=True,
+            stream=False,
+            system_message=None,
+            cache_responses=True,
+            cache_ttl_hours=24
         )
 
 
@@ -186,7 +198,7 @@ class GenerationRequest(BaseModel):
 
     # Generation configuration
     config: GenerationConfig = Field(
-        default_factory=GenerationConfig, description="Generation configuration"
+        default_factory=GenerationConfig.fast, description="Generation configuration"
     )
 
     def get_cache_key(self) -> str:
@@ -248,7 +260,7 @@ class GenerationResponse(BaseModel):
         """Check if content is plain text."""
         return isinstance(self.content, str)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
         result = self.dict()
 

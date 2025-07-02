@@ -34,7 +34,7 @@ class ParserConfig:
     version_check_timeout: float = 10.0
 
     # Retry configuration
-    retry_config: RetryConfig = None
+    retry_config: Optional[RetryConfig] = None
 
     # Lake project settings
     auto_detect_lake: bool = True
@@ -48,7 +48,7 @@ class ParserConfig:
     # Working directory
     working_dir: Optional[Path] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Initialize retry config if not provided."""
         if self.retry_config is None:
             self.retry_config = RetryConfig()
@@ -66,11 +66,12 @@ class ParserConfig:
         if self.version_check_timeout <= 0:
             errors.append("version_check_timeout must be positive")
 
-        if self.retry_config.max_attempts < 1:
-            errors.append("retry_config.max_attempts must be at least 1")
+        if self.retry_config is not None:
+            if self.retry_config.max_attempts < 1:
+                errors.append("retry_config.max_attempts must be at least 1")
 
-        if self.retry_config.base_delay <= 0:
-            errors.append("retry_config.base_delay must be positive")
+            if self.retry_config.base_delay <= 0:
+                errors.append("retry_config.base_delay must be positive")
 
         if self.working_dir and not self.working_dir.exists():
             errors.append(f"working_dir does not exist: {self.working_dir}")

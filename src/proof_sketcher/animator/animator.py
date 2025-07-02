@@ -1,101 +1,190 @@
-"""Main animator class that orchestrates proof animation generation."""
+"""Production-ready animator with fallback mechanisms."""
 
 import asyncio
 import logging
-import subprocess
+import psutil
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Callable, List, Optional
 
+from ..core.exceptions import AnimatorError, AnimationTimeoutError
 from ..generator.models import ProofSketch
 from ..parser.models import TheoremInfo
-from .formula_extractor import FormulaExtractor
-from .manim_mcp import ManimMCPManager
-from .models import (
-    AnimationConfig,
-    AnimationRequest,
-    AnimationResponse,
-    AnimationTimeoutError,
-    ManimConfig,
-)
-from .scene_builder import ProofAnimationBuilder
+from .fallback import FallbackAnimator, StaticAnimationGenerator
+from .manim_mcp_enhanced import EnhancedManimMCPClient
+from .models import AnimationConfig, AnimationRequest, AnimationResponse, AnimationStyle, ManimConfig, AnimationQuality
 
 
-class ManimAnimator:
-    """Main class for generating mathematical proof animations."""
+class ProductionAnimator:
+    """Production-ready animator with comprehensive error handling and fallbacks."""
 
     def __init__(
         self,
         animation_config: Optional[AnimationConfig] = None,
         manim_config: Optional[ManimConfig] = None,
+        use_mock: bool = False,
+        progress_callback: Optional[Callable[[str, float], None]] = None
     ):
-        """Initialize the animator.
+        """Initialize the production animator.
 
         Args:
-            animation_config: Configuration for animation generation
-            manim_config: Configuration for Manim MCP server
+            animation_config: Animation configuration
+            manim_config: Manim server configuration  
+            use_mock: Use mock server for testing
+            progress_callback: Optional progress callback function
         """
         self.animation_config = animation_config or AnimationConfig()
         self.manim_config = manim_config or ManimConfig()
-        self.scene_builder = ProofAnimationBuilder(self.animation_config)
-        self.formula_extractor = FormulaExtractor()
+        self.use_mock = use_mock
+        self.progress_callback = progress_callback
         self.logger = logging.getLogger(__name__)
 
-        # Initialize output directories
+        # Initialize components
+        self.mcp_client = EnhancedManimMCPClient(
+            config=self.manim_config,
+            use_mock=use_mock
+        )
+        self.static_generator = StaticAnimationGenerator(
+            output_dir=self.manim_config.output_dir or Path.cwd() / "animations"
+        )
+        self.fallback_animator = FallbackAnimator(
+            mcp_client=self.mcp_client,
+            static_generator=self.static_generator
+        )
+
+        # Resource monitoring
+        self.max_memory_mb = self.animation_config.max_memory_mb
+        self.max_processing_time = self.animation_config.max_processing_time
+
+        # Setup output directories
         self._setup_output_directories()
 
+    def _sanitize_filename(self, name: str) -> str:
+        """Sanitize a filename for filesystem use."""
+        # Replace problematic characters
+        safe_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
+        sanitized = "".join(c if c in safe_chars else "_" for c in name)
+        
+        # Remove multiple underscores and trim
+        while "__" in sanitized:
+            sanitized = sanitized.replace("__", "_")
+        
+        return sanitized.strip("_")[:50]  # Limit length
+
+    def _report_progress(self, message: str, progress: float) -> None:
+        """Report progress if callback is available."""
+        if self.progress_callback:
+            try:
+                self.progress_callback(message, progress)
+            except Exception as e:
+                self.logger.warning(f"Progress callback failed: {e}")
+
+    def _check_resource_limits(self) -> None:
+        """Check if system resources are within limits."""
+        # Check memory usage
+        try:
+            import psutil
+            process = psutil.Process()
+            memory_mb = process.memory_info().rss / (1024 * 1024)
+            
+            if memory_mb > self.max_memory_mb:
+                raise MemoryError(
+                    f"Memory usage {memory_mb:.1f}MB exceeds limit {self.max_memory_mb}MB"
+                )
+        except ImportError:
+            self.logger.warning("psutil not available, skipping memory check")
+        except Exception as e:
+            self.logger.warning(f"Could not check memory limits: {e}")
+
+    def _validate_proof_sketch(self, proof_sketch: ProofSketch) -> None:
+        """Validate proof sketch for animation."""
+        if not proof_sketch.theorem_name:
+            raise AnimatorError("Proof sketch must have a theorem name")
+        
+        if not proof_sketch.key_steps:
+            raise AnimatorError("Proof sketch must have at least one key step")
+        
+        # Check for excessively long proofs
+        if len(proof_sketch.key_steps) > 20:
+            self.logger.warning(
+                f"Proof has {len(proof_sketch.key_steps)} steps, "
+                "animation may be very long"
+            )
+
+    def _setup_output_directories(self) -> None:
+        """Ensure output directories exist."""
+        output_dir = self.manim_config.output_dir or Path.cwd() / "animations"
+        try:
+            output_dir.mkdir(parents=True, exist_ok=True)
+            if self.manim_config.temp_dir:
+                self.manim_config.temp_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            self.logger.error(f"Failed to create output directories: {e}")
+            raise AnimatorError(f"Cannot create output directories: {e}")
+
     async def animate_proof(
-        self, proof_sketch: ProofSketch, config: Optional[AnimationConfig] = None
+        self, proof_sketch: ProofSketch, 
+        style: AnimationStyle = AnimationStyle.MODERN,
+        quality: AnimationQuality = AnimationQuality.MEDIUM,
+        output_filename: Optional[str] = None
     ) -> AnimationResponse:
-        """Generate animation for a proof sketch.
+        """Generate animation for a proof sketch with comprehensive error handling.
 
         Args:
-            proof_sketch: Proof sketch to animate
-            config: Animation configuration override
+            proof_sketch: The proof sketch to animate
+            style: Animation style
+            quality: Quality level
+            output_filename: Optional output filename
 
         Returns:
-            Animation response with video path and metadata
+            AnimationResponse with results or fallback content
         """
-        config = config or self.animation_config
         start_time = time.time()
-
+        
+        # Generate output filename if not provided
+        if not output_filename:
+            safe_name = self._sanitize_filename(proof_sketch.theorem_name)
+            output_filename = f"{safe_name}_animation.mp4"
+        
+        self._report_progress("Starting animation generation", 0.0)
+        
         try:
+            # Check resource limits before starting
+            self._check_resource_limits()
+            
+            # Validate input
+            self._validate_proof_sketch(proof_sketch)
+            
+            self._report_progress("Connecting to animation services", 0.1)
+            
+            # Use fallback animator which handles MCP -> static fallback
+            response = await asyncio.wait_for(
+                self.fallback_animator.animate(
+                    proof_sketch=proof_sketch,
+                    style=style,
+                    quality=quality,
+                    output_filename=output_filename
+                ),
+                timeout=self.max_processing_time
+            )
+            
+            # Add timing metadata
+            processing_time = time.time() - start_time
+            if response.metadata is None:
+                response.metadata = {}
+            response.metadata.update({
+                "processing_time_seconds": processing_time,
+                "style": style.value,
+                "quality": quality.value,
+                "theorem_name": proof_sketch.theorem_name
+            })
+            
+            self._report_progress("Animation generation completed", 1.0)
             self.logger.info(
-                f"Starting animation generation for {proof_sketch.theorem_name}"
+                f"Animation completed for {proof_sketch.theorem_name} "
+                f"in {processing_time:.2f}s"
             )
-
-            # Build animation request
-            request = self.scene_builder.build_animation_request(proof_sketch, config)
-
-            # Validate request
-            if not self._validate_animation_request(request):
-                return AnimationResponse(
-                    request=request,
-                    success=False,
-                    error_message="Invalid animation request",
-                )
-
-            # Generate animation using MCP server
-            async with ManimMCPManager(self.manim_config) as manager:
-                response = await manager.render_animation(request)
-
-            # Post-process response
-            if response.success:
-                response = await self._post_process_animation(response)
-
-            generation_time = (time.time() - start_time) * 1000
-            response.generation_time_ms = generation_time
-
-            duration_str = (
-                f"{response.actual_duration:.1f}s"
-                if response.actual_duration is not None
-                else "N/A"
-            )
-            self.logger.info(
-                f"Animation generation completed for {proof_sketch.theorem_name}: "
-                f"success={response.success}, duration={duration_str}"
-            )
-
+            
             return response
 
         except AnimationTimeoutError as e:
@@ -107,6 +196,107 @@ class ManimAnimator:
                 f"Animation generation failed for {proof_sketch.theorem_name}"
             )
             return self._create_fallback_response(proof_sketch, str(e), start_time)
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        try:
+            await self.mcp_client.disconnect()
+        except Exception as e:
+            self.logger.warning(f"Error during cleanup: {e}")
+
+    async def cleanup(self):
+        """Clean up resources."""
+        try:
+            await self.mcp_client.disconnect()
+        except Exception as e:
+            self.logger.warning(f"Error during cleanup: {e}")
+
+    async def validate_setup(self) -> bool:
+        """Validate that the animation system is properly set up."""
+        try:
+            # Check output directories
+            output_dir = self.manim_config.output_dir or Path.cwd() / "animations"
+            if not output_dir.exists():
+                self.logger.error("Output directory does not exist")
+                return False
+
+            # Test in mock mode
+            if self.use_mock:
+                self.logger.info("Using mock mode - validation passed")
+                return True
+
+            # Try to connect to MCP client
+            try:
+                success = await self.mcp_client.connect()
+                if success:
+                    health_ok = await self.mcp_client.health_check()
+                    await self.mcp_client.disconnect()
+                    if health_ok:
+                        self.logger.info("MCP server connection validated")
+                        return True
+                    else:
+                        self.logger.warning("MCP server health check failed, will use fallback")
+                        return True  # Still valid with fallback
+                else:
+                    self.logger.warning("MCP server not available, will use fallback")
+                    return True  # Still valid with fallback
+            except Exception as e:
+                self.logger.warning(f"MCP server not available, will use fallback: {e}")
+                return True  # Still valid with fallback
+
+        except Exception as e:
+            self.logger.error(f"Setup validation failed: {e}")
+            return False
+
+    async def animate_batch(self, proof_sketches: List[ProofSketch],
+                           style: AnimationStyle = AnimationStyle.MODERN,
+                           quality: AnimationQuality = AnimationQuality.MEDIUM,
+                           max_concurrent: int = 3) -> List[dict]:
+        """Animate multiple proof sketches with controlled concurrency."""
+        self.logger.info(f"Starting batch animation of {len(proof_sketches)} proofs")
+        
+        semaphore = asyncio.Semaphore(max_concurrent)
+        
+        async def animate_single(sketch: ProofSketch) -> dict:
+            async with semaphore:
+                return await self.animate_proof(sketch, style, quality)
+        
+        # Process all animations concurrently with limit
+        tasks = [animate_single(sketch) for sketch in proof_sketches]
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Convert exceptions to error responses
+        results = []
+        for i, response in enumerate(responses):
+            if isinstance(response, Exception):
+                sketch = proof_sketches[i]
+                error_response = {
+                    'video_path': None,
+                    'thumbnail_path': None,
+                    'duration': 0,
+                    'frame_count': 0,
+                    'size_bytes': 0,
+                    'error': str(response),
+                    'metadata': {
+                        'error_type': 'batch_exception',
+                        'theorem_name': sketch.theorem_name
+                    }
+                }
+                results.append(error_response)
+            else:
+                results.append(response)
+        
+        # Report batch results
+        success_count = sum(1 for r in results if not r.get('error'))
+        self.logger.info(
+            f"Batch animation completed: {success_count}/{len(results)} successful"
+        )
+        
+        return results
 
     async def animate_single_step(
         self,
@@ -418,47 +608,24 @@ class ManimAnimator:
 
     def _create_fallback_response(
         self, proof_sketch: ProofSketch, error_message: str, start_time: float
-    ) -> AnimationResponse:
+    ) -> dict:
         """Create fallback response when animation fails."""
-        # Create minimal request for fallback
-        import uuid
-
-        from .models import AnimationScene, AnimationSegment, TransformationType
-
-        fallback_scene = AnimationScene(
-            scene_id=f"{proof_sketch.theorem_name}_fallback",
-            title="Theorem Statement",
-            duration=30.0,
-            initial_formula="",
-            final_formula=self.formula_extractor.convert_lean_to_latex(
-                proof_sketch.theorem_name
-            ),
-            transformation_type=TransformationType.EXPANSION,
-            narration_text=proof_sketch.introduction,
-        )
-
-        fallback_segment = AnimationSegment(
-            segment_id=f"{proof_sketch.theorem_name}_fallback_segment",
-            title="Fallback",
-            scenes=[fallback_scene],
-        )
-
-        fallback_request = AnimationRequest(
-            theorem_name=proof_sketch.theorem_name,
-            request_id=str(uuid.uuid4()),
-            segments=[fallback_segment],
-            config=self.animation_config,
-        )
-
         generation_time = (time.time() - start_time) * 1000
 
-        return AnimationResponse(
-            request=fallback_request,
-            generation_time_ms=generation_time,
-            success=False,
-            error_message=error_message,
-            warnings=["Animation generation failed, fallback response created"],
-        )
+        return {
+            'video_path': None,
+            'thumbnail_path': None,
+            'duration': 0,
+            'frame_count': 0,
+            'size_bytes': 0,
+            'error': error_message,
+            'metadata': {
+                'error_type': 'fallback',
+                'theorem_name': proof_sketch.theorem_name,
+                'generation_time_ms': generation_time,
+                'warnings': ['Animation generation failed, fallback response created']
+            }
+        }
 
 
 class CachedManimAnimator:
@@ -466,13 +633,13 @@ class CachedManimAnimator:
 
     def __init__(
         self,
-        animator: ManimAnimator,
+        animator: "ProductionAnimator",
         cache_manager=None,  # Could integrate with existing cache system
     ):
         """Initialize cached animator.
 
         Args:
-            animator: ManimAnimator instance
+            animator: ProductionAnimator instance
             cache_manager: Cache manager for responses
         """
         self.animator = animator
@@ -528,3 +695,7 @@ class CachedManimAnimator:
     def __getattr__(self, name):
         """Delegate other methods to the underlying animator."""
         return getattr(self.animator, name)
+
+
+# Backward compatibility alias
+ManimAnimator = ProductionAnimator

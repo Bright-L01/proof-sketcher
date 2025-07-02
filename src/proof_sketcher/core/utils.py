@@ -9,7 +9,7 @@ import re
 import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, TypeVar, Union
+from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union
 
 T = TypeVar("T")
 
@@ -193,7 +193,7 @@ def retry_with_backoff(
     base_delay: float = 1.0,
     max_delay: float = 60.0,
     exponential_base: float = 2.0,
-    exceptions: tuple = (Exception,),
+    exceptions: Tuple[type[BaseException], ...] = (Exception,),
 ) -> T:
     """Retry a function with exponential backoff.
 
@@ -227,8 +227,11 @@ def retry_with_backoff(
             else:
                 raise
 
-    # Should never reach here
-    raise last_exception
+    # Should never reach here, but satisfy type checker
+    if last_exception is not None:
+        raise last_exception
+    else:
+        raise RuntimeError("Retry failed with no recorded exception")
 
 
 def get_timestamp() -> str:
@@ -296,7 +299,7 @@ def flatten_dict(
     Returns:
         Flattened dictionary
     """
-    items = []
+    items: List[Tuple[str, Any]] = []
 
     for key, value in d.items():
         new_key = f"{parent_key}{separator}{key}" if parent_key else key
