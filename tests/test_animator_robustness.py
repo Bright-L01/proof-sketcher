@@ -16,7 +16,7 @@ import pytest
 
 from proof_sketcher.animator.animator import ProductionAnimator
 from proof_sketcher.animator.fallback import FallbackAnimator, StaticAnimationGenerator
-from proof_sketcher.animator.manim_mcp_enhanced import EnhancedManimMCPClient
+from proof_sketcher.animator.manim_mcp import ManimMCPClient
 from proof_sketcher.animator.mock_mcp import MockMCPServer, MockMCPTransport
 from proof_sketcher.animator.models import (
     AnimationConfig,
@@ -612,7 +612,7 @@ class TestEnhancedMCPClient:
     @pytest.mark.asyncio
     async def test_mcp_client_mock_mode(self):
         """Test MCP client in mock mode."""
-        client = EnhancedManimMCPClient(use_mock=True)
+        client = ManimMCPClient(use_mock=True)
 
         # Connect should work
         success = await client.connect()
@@ -630,7 +630,7 @@ class TestEnhancedMCPClient:
     @pytest.mark.asyncio
     async def test_circuit_breaker_reset(self):
         """Test circuit breaker timeout and reset."""
-        client = EnhancedManimMCPClient(use_mock=True)
+        client = ManimMCPClient(use_mock=True)
 
         # Simulate circuit open
         client.failure_count = 3
@@ -646,7 +646,7 @@ class TestEnhancedMCPClient:
     @pytest.mark.asyncio
     async def test_async_context_manager_mcp(self):
         """Test MCP client async context manager."""
-        async with EnhancedManimMCPClient(use_mock=True) as client:
+        async with ManimMCPClient(use_mock=True) as client:
             assert client.is_connected
 
         # Should be disconnected after context

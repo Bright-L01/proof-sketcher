@@ -11,7 +11,7 @@ import pytest
 
 from proof_sketcher.animator.animator import ProductionAnimator
 from proof_sketcher.animator.fallback import FallbackAnimator, StaticAnimationGenerator
-from proof_sketcher.animator.manim_mcp_enhanced import EnhancedManimMCPClient
+from proof_sketcher.animator.manim_mcp import ManimMCPClient
 from proof_sketcher.animator.mock_mcp import MockMCPServer, MockMCPTransport
 from proof_sketcher.animator.models import (
     AnimationConfig,
@@ -104,7 +104,7 @@ class TestProductionAnimator:
         assert animator.animation_config == animation_config
         assert animator.manim_config == manim_config
         assert animator.use_mock is True
-        assert isinstance(animator.mcp_client, EnhancedManimMCPClient)
+        assert isinstance(animator.mcp_client, ManimMCPClient)
         assert isinstance(animator.static_generator, StaticAnimationGenerator)
         assert isinstance(animator.fallback_animator, FallbackAnimator)
 
@@ -513,13 +513,13 @@ class TestProductionAnimator:
         assert isinstance(animator, ProductionAnimator)
 
 
-class TestEnhancedManimMCPClient:
-    """Test suite for EnhancedManimMCPClient."""
+class TestManimMCPClient:
+    """Test suite for ManimMCPClient."""
 
     @pytest.mark.asyncio
     async def test_mock_connection(self):
         """Test connection with mock server."""
-        client = EnhancedManimMCPClient(use_mock=True)
+        client = ManimMCPClient(use_mock=True)
 
         success = await client.connect()
         assert success is True
@@ -531,7 +531,7 @@ class TestEnhancedManimMCPClient:
     @pytest.mark.asyncio
     async def test_health_check_mock(self):
         """Test health check with mock server."""
-        client = EnhancedManimMCPClient(use_mock=True)
+        client = ManimMCPClient(use_mock=True)
 
         await client.connect()
         health = await client.health_check()
@@ -542,7 +542,7 @@ class TestEnhancedManimMCPClient:
     @pytest.mark.asyncio
     async def test_render_animation_mock(self, sample_proof_sketch):
         """Test animation rendering with mock server."""
-        client = EnhancedManimMCPClient(use_mock=True)
+        client = ManimMCPClient(use_mock=True)
 
         await client.connect()
 
@@ -560,7 +560,7 @@ class TestEnhancedManimMCPClient:
     @pytest.mark.asyncio
     async def test_circuit_breaker(self):
         """Test circuit breaker functionality."""
-        client = EnhancedManimMCPClient(use_mock=True)
+        client = ManimMCPClient(use_mock=True)
 
         # Simulate failures to trigger circuit breaker
         client.failure_count = 3
@@ -579,7 +579,7 @@ class TestEnhancedManimMCPClient:
     @pytest.mark.asyncio
     async def test_async_context_manager(self):
         """Test async context manager for MCP client."""
-        async with EnhancedManimMCPClient(use_mock=True) as client:
+        async with ManimMCPClient(use_mock=True) as client:
             assert client.is_connected is True
 
         assert client.is_connected is False

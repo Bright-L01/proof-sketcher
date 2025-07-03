@@ -8,12 +8,11 @@ Features:
 - Custom filter registry
 """
 
-import hashlib
 import logging
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
 
 from jinja2 import Environment, FileSystemLoader, Template, TemplateNotFound, meta
 

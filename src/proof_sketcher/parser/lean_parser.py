@@ -17,6 +17,7 @@ from ..core.exceptions import (
 from ..core.interfaces import IParser
 from .config import ParserConfig
 from .models import FileMetadata, ParseError, ParseResult, TheoremInfo
+from .enhanced_parser import EnhancedLeanParser
 
 
 class LeanParser(IParser):
@@ -31,6 +32,7 @@ class LeanParser(IParser):
         self.config = config or ParserConfig.default()
         self.logger = logging.getLogger(__name__)
         self.extractor_path = Path(__file__).parent / "ExtractTheorem.lean"
+        self.enhanced_parser = EnhancedLeanParser()
 
         # Validate configuration
         config_errors = self.config.validate()
@@ -78,20 +80,25 @@ class LeanParser(IParser):
                 lake_errors = self._setup_lake_project(file_path)
                 lake_setup_errors.extend(lake_errors)
 
-            # Extract theorems using basic parsing first (for theorem names)
-            basic_theorems = self._extract_theorems_basic(content)
+            # Extract theorems using enhanced parser first
+            enhanced_declarations = self.enhanced_parser.parse_content_enhanced(content)
+            enhanced_theorems = self.enhanced_parser.get_theorems_for_proof_sketcher(enhanced_declarations)
+            
+            # Fall back to basic parsing if enhanced parsing fails or returns no results
+            basic_theorems = []
+            if not enhanced_theorems:
+                basic_theorems = self._extract_theorems_basic(content)
 
-            # Enhance with Lean extractor if available
-            enhanced_theorems = []
+            # Enhance with Lean extractor if available and we have theorems
             extraction_errors = []
-
-            if self._can_use_lean_extractor():
-                enhanced_theorems, extraction_errors = (
-                    self._extract_all_theorems_with_lean(file_path, basic_theorems)
+            final_theorems = enhanced_theorems or basic_theorems
+            
+            if final_theorems and self._can_use_lean_extractor():
+                lean_enhanced_theorems, extraction_errors = (
+                    self._extract_all_theorems_with_lean(file_path, final_theorems)
                 )
-
-            # Use enhanced results if available, otherwise fall back
-            final_theorems = enhanced_theorems if enhanced_theorems else basic_theorems
+                if lean_enhanced_theorems:
+                    final_theorems = lean_enhanced_theorems
 
             # Combine all errors
             all_errors = lake_setup_errors + extraction_errors
@@ -668,3 +675,55 @@ class LeanParser(IParser):
         except (subprocess.SubprocessError, FileNotFoundError):
             pass
         return None
+    
+    def parse_file_enhanced(self, file_path: Path) -> dict:
+        """Parse a Lean file and extract all language constructs using enhanced parser.
+        
+        Returns:
+            Dictionary mapping construct types to lists of declarations
+        """
+        try:
+            return self.enhanced_parser.parse_file_enhanced(file_path)
+        except Exception as e:
+            self.logger.error(f"Enhanced parsing failed for {file_path}: {e}")
+            return {}
+    
+    def get_supported_constructs(self) -> List[str]:
+        """Get list of supported Lean 4 constructs.
+        
+        Returns:
+            List of supported construct names
+        """
+        from .enhanced_parser import LeanConstruct
+        return [construct.value for construct in LeanConstruct]
+    
+    def get_parsing_statistics(self, file_path: Path) -> dict:
+        """Get detailed parsing statistics for a file.
+        
+        Returns:
+            Dictionary with parsing statistics and construct counts
+        """
+        try:
+            declarations = self.parse_file_enhanced(file_path)
+            
+            stats = {
+                "total_constructs": 0,
+                "construct_counts": {},
+                "parsing_method": "enhanced"
+            }
+            
+            for construct_type, construct_list in declarations.items():
+                count = len(construct_list)
+                stats["construct_counts"][construct_type] = count
+                stats["total_constructs"] += count
+            
+            # Also get basic theorem count for comparison
+            basic_result = self.parse_file(file_path)
+            stats["theorem_count_basic"] = len(basic_result.theorems)
+            stats["theorem_count_enhanced"] = stats["construct_counts"].get("theorem", 0) + stats["construct_counts"].get("lemma", 0)
+            
+            return stats
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get parsing statistics for {file_path}: {e}")
+            return {"error": str(e)}

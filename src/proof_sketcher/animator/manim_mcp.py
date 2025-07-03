@@ -1,23 +1,19 @@
 """Manim MCP server integration for animation generation."""
 
 import asyncio
-import json
 import logging
-import random
 import subprocess
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
-from urllib.parse import urljoin
+from typing import AsyncIterator, List, Optional
 
 import aiohttp
 import tenacity
 
-from ..core.exceptions import AnimatorError, AnimationTimeoutError
-from ..generator.models import ProofSketch
-from .mock_mcp import MockMCPTransport, MockMCPServer
-from .models import AnimationRequest, AnimationResponse, AnimationScene, AnimationStyle, ManimConfig, AnimationQuality
+from ..core.exceptions import AnimationTimeoutError
+from .mock_mcp import MockMCPTransport
+from .models import AnimationRequest, AnimationResponse, AnimationScene, ManimConfig
 
 
 class ManimMCPClient:

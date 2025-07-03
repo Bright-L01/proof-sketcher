@@ -208,3 +208,163 @@ class InputValidationError(ValidationError):
     """Raised when input validation fails."""
 
     pass
+
+
+# Batch Processing Exceptions
+class BatchProcessingError(ProofSketcherError):
+    """Base exception for batch processing errors."""
+
+    pass
+
+
+class BatchFileError(BatchProcessingError):
+    """Raised when individual file processing fails in batch mode."""
+
+    pass
+
+
+# Resource Management Exceptions
+class ResourceError(ProofSketcherError):
+    """Base exception for resource-related errors."""
+
+    pass
+
+
+class DiskSpaceError(ResourceError):
+    """Raised when disk space is insufficient."""
+
+    def __init__(
+        self,
+        message: str,
+        required_space: Optional[int] = None,
+        available_space: Optional[int] = None,
+        details: Optional[Dict[str, Any]] = None,
+        error_code: Optional[str] = None,
+    ):
+        """Initialize disk space error.
+        
+        Args:
+            message: Error message
+            required_space: Required space in bytes
+            available_space: Available space in bytes
+            details: Additional error context
+            error_code: Optional error code
+        """
+        super().__init__(message, details, error_code)
+        self.required_space = required_space
+        self.available_space = available_space
+
+
+class MemoryError(ResourceError):
+    """Raised when memory usage exceeds limits."""
+
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None,
+        details: Optional[Dict[str, Any]] = None,
+        error_code: Optional[str] = None,
+    ):
+        """Initialize memory error.
+        
+        Args:
+            message: Error message
+            context: Memory usage context
+            details: Additional error context
+            error_code: Optional error code
+        """
+        super().__init__(message, details, error_code)
+        self.context = context or {}
+
+
+class NetworkError(ResourceError):
+    """Raised when network operations fail."""
+
+    def __init__(
+        self,
+        message: str,
+        operation: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
+        error_code: Optional[str] = None,
+    ):
+        """Initialize network error.
+        
+        Args:
+            message: Error message
+            operation: The network operation that failed
+            details: Additional error context
+            error_code: Optional error code
+        """
+        super().__init__(message, details, error_code)
+        self.operation = operation
+
+
+class ErrorHandler:
+    """Simple error handler for managing and logging errors."""
+
+    def __init__(self, auto_recover: bool = True):
+        """Initialize error handler.
+        
+        Args:
+            auto_recover: Whether to attempt automatic recovery
+        """
+        self.auto_recover = auto_recover
+        self.logger = self._setup_logger()
+
+    def _setup_logger(self):
+        """Set up logger for error handling."""
+        import logging
+        logger = logging.getLogger(f"{__name__}.ErrorHandler")
+        return logger
+
+    def handle(self, error: Exception, context: Optional[Dict[str, Any]] = None) -> Optional[Any]:
+        """Handle an error with optional context.
+        
+        Args:
+            error: The exception to handle
+            context: Additional context for error handling
+            
+        Returns:
+            None or recovery result if auto_recover is enabled
+        """
+        if isinstance(error, ProofSketcherError):
+            self.logger.error(f"ProofSketcherError: {error}")
+            if hasattr(error, 'details') and error.details:
+                self.logger.debug(f"Error details: {error.details}")
+        else:
+            self.logger.error(f"Unexpected error: {error}")
+        
+        if context:
+            self.logger.debug(f"Error context: {context}")
+        
+        return None
+
+
+# Alias for backward compatibility with generator.offline
+GenerationError = GeneratorError
+
+
+def handle_error(
+    error: Exception,
+    context: Optional[Dict[str, Any]] = None,
+    auto_recover: bool = True
+) -> Optional[Any]:
+    """Simple error handler for backward compatibility.
+    
+    Args:
+        error: The exception to handle
+        context: Additional context (unused in simple implementation)
+        auto_recover: Whether to attempt recovery (unused in simple implementation)
+        
+    Returns:
+        None (simple implementation just logs the error)
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    if isinstance(error, ProofSketcherError):
+        logger.error(f"ProofSketcherError: {error}")
+    else:
+        logger.error(f"Unexpected error: {error}")
+    
+    return None
