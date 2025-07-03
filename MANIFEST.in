@@ -7,15 +7,15 @@ include pyproject.toml
 # Include Lean extractor
 include src/proof_sketcher/parser/*.lean
 
-# Include templates
-recursive-include src/proof_sketcher/templates *.jinja2 *.html *.css *.js
+# Templates are now included via package-data in pyproject.toml
 
 # Include examples
-recursive-include examples *.lean *.md
+recursive-include examples *.lean *.md *.py
 
-# Include configuration examples
-include .proof-sketcher.yaml.example
-include .env.example
+# Include documentation
+include CHANGELOG.md
+include CONTRIBUTING.md
+include SECURITY.md
 
 # Exclude development files
 exclude .pre-commit-config.yaml

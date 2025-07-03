@@ -6,13 +6,13 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
 from ..core.exceptions import AnimatorError
 from ..generator.models import ProofSketch, ProofStep
-from .models import AnimationResponse, AnimationStyle, AnimationQuality
+from .models import AnimationStyle, AnimationQuality
 
 
 class StaticAnimationGenerator:

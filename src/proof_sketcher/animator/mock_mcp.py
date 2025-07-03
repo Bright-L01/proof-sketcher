@@ -1,7 +1,6 @@
 """Mock MCP server for testing without real Manim."""
 
 import asyncio
-import json
 import logging
 import random
 import tempfile

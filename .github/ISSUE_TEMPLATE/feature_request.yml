@@ -1,0 +1,131 @@
+name: 🚀 Feature Request
+description: Suggest an idea for this project
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to suggest a feature! 
+        
+        Please search existing issues and the roadmap before creating a new request.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-flight checklist
+      options:
+        - label: I have read the [Contributing Guidelines](https://github.com/Bright-L01/proof-sketcher/blob/main/CONTRIBUTING.md)
+          required: true
+        - label: I have searched existing issues and this is not a duplicate
+          required: true
+        - label: This feature would benefit the broader Lean community
+          required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Feature type
+      description: What type of feature is this?
+      options:
+        - New export format
+        - Parser enhancement (new Lean construct support)
+        - Animation improvement
+        - CLI enhancement
+        - Performance optimization
+        - Integration (new tool/service)
+        - Documentation improvement
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem description
+      description: Is your feature request related to a problem? Please describe.
+      placeholder: I'm always frustrated when [...]
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the solution you'd like
+      placeholder: A clear and concise description of what you want to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe any alternative solutions or features you've considered
+      placeholder: What other approaches have you thought about?
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: Describe your specific use case and how this feature would help
+      placeholder: |
+        I'm working on [project/research] and this feature would help by...
+    validations:
+      required: true
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Example usage
+      description: If applicable, show how you would use this feature
+      placeholder: |
+        ```bash
+        proof-sketcher prove file.lean --new-feature
+        ```
+        or provide Lean code examples
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Critical (blocking my work)
+        - High (would significantly improve my workflow)
+        - Medium (nice to have)
+        - Low (minor improvement)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Estimated complexity
+      description: How complex do you think this feature would be to implement?
+      options:
+        - Simple (small change/addition)
+        - Medium (moderate implementation effort)
+        - Complex (significant development work)
+        - Unknown/Not sure
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add any other context, screenshots, or examples about the feature request here.
+      placeholder: Links to similar features in other tools, research papers, etc.
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Would you like to contribute this feature?
+      options:
+        - label: I'm willing to contribute this feature
+          required: false
+        - label: I need guidance on how to implement this
+          required: false
+        - label: I can help with testing once implemented
+          required: false

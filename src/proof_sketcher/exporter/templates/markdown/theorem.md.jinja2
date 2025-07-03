@@ -1,0 +1,66 @@
+# {{ theorem_name }}
+
+{{ navigation }}
+
+---
+
+## Statement
+
+```lean
+{{ theorem_statement }}
+```
+
+## Explanation
+
+{{ explanation }}
+
+{% if animation_path %}
+## Visual Proof
+
+[![Animation]({{ animation_path }})]({{ animation_path }})
+
+{% endif %}
+
+## Proof Steps
+
+{% for step in proof_steps %}
+### Step {{ loop.index }}: {{ step.description }}
+
+{% if step.mathematical_content %}
+$${{ step.mathematical_content }}$$
+{% endif %}
+
+{% if step.reasoning %}
+**Reasoning:** {{ step.reasoning }}
+{% endif %}
+
+{% if step.prerequisites %}
+**Prerequisites:**
+{% for prereq in step.prerequisites %}
+- {{ prereq }}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+
+{% if key_insights %}
+## Key Insights
+
+{% for insight in key_insights %}
+- {{ insight }}
+{% endfor %}
+{% endif %}
+
+{% if dependencies %}
+## Dependencies
+
+{% for dep in dependencies %}
+- [{{ dep.name }}]({{ dep.url }})
+{% endfor %}
+{% endif %}
+
+---
+
+{% if timestamp %}
+_Generated on {{ timestamp }}_
+{% endif %}

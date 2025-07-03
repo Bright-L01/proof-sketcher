@@ -16,6 +16,7 @@ import toml
 import yaml
 from pydantic import BaseModel, Field
 
+from ..core.exceptions import ConfigError, ConfigNotFoundError, ConfigValidationError
 from ..animator.models import AnimationConfig, ManimConfig
 from ..generator.models import GenerationConfig
 from ..parser.config import ParserConfig
@@ -164,8 +165,14 @@ class ProofSketcherConfig:
 
             if data:
                 self._apply_config_dict(data)
+        except FileNotFoundError:
+            raise ConfigNotFoundError(f"Config file not found: {path}")
+        except yaml.YAMLError as e:
+            raise ConfigValidationError(f"Invalid YAML in {path}: {e}")
+        except (OSError, PermissionError) as e:
+            raise ConfigError(f"Failed to read config file {path}: {e}")
         except Exception as e:
-            print(f"Warning: Failed to load config from {path}: {e}")
+            raise ConfigError(f"Unexpected error loading config from {path}: {e}")
 
     def _load_from_pyproject(self, path: Path) -> None:
         """Load configuration from pyproject.toml."""
@@ -175,8 +182,14 @@ class ProofSketcherConfig:
 
             if "tool" in data and "proof-sketcher" in data["tool"]:
                 self._apply_config_dict(data["tool"]["proof-sketcher"])
+        except FileNotFoundError:
+            raise ConfigNotFoundError(f"Config file not found: {path}")
+        except toml.TomlDecodeError as e:
+            raise ConfigValidationError(f"Invalid TOML in {path}: {e}")
+        except (OSError, PermissionError) as e:
+            raise ConfigError(f"Failed to read config file {path}: {e}")
         except Exception as e:
-            print(f"Warning: Failed to load config from {path}: {e}")
+            raise ConfigError(f"Unexpected error loading config from {path}: {e}")
 
     def _load_from_toml(self, path: Path) -> None:
         """Load configuration from TOML file."""
@@ -186,8 +199,14 @@ class ProofSketcherConfig:
 
             if data:
                 self._apply_config_dict(data)
+        except FileNotFoundError:
+            raise ConfigNotFoundError(f"Config file not found: {path}")
+        except toml.TomlDecodeError as e:
+            raise ConfigValidationError(f"Invalid TOML in {path}: {e}")
+        except (OSError, PermissionError) as e:
+            raise ConfigError(f"Failed to read config file {path}: {e}")
         except Exception as e:
-            print(f"Warning: Failed to load config from {path}: {e}")
+            raise ConfigError(f"Unexpected error loading config from {path}: {e}")
 
     def _apply_config_dict(self, data: Dict[str, Any]) -> None:
         """Apply configuration from dictionary."""
@@ -251,8 +270,10 @@ class ProofSketcherConfig:
                     component = parts[0]
                     setting = "_".join(parts[1:])
                     self._set_component_value(component, setting, value)
+            except ConfigValidationError as e:
+                print(f"Warning: Invalid env override {key}={value}: {e}")
             except Exception as e:
-                print(f"Warning: Failed to apply env override {key}={value}: {e}")
+                print(f"Warning: Failed to apply env override {key}={value}: {type(e).__name__}: {e}")
 
     def _set_value(self, key: str, value: str) -> None:
         """Set a global configuration value."""
@@ -300,17 +321,20 @@ class ProofSketcherConfig:
         if not self.cache_dir.exists():
             try:
                 self.cache_dir.mkdir(parents=True, exist_ok=True)
-            except Exception as e:
+            except (OSError, PermissionError) as e:
                 errors.append(f"Cannot create cache directory: {e}")
 
         if not self.data_dir.exists():
             try:
                 self.data_dir.mkdir(parents=True, exist_ok=True)
-            except Exception as e:
+            except (OSError, PermissionError) as e:
                 errors.append(f"Cannot create data directory: {e}")
 
         if errors:
-            raise ValueError("Configuration validation failed:\n" + "\n".join(errors))
+            raise ConfigValidationError(
+                "Configuration validation failed",
+                details={"errors": errors}
+            )
 
     def save(self, path: Path) -> None:
         """Save configuration to file.

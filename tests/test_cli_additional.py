@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch, AsyncMock
 import pytest
 from click.testing import CliRunner
 
-from proof_sketcher.cli import cli, setup_logging, main
+from proof_sketcher.cli import cli, main
 
 
 class TestAdditionalCLICommands:

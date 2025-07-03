@@ -12,6 +12,8 @@ from typing import Any, Dict, Generic, List, Optional, TypeVar
 
 from pydantic import BaseModel, Field, field_validator
 
+from .exceptions import ValidationError
+
 T = TypeVar("T")
 
 
@@ -211,7 +213,10 @@ class BatchProcessingRequest(BaseModel):
     def validate_max_workers(cls, v: Optional[int]) -> Optional[int]:
         """Validate max_workers is positive."""
         if v is not None and v <= 0:
-            raise ValueError("max_workers must be positive")
+            raise ValidationError(
+                "max_workers must be positive",
+                details={"value": v, "constraint": "positive integer"}
+            )
         return v
 
 

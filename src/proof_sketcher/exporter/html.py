@@ -4,11 +4,10 @@ import gzip
 import hashlib
 import json
 import logging
-import mimetypes
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
 from ..generator.models import ProofSketch
 from .base import BaseExporterImpl
