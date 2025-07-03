@@ -1,0 +1,12 @@
+exclude_dirs:
+  - tests
+  - venv
+  - .venv
+  - build
+  - dist
+  - .git
+  - __pycache__
+
+skips:
+  - B101  # assert_used
+  - B601  # paramiko_calls

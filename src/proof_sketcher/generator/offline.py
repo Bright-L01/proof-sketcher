@@ -12,9 +12,9 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Any
+from typing import Dict, List, Optional, Any
 
-from ..core.errors import GenerationError, handle_error
+from ..core.exceptions import handle_error
 from ..parser.models import TheoremInfo
 from .models import ProofSketch, ProofStep, GenerationConfig, GenerationRequest, GenerationResponse
 

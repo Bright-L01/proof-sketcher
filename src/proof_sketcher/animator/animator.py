@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import psutil
 import time
 from pathlib import Path
 from typing import Callable, List, Optional
@@ -11,7 +10,7 @@ from ..core.exceptions import AnimatorError, AnimationTimeoutError
 from ..generator.models import ProofSketch
 from ..parser.models import TheoremInfo
 from .fallback import FallbackAnimator, StaticAnimationGenerator
-from .manim_mcp_enhanced import EnhancedManimMCPClient
+from .manim_mcp import ManimMCPClient
 from .models import AnimationConfig, AnimationRequest, AnimationResponse, AnimationStyle, ManimConfig, AnimationQuality
 
 
@@ -40,7 +39,7 @@ class ProductionAnimator:
         self.logger = logging.getLogger(__name__)
 
         # Initialize components
-        self.mcp_client = EnhancedManimMCPClient(
+        self.mcp_client = ManimMCPClient(
             config=self.manim_config,
             use_mock=use_mock
         )

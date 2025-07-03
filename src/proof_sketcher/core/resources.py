@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Callable, Any, Generator
 from dataclasses import dataclass
 
-from .errors import ResourceError, DiskSpaceError, MemoryError, handle_error
+from .exceptions import ResourceError, DiskSpaceError, MemoryError, handle_error
 
 
 @dataclass

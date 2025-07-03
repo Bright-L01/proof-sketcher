@@ -20,7 +20,7 @@ from unittest.mock import Mock, patch, MagicMock
 import pytest
 import psutil
 
-from src.proof_sketcher.core.errors import (
+from src.proof_sketcher.core.exceptions import (
     NetworkError, DiskSpaceError, MemoryError, ResourceError,
     ErrorHandler, handle_error
 )

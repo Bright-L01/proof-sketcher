@@ -34,5 +34,45 @@ repos:
     rev: v1.8.0
     hooks:
       - id: mypy
-        additional_dependencies: [types-all]
-        args: [--ignore-missing-imports]
+        additional_dependencies: 
+          - types-PyYAML
+          - types-toml
+          - types-aiofiles
+        args: [--config-file=pyproject.toml]
+
+  # Security scanning
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: [-c, .bandit, -r, src/]
+        exclude: tests/
+
+  # Dependency vulnerability scanning
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.2
+    hooks:
+      - id: python-safety-dependencies-check
+
+  # Documentation checks
+  - repo: https://github.com/pycqa/doc8
+    rev: v1.1.1
+    hooks:
+      - id: doc8
+        args: [--max-line-length=88]
+
+# Configuration
+default_language_version:
+  python: python3.11
+
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

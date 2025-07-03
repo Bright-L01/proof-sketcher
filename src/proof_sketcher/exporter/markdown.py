@@ -12,7 +12,7 @@ Features:
 import logging
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from ..generator.models import ProofSketch
 from .base import BaseExporterImpl

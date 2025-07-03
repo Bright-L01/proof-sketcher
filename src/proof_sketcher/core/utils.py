@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union
 
+from .exceptions import ProofSketcherError
+
 T = TypeVar("T")
 
 
@@ -231,7 +233,11 @@ def retry_with_backoff(
     if last_exception is not None:
         raise last_exception
     else:
-        raise RuntimeError("Retry failed with no recorded exception")
+        raise ProofSketcherError(
+            "Retry failed with no recorded exception",
+            details={"max_retries": max_retries, "delay": delay},
+            error_code="RETRY_FAILED"
+        )
 
 
 def get_timestamp() -> str:
