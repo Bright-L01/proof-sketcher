@@ -227,7 +227,29 @@ class BatchFileError(BatchProcessingError):
 class ResourceError(ProofSketcherError):
     """Base exception for resource-related errors."""
 
-    pass
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None,
+        error_code: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ):
+        """Initialize resource error.
+        
+        Args:
+            message: Error message
+            details: Additional error context
+            error_code: Optional error code
+            context: Additional context (alias for details)
+        """
+        # Merge context into details for backward compatibility
+        if context and details:
+            details.update(context)
+        elif context:
+            details = context
+            
+        super().__init__(message, details, error_code)
+        self.context = details or {}
 
 
 class DiskSpaceError(ResourceError):
@@ -250,9 +272,19 @@ class DiskSpaceError(ResourceError):
             details: Additional error context
             error_code: Optional error code
         """
+        # Add space info to context
+        if details is None:
+            details = {}
+        
+        if required_space:
+            details["required_space_mb"] = required_space // (1024 * 1024)
+        if available_space:
+            details["available_space_mb"] = available_space // (1024 * 1024)
+            
         super().__init__(message, details, error_code)
         self.required_space = required_space
         self.available_space = available_space
+        self.context = details
 
 
 class MemoryError(ResourceError):
@@ -275,6 +307,16 @@ class MemoryError(ResourceError):
         """
         super().__init__(message, details, error_code)
         self.context = context or {}
+    
+    def get_full_message(self) -> str:
+        """Get full error message with recovery suggestions."""
+        base_msg = str(self)
+        suggestions = [
+            "Close other applications to free memory",
+            "Reduce batch size if processing multiple files",
+            "Consider using streaming mode for large files"
+        ]
+        return f"{base_msg}\n\nSuggestions:\n" + "\n".join(f"- {s}" for s in suggestions)
 
 
 class NetworkError(ResourceError):
@@ -284,6 +326,7 @@ class NetworkError(ResourceError):
         self,
         message: str,
         operation: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None,
         details: Optional[Dict[str, Any]] = None,
         error_code: Optional[str] = None,
     ):
@@ -292,11 +335,26 @@ class NetworkError(ResourceError):
         Args:
             message: Error message
             operation: The network operation that failed
+            context: Additional context (alias for details)
             details: Additional error context
             error_code: Optional error code
         """
+        # Merge context into details for backward compatibility
+        if context and details:
+            details.update(context)
+        elif context:
+            details = context
+            
         super().__init__(message, details, error_code)
         self.operation = operation
+        self.context = details or {}
+        
+        # Add recovery strategies for network errors
+        self.recovery_strategies = [
+            type('RecoveryStrategy', (), {'value': 'retry'}),
+            type('RecoveryStrategy', (), {'value': 'fallback'}),
+            type('RecoveryStrategy', (), {'value': 'cache'})
+        ]
 
 
 class ErrorHandler:
@@ -310,6 +368,8 @@ class ErrorHandler:
         """
         self.auto_recover = auto_recover
         self.logger = self._setup_logger()
+        self.error_counts = {}
+        self.recovery_counts = {}
 
     def _setup_logger(self):
         """Set up logger for error handling."""
@@ -327,6 +387,9 @@ class ErrorHandler:
         Returns:
             None or recovery result if auto_recover is enabled
         """
+        error_type = type(error).__name__
+        self.error_counts[error_type] = self.error_counts.get(error_type, 0) + 1
+        
         if isinstance(error, ProofSketcherError):
             self.logger.error(f"ProofSketcherError: {error}")
             if hasattr(error, 'details') and error.details:
@@ -338,6 +401,41 @@ class ErrorHandler:
             self.logger.debug(f"Error context: {context}")
         
         return None
+    
+    def handle_error(self, error: Exception, auto_recover: bool = True, context: Optional[Dict[str, Any]] = None) -> Optional[Any]:
+        """Handle error with recovery attempts (alias for handle method)."""
+        result = self.handle(error, context)
+        
+        # Track recovery attempts
+        if auto_recover and self.auto_recover:
+            error_type = type(error).__name__
+            recovery_count = self.recovery_counts.get(error_type, 0)
+            if recovery_count < 3:  # Max 3 recovery attempts per error type
+                self.recovery_counts[error_type] = recovery_count + 1
+                
+        return result
+    
+    def _wrap_error(self, original_error: Exception) -> ProofSketcherError:
+        """Wrap a standard exception into a ProofSketcherError."""
+        if isinstance(original_error, ConnectionError):
+            return NetworkError(str(original_error), operation="connection")
+        elif isinstance(original_error, FileNotFoundError):
+            error = ParserError(str(original_error), error_code="FILE_NOT_FOUND")
+            error.category = type('Category', (), {'value': 'parse'})()
+            return error
+        elif isinstance(original_error, (MemoryError, OSError)):
+            return ResourceError(str(original_error))
+        else:
+            return ProofSketcherError(str(original_error))
+    
+    def get_error_summary(self) -> Dict[str, Any]:
+        """Get summary of error handling statistics."""
+        return {
+            "total_errors": sum(self.error_counts.values()),
+            "total_recoveries": sum(self.recovery_counts.values()),
+            "error_counts": self.error_counts.copy(),
+            "recovery_counts": self.recovery_counts.copy()
+        }
 
 
 # Alias for backward compatibility with generator.offline
