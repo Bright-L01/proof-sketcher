@@ -312,7 +312,22 @@ class TestCorruptedCache:
         
         # Create good cache file
         good_key = "good_cache"
-        cache_manager.set(good_key, {"data": "good"}, ttl_hours=1)
+        # Create a mock GenerationResponse to use with put()
+        from src.proof_sketcher.generator.models import GenerationResponse, GenerationRequest, GenerationType
+        from src.proof_sketcher.config.config import GenerationConfig
+        
+        config = GenerationConfig()
+        request = GenerationRequest(
+            theorem_name="test",
+            generation_type=GenerationType.PROOF_SKETCH,
+            config=config
+        )
+        response = GenerationResponse(
+            request=request,
+            content={"data": "good"},
+            metadata={}
+        )
+        cache_manager.put(good_key, response, ttl_hours=1)
         
         # Create corrupted cache file
         cache_file = temp_dir / "generation" / "bad.json"
