@@ -40,6 +40,9 @@ dependencies = [
     "psutil>=5.9.0,<6.0",
     "Pillow>=11.3.0,<12.0",  # Security fix: PYSEC-2025-61
     "matplotlib>=3.7.0,<4.0",
+    "h11>=0.16.0,<1.0",  # Security fix: GHSA-vqfr-h8mv-ghfj
+    "httpcore>=1.0.7,<2.0",  # Security fix: GHSA-r5v8-xrfc-8v8j
+    "urllib3>=2.5.0,<3.0",  # Security fix: GHSA-48p4-8xcf-vxj5, GHSA-pq67-6m6q-mj2v
 ]
 
 [project.optional-dependencies]
