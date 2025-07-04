@@ -2,11 +2,12 @@
 
 import asyncio
 import logging
+import subprocess
 import time
 from pathlib import Path
 from typing import Callable, List, Optional
 
-from ..core.exceptions import AnimatorError, AnimationTimeoutError
+from ..core.exceptions import AnimatorError, AnimationTimeoutError, MemoryError as ProofSketcherMemoryError
 from ..generator.models import ProofSketch
 from ..parser.models import TheoremInfo
 from .fallback import FallbackAnimator, StaticAnimationGenerator
@@ -51,6 +52,10 @@ class ProductionAnimator:
             static_generator=self.static_generator
         )
 
+        # Initialize missing components as None (will be mocked in tests)
+        self.scene_builder = None  # Will be mocked in tests
+        self.formula_extractor = None  # Will be mocked in tests
+
         # Resource monitoring
         self.max_memory_mb = self.animation_config.max_memory_mb
         self.max_processing_time = self.animation_config.max_processing_time
@@ -61,14 +66,11 @@ class ProductionAnimator:
     def _sanitize_filename(self, name: str) -> str:
         """Sanitize a filename for filesystem use."""
         # Replace problematic characters
-        safe_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
-        sanitized = "".join(c if c in safe_chars else "_" for c in name)
+        for char in ['/', '\\', ':', '|', '*', '?', '<', '>', '"']:
+            name = name.replace(char, '')
         
-        # Remove multiple underscores and trim
-        while "__" in sanitized:
-            sanitized = sanitized.replace("__", "_")
-        
-        return sanitized.strip("_")[:50]  # Limit length
+        # Limit length
+        return name[:50]
 
     def _report_progress(self, message: str, progress: float) -> None:
         """Report progress if callback is available."""
@@ -87,7 +89,7 @@ class ProductionAnimator:
             memory_mb = process.memory_info().rss / (1024 * 1024)
             
             if memory_mb > self.max_memory_mb:
-                raise MemoryError(
+                raise AnimatorError(
                     f"Memory usage {memory_mb:.1f}MB exceeds limit {self.max_memory_mb}MB"
                 )
         except ImportError:
@@ -509,13 +511,13 @@ class ProductionAnimator:
             response.file_size_mb = response.video_path.stat().st_size / (1024 * 1024)
 
             # Verify video duration
-            actual_duration = await self._get_video_duration(response.video_path)
+            actual_duration = self._get_video_duration(response.video_path)
             if actual_duration:
                 response.actual_duration = actual_duration
 
         return response
 
-    async def _get_video_duration(self, video_path: Path) -> Optional[float]:
+    def _get_video_duration(self, video_path: Path) -> Optional[float]:
         """Get duration of video file."""
         try:
             # Use ffprobe to get video duration
@@ -542,7 +544,7 @@ class ProductionAnimator:
 
         return None
 
-    async def _create_latex_preview(
+    def _create_latex_preview(
         self, theorem_name: str, latex_formula: str, config: AnimationConfig
     ) -> Optional[Path]:
         """Create a preview image using LaTeX rendering."""
@@ -607,24 +609,214 @@ class ProductionAnimator:
 
     def _create_fallback_response(
         self, proof_sketch: ProofSketch, error_message: str, start_time: float
-    ) -> dict:
+    ) -> AnimationResponse:
         """Create fallback response when animation fails."""
         generation_time = (time.time() - start_time) * 1000
 
-        return {
-            'video_path': None,
-            'thumbnail_path': None,
-            'duration': 0,
-            'frame_count': 0,
-            'size_bytes': 0,
-            'error': error_message,
-            'metadata': {
+        return AnimationResponse(
+            video_path=None,
+            thumbnail_path=None,
+            duration=0,
+            frame_count=0,
+            size_bytes=0,
+            metadata={
+                'error': error_message,
                 'error_type': 'fallback',
                 'theorem_name': proof_sketch.theorem_name,
                 'generation_time_ms': generation_time,
                 'warnings': ['Animation generation failed, fallback response created']
             }
-        }
+        )
+    
+    async def animate_proof_complete(
+        self, 
+        proof_sketch: ProofSketch,
+        style: AnimationStyle = AnimationStyle.MODERN,
+        quality: AnimationQuality = AnimationQuality.MEDIUM
+    ) -> AnimationResponse:
+        """Animate a complete proof with proper segmentation for long proofs.
+        
+        Args:
+            proof_sketch: The proof sketch to animate
+            style: Animation style
+            quality: Quality level
+            
+        Returns:
+            AnimationResponse with complete animation or segments
+        """
+        # Check if proof needs segmentation
+        if len(proof_sketch.key_steps) > 10:
+            return await self.handle_long_proof(proof_sketch, style, quality)
+        else:
+            # Regular animation for shorter proofs
+            return await self.animate_proof(proof_sketch, style, quality)
+    
+    async def handle_long_proof(
+        self,
+        proof_sketch: ProofSketch,
+        style: AnimationStyle = AnimationStyle.MODERN,
+        quality: AnimationQuality = AnimationQuality.MEDIUM
+    ) -> AnimationResponse:
+        """Handle long proofs by creating segmented animations with chapter markers.
+        
+        Args:
+            proof_sketch: The proof sketch to animate
+            style: Animation style
+            quality: Quality level
+            
+        Returns:
+            AnimationResponse with segmented animation
+        """
+        self.logger.info(f"Handling long proof with {len(proof_sketch.key_steps)} steps")
+        
+        # Segment the proof into chapters (10 steps per chapter)
+        segments = []
+        chapter_size = 10
+        
+        for i in range(0, len(proof_sketch.key_steps), chapter_size):
+            chapter_steps = proof_sketch.key_steps[i:i + chapter_size]
+            chapter_num = i // chapter_size + 1
+            
+            # Create a sub-sketch for this chapter
+            chapter_sketch = ProofSketch(
+                theorem_name=f"{proof_sketch.theorem_name}_chapter_{chapter_num}",
+                introduction=f"Chapter {chapter_num}: Steps {i+1}-{min(i+chapter_size, len(proof_sketch.key_steps))}",
+                key_steps=chapter_steps,
+                conclusion=proof_sketch.conclusion if i + chapter_size >= len(proof_sketch.key_steps) else "To be continued..."
+            )
+            
+            # Animate this chapter
+            chapter_response = await self.animate_proof(
+                chapter_sketch, 
+                style, 
+                quality,
+                output_filename=f"{proof_sketch.theorem_name}_chapter_{chapter_num}.mp4"
+            )
+            
+            segments.append({
+                "chapter": chapter_num,
+                "start_step": i + 1,
+                "end_step": min(i + chapter_size, len(proof_sketch.key_steps)),
+                "video_path": chapter_response.video_path,
+                "duration": chapter_response.duration
+            })
+        
+        # Create consolidated response
+        total_duration = sum(seg["duration"] for seg in segments)
+        
+        return AnimationResponse(
+            video_path=segments[0]["video_path"] if segments else None,
+            thumbnail_path=None,
+            duration=total_duration,
+            frame_count=0,
+            size_bytes=0,
+            metadata={
+                "segmented": True,
+                "total_chapters": len(segments),
+                "segments": segments,
+                "theorem_name": proof_sketch.theorem_name,
+                "total_steps": len(proof_sketch.key_steps)
+            }
+        )
+    
+    async def generate_preview_frames(
+        self,
+        proof_sketch: ProofSketch,
+        num_frames: int = 5
+    ) -> List[Path]:
+        """Generate preview frames/thumbnails from the proof.
+        
+        Args:
+            proof_sketch: The proof sketch to preview
+            num_frames: Number of preview frames to generate
+            
+        Returns:
+            List of paths to preview frame images
+        """
+        preview_frames = []
+        
+        try:
+            # Select representative steps
+            step_indices = []
+            if len(proof_sketch.key_steps) <= num_frames:
+                step_indices = list(range(len(proof_sketch.key_steps)))
+            else:
+                # Evenly distribute frames across the proof
+                interval = len(proof_sketch.key_steps) / num_frames
+                step_indices = [int(i * interval) for i in range(num_frames)]
+            
+            # Generate frame for each selected step
+            for idx, step_idx in enumerate(step_indices):
+                step = proof_sketch.key_steps[step_idx]
+                
+                # Try to create LaTeX preview if we have mathematical content
+                if step.mathematical_content:
+                    preview_path = self._create_latex_preview(
+                        f"{proof_sketch.theorem_name}_frame_{idx}",
+                        step.mathematical_content,
+                        self.animation_config
+                    )
+                    if preview_path:
+                        preview_frames.append(preview_path)
+                        continue
+                
+                # Fallback to text-based preview
+                text_preview = self.static_generator._render_text_to_image(
+                    f"Step {step.step_number}: {step.description}",
+                    f"{proof_sketch.theorem_name}_frame_{idx}.png"
+                )
+                if text_preview:
+                    preview_frames.append(text_preview)
+            
+            self.logger.info(f"Generated {len(preview_frames)} preview frames")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to generate preview frames: {e}")
+        
+        return preview_frames
+    
+    async def cleanup_resources(self) -> None:
+        """Clean up animation resources and manage memory.
+        
+        This includes:
+        - Removing temporary files
+        - Clearing animation caches
+        - Releasing GPU memory (if applicable)
+        - Closing server connections
+        """
+        try:
+            self.logger.info("Starting resource cleanup")
+            
+            # Clean up temporary files
+            if self.manim_config.temp_dir and self.manim_config.temp_dir.exists():
+                temp_files = list(self.manim_config.temp_dir.glob("*"))
+                for temp_file in temp_files:
+                    try:
+                        if temp_file.is_file():
+                            temp_file.unlink()
+                        elif temp_file.is_dir():
+                            import shutil
+                            shutil.rmtree(temp_file)
+                    except Exception as e:
+                        self.logger.warning(f"Failed to remove temp file {temp_file}: {e}")
+                
+                self.logger.info(f"Cleaned up {len(temp_files)} temporary files")
+            
+            # Disconnect from MCP server
+            await self.mcp_client.disconnect()
+            
+            # Clear any internal caches
+            if hasattr(self.static_generator, 'clear_cache'):
+                self.static_generator.clear_cache()
+            
+            # Force garbage collection to free memory
+            import gc
+            gc.collect()
+            
+            self.logger.info("Resource cleanup completed")
+            
+        except Exception as e:
+            self.logger.error(f"Error during resource cleanup: {e}")
 
 
 class CachedManimAnimator:

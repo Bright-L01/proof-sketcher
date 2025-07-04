@@ -30,10 +30,12 @@ class ManimMCPClient:
         self.logger = logging.getLogger(__name__)
         self.server_process: Optional[subprocess.Popen] = None
         self.session: Optional[aiohttp.ClientSession] = None
+        self.session_pool: Optional[aiohttp.ClientSession] = None
         self.active_connections = 0
         self._health_check_task: Optional[asyncio.Task] = None
         self._shutdown_event = asyncio.Event()
         self._request_id = 0
+        self._connected = False
         
         # Mock server for testing
         self.use_mock = use_mock
@@ -51,6 +53,28 @@ class ManimMCPClient:
         self.last_failure_time = 0
         self.circuit_open = False
         self.circuit_timeout = 60.0  # 1 minute
+    
+    def _increment_circuit_breaker(self) -> None:
+        """Increment circuit breaker failure count."""
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        
+        if self.failure_count >= 5:  # Open circuit after 5 failures
+            self.circuit_open = True
+            self.logger.warning("Circuit breaker opened due to repeated failures")
+    
+    def _is_circuit_open(self) -> bool:
+        """Check if circuit breaker is open."""
+        if not self.circuit_open:
+            return False
+            
+        # Check if timeout has passed
+        if time.time() - self.last_failure_time > self.circuit_timeout:
+            self.circuit_open = False
+            self.failure_count = 0
+            return False
+            
+        return True
 
     @tenacity.retry(
         wait=tenacity.wait_exponential(multiplier=1, min=1, max=10),
@@ -138,8 +162,8 @@ class ManimMCPClient:
         # In a real implementation, this would start the actual MCP server
         cmd = [
             "python", "-m", "manim_mcp_server",
-            "--host", self.config.host,
-            "--port", str(self.config.port)
+            "--host", self.config.server_host,
+            "--port", str(self.config.server_port)
         ]
         
         if self.config.temp_dir:
@@ -163,6 +187,82 @@ class ManimMCPClient:
             await asyncio.sleep(1.0)
         
         raise AnimationTimeoutError("Server failed to start within timeout")
+
+    async def connect(self) -> bool:
+        """Connect to the MCP server.
+        
+        Returns:
+            True if connection successful, False otherwise
+        """
+        if self._connected:
+            self.logger.debug("Already connected to MCP server")
+            return True
+            
+        try:
+            # Start server if needed
+            if not await self.start_server():
+                return False
+                
+            # Initialize session pool
+            if not self.session_pool:
+                self.session_pool = aiohttp.ClientSession(
+                    timeout=aiohttp.ClientTimeout(total=self.config.server_timeout)
+                )
+            
+            # Verify connection with health check
+            if await self.health_check():
+                self._connected = True
+                
+                # Start health check loop
+                if not self._health_check_task or self._health_check_task.done():
+                    self._health_check_task = asyncio.create_task(self._health_check_loop())
+                
+                self.logger.info("Successfully connected to MCP server")
+                return True
+            else:
+                self.logger.error("Failed to verify MCP server connection")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Failed to connect to MCP server: {e}")
+            return False
+    
+    async def disconnect(self) -> None:
+        """Disconnect from the MCP server and clean up resources."""
+        try:
+            # Stop health check task
+            if self._health_check_task and not self._health_check_task.done():
+                self._health_check_task.cancel()
+                try:
+                    await self._health_check_task
+                except asyncio.CancelledError:
+                    pass
+            
+            # Close session pool
+            if self.session_pool:
+                await self.session_pool.close()
+                self.session_pool = None
+            
+            # Stop server if we started it
+            if self.server_process:
+                self.logger.info("Stopping MCP server")
+                self.server_process.terminate()
+                try:
+                    self.server_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.server_process.kill()
+                    self.server_process.wait()
+                self.server_process = None
+            
+            # Disconnect mock transport
+            if self.use_mock and self.mock_transport:
+                await self.mock_transport.disconnect()
+            
+            self._connected = False
+            self.logger.info("Disconnected from MCP server")
+            
+        except Exception as e:
+            self.logger.error(f"Error during disconnect: {e}")
 
     async def _health_check_loop(self) -> None:
         """Background task to monitor server health."""
@@ -305,14 +405,42 @@ class ManimMCPClient:
             Animation response with results
         """
         start_time = time.time()
+        
+        # Check circuit breaker
+        if self._is_circuit_open():
+            from ..core.exceptions import MCPConnectionError
+            raise MCPConnectionError("Circuit breaker is open")
+        
+        # Handle mock mode
+        if self.use_mock and self.mock_transport:
+            from .mock_mcp import create_mock_animation_response
+            from ..generator.models import ProofSketch, ProofStep
+            
+            # Create a simple proof sketch from the request
+            proof_sketch = ProofSketch(
+                theorem_name=request.theorem_name,
+                introduction="Mock introduction",
+                key_steps=[
+                    ProofStep(
+                        step_number=i+1,
+                        description=f"Step {i+1}",
+                        mathematical_content="",
+                        tactics=[]
+                    )
+                    for i in range(len(request.segments))
+                ],
+                conclusion="Mock conclusion"
+            )
+            
+            return create_mock_animation_response(proof_sketch, success=True)
 
         try:
             # Ensure server is running
             if not await self._ensure_server_running():
                 return AnimationResponse(
-                    request=request,
                     success=False,
                     error_message="Failed to start Manim server",
+                    metadata={"theorem_name": request.theorem_name}
                 )
 
             # Prepare output paths
@@ -341,18 +469,18 @@ class ManimMCPClient:
                     current_time += segment.total_duration
                 else:
                     return AnimationResponse(
-                        request=request,
                         success=False,
                         error_message=f"Failed to render segment {i}: {segment.title}",
+                        metadata={"theorem_name": request.theorem_name}
                     )
 
             # Combine segments into final video
             if len(segment_paths) > 1:
                 if not await self._combine_segments(segment_paths, video_path):
                     return AnimationResponse(
-                        request=request,
                         success=False,
                         error_message="Failed to combine video segments",
+                        metadata={"theorem_name": request.theorem_name}
                     )
             elif len(segment_paths) == 1:
                 # Single segment, just copy/move
@@ -361,9 +489,9 @@ class ManimMCPClient:
                 shutil.copy2(segment_paths[0], video_path)
             else:
                 return AnimationResponse(
-                    request=request,
                     success=False,
                     error_message="No segments were successfully rendered",
+                    metadata={"theorem_name": request.theorem_name}
                 )
 
             # Generate preview image
@@ -382,15 +510,21 @@ class ManimMCPClient:
             generation_time = (time.time() - start_time) * 1000
 
             return AnimationResponse(
-                request=request,
                 video_path=video_path,
                 preview_image_path=preview_path if preview_path.exists() else None,
                 segments_paths=segment_paths,
+                duration=actual_duration or request.estimated_duration,
                 actual_duration=actual_duration,
                 file_size_mb=file_size_mb,
                 generation_time_ms=generation_time,
                 chapter_markers=chapter_markers,
                 success=True,
+                metadata={
+                    "theorem_name": request.theorem_name,
+                    "request_id": request.request_id,
+                    "style": request.config.style.value if request.config else "modern",
+                    "quality": request.config.quality.value if request.config else "medium"
+                }
             )
 
         except Exception as e:
@@ -398,10 +532,10 @@ class ManimMCPClient:
             self.logger.exception("Animation rendering failed")
 
             return AnimationResponse(
-                request=request,
                 generation_time_ms=generation_time,
                 success=False,
                 error_message=str(e),
+                metadata={"theorem_name": request.theorem_name if request else "unknown"}
             )
 
     async def health_check(self) -> bool:
@@ -410,6 +544,14 @@ class ManimMCPClient:
         Returns:
             True if server is healthy, False otherwise
         """
+        # In mock mode, always return True
+        if self.use_mock:
+            return True
+            
+        # If not connected, return False
+        if not self._connected and not self.server_process:
+            return False
+            
         try:
             async with self._get_session() as session:
                 url = f"{self.config.get_server_url()}/health"
@@ -442,34 +584,28 @@ class ManimMCPClient:
     @asynccontextmanager
     async def _get_session(self) -> AsyncIterator[aiohttp.ClientSession]:
         """Get a session from the pool or create a new one."""
-        if self.active_connections >= self.config.max_connections:
-            # Wait for a connection to become available
-            await asyncio.sleep(0.1)
+        # Check if we need to create a new session
+        if not self.session_pool or self.session_pool.closed:
+            self.session_pool = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=self.config.server_timeout)
+            )
+        
+        yield self.session_pool
 
-        session = None
-        try:
-            if self.session_pool:
-                session = self.session_pool.pop()
-            else:
-                connector = aiohttp.TCPConnector(limit=self.config.max_connections)
-                session = aiohttp.ClientSession(
-                    connector=connector,
-                    timeout=aiohttp.ClientTimeout(total=self.config.connection_timeout),
-                )
-
-            self.active_connections += 1
-            yield session
-
-        finally:
-            self.active_connections -= 1
-            if session and not session.closed:
-                self.session_pool.append(session)
-
+    async def __aenter__(self):
+        """Async context manager entry."""
+        await self.connect()
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        await self.disconnect()
+    
     async def _close_session_pool(self) -> None:
         """Close all sessions in the pool."""
-        while self.session_pool:
-            session = self.session_pool.pop()
-            await session.close()
+        if self.session_pool and not self.session_pool.closed:
+            await self.session_pool.close()
+            self.session_pool = None
 
     def _build_server_command(self) -> List[str]:
         """Build command to start Manim MCP server."""
@@ -691,9 +827,9 @@ class ManimMCPManager:
                 else:
                     self.logger.error(f"All render attempts failed: {e}")
                     return AnimationResponse(
-                        request=request,
                         success=False,
                         error_message=f"Rendering failed after {self.config.retry_attempts} attempts: {e}",
+                        metadata={"theorem_name": request.theorem_name}
                     )
 
     async def validate_setup(self) -> bool:
