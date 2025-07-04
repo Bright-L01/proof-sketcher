@@ -4,7 +4,7 @@ import hashlib
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -281,11 +281,9 @@ class AnimationRequest(BaseModel):
 class AnimationResponse(BaseModel):
     """Response from animation generation."""
 
-    # Request info
-    request: AnimationRequest = Field(..., description="Original request")
-
     # Output files
     video_path: Optional[Path] = Field(None, description="Path to generated video")
+    thumbnail_path: Optional[Path] = Field(None, description="Path to thumbnail image")
     preview_image_path: Optional[Path] = Field(
         None, description="Path to preview image"
     )
@@ -293,7 +291,12 @@ class AnimationResponse(BaseModel):
         default_factory=list, description="Paths to segment videos"
     )
 
-    # Metadata
+    # Basic metadata
+    duration: float = Field(0.0, description="Animation duration in seconds")
+    frame_count: int = Field(0, description="Number of frames in animation")
+    size_bytes: int = Field(0, description="File size in bytes")
+    
+    # Extended metadata
     actual_duration: Optional[float] = Field(None, description="Actual video duration")
     file_size_mb: Optional[float] = Field(None, description="Video file size in MB")
     generation_time_ms: Optional[float] = Field(
@@ -309,6 +312,9 @@ class AnimationResponse(BaseModel):
     cached: bool = Field(
         False, description="Whether the result was retrieved from cache"
     )
+    
+    # Additional metadata
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
     # Additional outputs
     chapter_markers: List[Tuple[float, str]] = Field(
@@ -317,11 +323,6 @@ class AnimationResponse(BaseModel):
     generated_at: datetime = Field(
         default_factory=datetime.now, description="Generation timestamp"
     )
-
-    @property
-    def cache_key(self) -> str:
-        """Get cache key from the request."""
-        return self.request.get_cache_key()
 
     @property
     def has_video(self) -> bool:
@@ -344,10 +345,10 @@ class AnimationResponse(BaseModel):
         """Get information for video playback."""
         info = {
             "video_path": str(self.video_path) if self.video_path else None,
-            "duration": self.actual_duration,
+            "duration": self.actual_duration or self.duration,
             "file_size_mb": self.file_size_mb,
-            "quality": self.request.config.quality.value,
-            "style": self.request.config.style.value,
+            "quality": self.metadata.get("quality", "medium"),
+            "style": self.metadata.get("style", "modern"),
         }
 
         if self.chapter_markers:
