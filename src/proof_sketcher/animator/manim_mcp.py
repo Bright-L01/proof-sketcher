@@ -6,7 +6,7 @@ import subprocess
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator, List, Optional
+from typing import AsyncIterator, List, Optional, Any, Dict
 
 import aiohttp
 import tenacity
@@ -26,13 +26,13 @@ class ManimMCPClient:
             config: Manim configuration. Uses default if None.
             use_mock: Use mock server for testing
         """
-        self.config = config or ManimConfig()
+        self.config = config or ManimConfig.model_validate({})
         self.logger = logging.getLogger(__name__)
-        self.server_process: Optional[subprocess.Popen] = None
+        self.server_process: Optional[subprocess.Popen[str]] = None
         self.session: Optional[aiohttp.ClientSession] = None
         self.session_pool: Optional[aiohttp.ClientSession] = None
         self.active_connections = 0
-        self._health_check_task: Optional[asyncio.Task] = None
+        self._health_check_task: Optional[asyncio.Task[None]] = None
         self._shutdown_event = asyncio.Event()
         self._request_id = 0
         self._connected = False
@@ -50,7 +50,7 @@ class ManimMCPClient:
         
         # Circuit breaker state
         self.failure_count = 0
-        self.last_failure_time = 0
+        self.last_failure_time = 0.0
         self.circuit_open = False
         self.circuit_timeout = 60.0  # 1 minute
     
@@ -592,12 +592,12 @@ class ManimMCPClient:
         
         yield self.session_pool
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "ManimMCPClient":
         """Async context manager entry."""
         await self.connect()
         return self
     
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Async context manager exit."""
         await self.disconnect()
     
@@ -800,7 +800,7 @@ class ManimMCPManager:
         Args:
             config: Manim configuration
         """
-        self.config = config or ManimConfig()
+        self.config = config or ManimConfig.model_validate({})
         self.client = ManimMCPClient(self.config)
         self.logger = logging.getLogger(__name__)
 

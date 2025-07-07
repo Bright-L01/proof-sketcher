@@ -5,8 +5,9 @@ import logging
 import pickle
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
+from ..utils.security import secure_pickle_load
 from .models import CacheEntry, GenerationRequest, GenerationResponse
 
 
@@ -113,6 +114,7 @@ class CacheManager:
             ttl = ttl_hours or response.request.config.cache_ttl_hours
 
             entry = CacheEntry(cache_key=cache_key, response=response, ttl_hours=ttl)
+            stored = False
 
             # Try to store as JSON first (more portable)
             try:
@@ -146,6 +148,8 @@ class CacheManager:
         except Exception as e:
             self.logger.error(f"Error caching response {cache_key}: {e}")
             return False
+        
+        return False  # Default return if no exception but also not stored
 
     def delete(self, cache_key: str) -> bool:
         """Delete a cache entry.
@@ -229,7 +233,7 @@ class CacheManager:
 
         return total_size / (1024 * 1024)
 
-    def get_cache_stats(self) -> Dict[str, Union[int, float, str]]:
+    def get_cache_stats(self) -> Dict[str, Any]:
         """Get cache statistics.
 
         Returns:
@@ -245,7 +249,7 @@ class CacheManager:
         }
 
         # Count by generation type
-        type_counts = {}
+        type_counts: Dict[str, int] = {}
         for meta in self._metadata.values():
             gen_type = meta.get("generation_type", "unknown")
             type_counts[gen_type] = type_counts.get(gen_type, 0) + 1
@@ -259,12 +263,13 @@ class CacheManager:
         home = Path.home()
         return home / ".proof_sketcher" / "cache"
 
-    def _load_metadata(self) -> Dict[str, Dict]:
+    def _load_metadata(self) -> Dict[str, Dict[str, Any]]:
         """Load cache metadata."""
         if self.metadata_file.exists():
             try:
                 with open(self.metadata_file, "r") as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    return data if isinstance(data, dict) else {}
             except Exception as e:
                 self.logger.warning(f"Failed to load cache metadata: {e}")
 
@@ -300,7 +305,9 @@ class CacheManager:
         """Load a cache entry from pickle file."""
         try:
             with open(path, "rb") as f:
-                return pickle.load(f)
+                data = f.read()
+                obj = secure_pickle_load(data)
+                return obj if isinstance(obj, CacheEntry) else None
         except Exception as e:
             self.logger.warning(f"Failed to load pickle cache entry {path}: {e}")
             return None
@@ -504,7 +511,14 @@ class CachedClaudeGenerator:
             self.cache.put(cache_key, result)
         else:
             # It's raw content, wrap it in a response
-            response = GenerationResponse(request=request, content=result, success=True)
+            response = GenerationResponse(
+                request=request,
+                content=result,
+                success=True,
+                generation_time_ms=None,
+                token_count=None,
+                error_message=None
+            )
             self.cache.put(cache_key, response)
 
         return result

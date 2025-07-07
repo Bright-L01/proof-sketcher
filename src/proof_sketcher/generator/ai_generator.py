@@ -13,6 +13,7 @@ from ..core.exceptions import (
 )
 from ..core.interfaces import IGenerator
 from ..parser.models import TheoremInfo
+from ..utils.security import validate_theorem_name
 from .models import (
     GenerationConfig,
     GenerationRequest,
@@ -75,6 +76,12 @@ class AIGenerator(IGenerator):
         Raises:
             ClaudeError: If generation fails
         """
+        # Validate theorem name for security
+        try:
+            validate_theorem_name(theorem.name)
+        except Exception as e:
+            raise GeneratorError(f"Invalid theorem name: {e}")
+            
         config = config or self.default_config
 
         # Create generation request
@@ -490,11 +497,9 @@ class AIGenerator(IGenerator):
         """
         cmd = [self.ai_executable]
 
-        # Model selection
-        cmd.extend(["-m", config.model.value])
-
-        # Temperature
-        cmd.extend(["-t", str(config.temperature)])
+        # NOTE: Claude CLI does not support -m flag for model selection
+        # Temperature (Claude uses --temperature, not -t)
+        cmd.extend(["--temperature", str(config.temperature)])
 
         # Max tokens
         cmd.extend(["--max-tokens", str(config.max_tokens)])

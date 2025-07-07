@@ -197,7 +197,7 @@ class BaseExporter(ABC):
         Args:
             options: Export options
         """
-        self.options = options or ExportOptions()
+        self.options = options if options is not None else ExportOptions()
         self._ensure_output_dir()
 
     @property

@@ -878,7 +878,7 @@ class CachedManimAnimator:
         for step in proof_sketch.key_steps:
             proof_content += step.description + step.mathematical_content
 
-        content_hash = hashlib.md5(proof_content.encode()).hexdigest()[:8]
+        content_hash = hashlib.md5(proof_content.encode(), usedforsecurity=False).hexdigest()[:8]
         content += f":{content_hash}"
 
         return hashlib.sha256(content.encode()).hexdigest()

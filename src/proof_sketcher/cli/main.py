@@ -16,6 +16,7 @@ from .commands.batch import batch
 from .commands.cache import cache
 from .commands.config import config
 from .commands.info import formats, list_theorems, version
+from .commands.performance import performance
 from .commands.prove import prove
 
 # Set up rich console
@@ -99,6 +100,7 @@ cli.add_command(list_theorems)
 cli.add_command(formats)
 cli.add_command(version)
 cli.add_command(batch)
+cli.add_command(performance)
 
 
 def main() -> None:

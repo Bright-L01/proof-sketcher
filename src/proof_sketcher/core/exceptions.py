@@ -368,10 +368,10 @@ class ErrorHandler:
         """
         self.auto_recover = auto_recover
         self.logger = self._setup_logger()
-        self.error_counts = {}
-        self.recovery_counts = {}
+        self.error_counts: Dict[str, int] = {}
+        self.recovery_counts: Dict[str, int] = {}
 
-    def _setup_logger(self):
+    def _setup_logger(self) -> Any:
         """Set up logger for error handling."""
         import logging
         logger = logging.getLogger(f"{__name__}.ErrorHandler")
@@ -420,9 +420,11 @@ class ErrorHandler:
         if isinstance(original_error, ConnectionError):
             return NetworkError(str(original_error), operation="connection")
         elif isinstance(original_error, FileNotFoundError):
-            error = ParserError(str(original_error), error_code="FILE_NOT_FOUND")
-            error.category = type('Category', (), {'value': 'parse'})()
-            return error
+            return ParserError(
+                str(original_error), 
+                details={"category": "parse"}, 
+                error_code="FILE_NOT_FOUND"
+            )
         elif isinstance(original_error, (MemoryError, OSError)):
             return ResourceError(str(original_error))
         else:
