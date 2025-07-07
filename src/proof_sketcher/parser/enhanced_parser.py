@@ -15,7 +15,7 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Match
 
 from .models import TheoremInfo
 
@@ -89,7 +89,8 @@ class LeanTheorem(LeanDeclaration):
             namespace=self.namespace,
             visibility=self.visibility,
             dependencies=self.dependencies,
-            tactics=self.tactics
+            tactics=self.tactics,
+            is_axiom=False
         )
 
 
@@ -148,7 +149,7 @@ class LeanNamespace(LeanDeclaration):
 class EnhancedLeanParser:
     """Enhanced parser for Lean 4 with support for extended language constructs."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
         self.current_namespace: Optional[str] = None
         self.namespace_stack: List[str] = []
@@ -233,7 +234,7 @@ class EnhancedLeanParser:
                 line = lines[i].strip()
             
             # Parse attributes if present
-            attributes = []
+            attributes: List[LeanAttribute] = []
             if line.startswith('@['):
                 attributes, attr_end = self._extract_attributes(lines, i)
                 i = attr_end
@@ -243,8 +244,9 @@ class EnhancedLeanParser:
             
             # Parse visibility modifier
             visibility = "public"
-            if self.visibility_pattern.match(line):
-                visibility = self.visibility_pattern.match(line).group(1)
+            visibility_match = self.visibility_pattern.match(line)
+            if visibility_match:
+                visibility = visibility_match.group(1)
                 line = self.visibility_pattern.sub('', line).strip()
             
             # Parse noncomputable modifier
@@ -274,7 +276,7 @@ class EnhancedLeanParser:
         
         return declarations
     
-    def _parse_construct(self, construct_name: str, match: re.Match, 
+    def _parse_construct(self, construct_name: str, match: re.Match[str], 
                         lines: List[str], start_line: int,
                         docstring: Optional[str], attributes: List[LeanAttribute],
                         visibility: str, is_noncomputable: bool) -> tuple[Optional[LeanDeclaration], int]:
@@ -310,7 +312,7 @@ class EnhancedLeanParser:
                 visibility=visibility
             ), start_line + 1
     
-    def _parse_theorem(self, match: re.Match, lines: List[str], start_line: int,
+    def _parse_theorem(self, match: re.Match[str], lines: List[str], start_line: int,
                       docstring: Optional[str], attributes: List[LeanAttribute], 
                       visibility: str) -> tuple[LeanTheorem, int]:
         """Parse theorem or lemma declaration."""
@@ -343,7 +345,7 @@ class EnhancedLeanParser:
         
         return theorem, end_line + 1
     
-    def _parse_definition(self, match: re.Match, lines: List[str], start_line: int,
+    def _parse_definition(self, match: re.Match[str], lines: List[str], start_line: int,
                          docstring: Optional[str], attributes: List[LeanAttribute],
                          visibility: str, is_noncomputable: bool) -> tuple[LeanDefinition, int]:
         """Parse definition declaration."""
@@ -372,7 +374,7 @@ class EnhancedLeanParser:
         
         return definition, end_line + 1
     
-    def _parse_inductive(self, match: re.Match, lines: List[str], start_line: int,
+    def _parse_inductive(self, match: re.Match[str], lines: List[str], start_line: int,
                         docstring: Optional[str], attributes: List[LeanAttribute],
                         visibility: str) -> tuple[LeanInductive, int]:
         """Parse inductive type declaration."""
@@ -401,7 +403,7 @@ class EnhancedLeanParser:
         
         return inductive, end_line + 1
     
-    def _parse_structure(self, match: re.Match, lines: List[str], start_line: int,
+    def _parse_structure(self, match: re.Match[str], lines: List[str], start_line: int,
                         docstring: Optional[str], attributes: List[LeanAttribute],
                         visibility: str) -> tuple[LeanStructure, int]:
         """Parse structure declaration."""
@@ -427,7 +429,7 @@ class EnhancedLeanParser:
         
         return structure, end_line + 1
     
-    def _parse_class(self, match: re.Match, lines: List[str], start_line: int,
+    def _parse_class(self, match: re.Match[str], lines: List[str], start_line: int,
                     docstring: Optional[str], attributes: List[LeanAttribute],
                     visibility: str) -> tuple[LeanClass, int]:
         """Parse class declaration."""
@@ -452,7 +454,7 @@ class EnhancedLeanParser:
         
         return class_decl, end_line + 1
     
-    def _parse_instance(self, match: re.Match, lines: List[str], start_line: int,
+    def _parse_instance(self, match: re.Match[str], lines: List[str], start_line: int,
                        docstring: Optional[str], attributes: List[LeanAttribute],
                        visibility: str) -> tuple[LeanInstance, int]:
         """Parse instance declaration."""
@@ -478,7 +480,7 @@ class EnhancedLeanParser:
         
         return instance, end_line + 1
     
-    def _parse_axiom(self, match: re.Match, lines: List[str], start_line: int,
+    def _parse_axiom(self, match: re.Match[str], lines: List[str], start_line: int,
                     docstring: Optional[str], attributes: List[LeanAttribute],
                     visibility: str) -> tuple[LeanTheorem, int]:
         """Parse axiom declaration (treated as theorem without proof)."""
@@ -502,7 +504,7 @@ class EnhancedLeanParser:
         
         return axiom, end_line + 1
     
-    def _parse_namespace(self, match: re.Match, lines: List[str], start_line: int,
+    def _parse_namespace(self, match: re.Match[str], lines: List[str], start_line: int,
                         docstring: Optional[str], attributes: List[LeanAttribute],
                         visibility: str) -> tuple[LeanNamespace, int]:
         """Parse namespace declaration."""
@@ -663,7 +665,7 @@ class EnhancedLeanParser:
     def _extract_structure_content(self, lines: List[str], start_line: int) -> tuple[List[str], List[str], List[Dict[str, str]], List[str], int]:
         """Extract structure content."""
         # Simplified implementation
-        parameters = []
+        parameters: List[str] = []
         extends = []
         fields = []
         derives = []
@@ -691,7 +693,7 @@ class EnhancedLeanParser:
         # Simplified implementation
         class_name = ""
         instance_type = ""
-        parameters = []
+        parameters: List[str] = []
         proof = None
         
         i = start_line

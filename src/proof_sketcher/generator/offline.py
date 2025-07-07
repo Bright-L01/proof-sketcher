@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
-from ..core.exceptions import handle_error
+from ..core.exceptions import handle_error, GeneratorError
 from ..parser.models import TheoremInfo
 from .models import ProofSketch, ProofStep, GenerationConfig, GenerationRequest, GenerationResponse
 
@@ -135,10 +135,9 @@ class OfflineGenerator:
             return sketch
             
         except Exception as e:
-            error = GenerationError(
+            error = GeneratorError(
                 f"Failed to generate offline proof sketch: {e}",
-                context={"theorem_name": theorem.name},
-                cause=e
+                details={"theorem_name": theorem.name, "cause": str(e)}
             )
             handle_error(error)
             raise error
@@ -456,5 +455,6 @@ def create_offline_response(
         generated_at=datetime.now(),
         generation_time_ms=generation_time_ms,
         success=True,
+        error_message=None,
         token_count=None  # Not applicable for offline generation
     )

@@ -398,6 +398,13 @@ class LeanParser(IParser):
         self, file_path: Path, theorem_name: str
     ) -> Optional[TheoremInfo]:
         """Extract single theorem using Lean extractor."""
+        # Validate theorem name for security
+        try:
+            theorem_name = validate_theorem_name(theorem_name)
+        except Exception as e:
+            self.logger.error(f"Invalid theorem name: {e}")
+            return None
+            
         working_dir = self.config.working_dir or file_path.parent
 
         # Check if we're in a Lake project

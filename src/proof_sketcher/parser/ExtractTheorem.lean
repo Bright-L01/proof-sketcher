@@ -27,8 +27,22 @@ structure TheoremData where
 partial def extractTacticsFromSyntax (stx : Syntax) : Array String :=
   match stx with
   | Syntax.node _ kind args =>
-    let tactics := if kind.toString.contains "tactic" then #[kind.toString] else #[]
+    let kindStr := kind.toString
+    let tactics := 
+      if kindStr.endsWith ".tactic" || kindStr.contains "Tactic" then
+        -- Extract the actual tactic name (last component)
+        let tacticName := kindStr.split (· == '.') |>.getLast!
+        #[tacticName]
+      else if kindStr == "`tactic" then
+        -- Handle quoted tactics
+        if args.size > 0 then
+          #[args[0]!.prettyPrint.pretty]
+        else #[]
+      else #[]
     tactics ++ args.concatMap extractTacticsFromSyntax
+  | Syntax.atom _ val => 
+    -- Direct tactic names like "simp", "rfl", etc.
+    if val.all Char.isAlpha then #[val] else #[]
   | _ => #[]
 
 /-- Extract dependencies from an expression -/
@@ -40,8 +54,13 @@ partial def extractDeps (e : Expr) (visited : NameSet := {}) : MetaM NameSet := 
   match e with
   | .const name _ =>
     let nameStr := name.toString
-    -- Include non-internal constants as dependencies
-    if !nameStr.startsWith "_" && !nameStr.startsWith "Lean" && nameStr.contains "." then
+    -- Include mathlib and meaningful dependencies, exclude internals
+    if !nameStr.startsWith "_" && 
+       !nameStr.startsWith "Lean." && 
+       !nameStr.startsWith "Classical" && 
+       !nameStr.startsWith "sorryAx" &&
+       nameStr != "True" && nameStr != "False" &&
+       nameStr.contains "." then
       return visited.insert name
     else
       return visited
@@ -61,6 +80,26 @@ partial def extractDeps (e : Expr) (visited : NameSet := {}) : MetaM NameSet := 
   | .mdata _ expr => extractDeps expr visited
   | _ => return visited
 
+/-- Extract tactics from a proof expression by pattern matching common tactic combinators -/
+partial def extractTacticsFromProof (e : Expr) : Array String :=
+  match e with
+  | .const name _ =>
+    let nameStr := name.toString
+    -- Common tactics that appear as constants
+    if nameStr.endsWith ".simp" || nameStr.endsWith ".rfl" || 
+       nameStr.endsWith ".trivial" || nameStr.endsWith ".assumption" ||
+       nameStr.endsWith ".exact" || nameStr.endsWith ".apply" then
+      #[nameStr.split (· == '.') |>.getLast!]
+    else #[]
+  | .app f a =>
+    -- Recursively extract from function and argument
+    extractTacticsFromProof f ++ extractTacticsFromProof a
+  | .lam _ _ body _ =>
+    extractTacticsFromProof body
+  | .letE _ _ value body _ =>
+    extractTacticsFromProof value ++ extractTacticsFromProof body
+  | _ => #[]
+
 /-- Process a single theorem -/
 def processTheorem (env : Environment) (name : Name) : MetaM TheoremData := do
   let some info := env.find? name | throw $ IO.userError s!"Theorem {name} not found"
@@ -74,9 +113,8 @@ def processTheorem (env : Environment) (name : Name) : MetaM TheoremData := do
   | none => return ("axiom", true, #[])
   | some val => do
     let pp ← ppExpr val
-    -- Try to extract tactics from the proof term
-    -- This is simplified - real implementation would parse proof syntax
-    let tactics := #[]
+    -- Extract tactics from the proof term by analyzing its structure
+    let tactics := extractTacticsFromProof val
     return (toString pp, false, tactics)
   
   -- Get docstring

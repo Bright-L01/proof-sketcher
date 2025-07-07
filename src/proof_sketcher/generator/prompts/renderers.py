@@ -15,7 +15,7 @@ from .mathematical_context import MathematicalContextTemplate
 class PromptTemplates:
     """Collection of prompt templates for different generation types."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize with template instances."""
         self._templates = {
             GenerationType.PROOF_SKETCH: ProofSketchTemplate(),

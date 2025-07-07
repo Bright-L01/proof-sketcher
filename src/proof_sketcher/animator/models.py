@@ -87,7 +87,7 @@ class AnimationConfig(BaseModel):
 
     @field_validator("background_color", "text_color", "accent_color")
     @classmethod
-    def validate_hex_color(cls, v):
+    def validate_hex_color(cls, v: str) -> str:
         """Validate hex color format."""
         if not v.startswith("#") or len(v) != 7:
             raise ValueError("Color must be in #RRGGBB format")
@@ -100,41 +100,41 @@ class AnimationConfig(BaseModel):
     @classmethod
     def preview(cls) -> "AnimationConfig":
         """Create config optimized for previews."""
-        return cls(
-            quality=AnimationQuality.LOW,
-            fps=15,
-            width=640,
-            height=360,
-            base_duration=15.0,
-            step_duration=8.0,
-            max_duration=120.0,
-        )
+        return cls.model_validate({
+            "quality": AnimationQuality.LOW,
+            "fps": 15,
+            "width": 640,
+            "height": 360,
+            "base_duration": 15.0,
+            "step_duration": 8.0,
+            "max_duration": 120.0,
+        })
 
     @classmethod
     def publication(cls) -> "AnimationConfig":
         """Create config optimized for publication."""
-        return cls(
-            quality=AnimationQuality.HIGH,
-            fps=60,
-            width=1920,
-            height=1080,
-            base_duration=45.0,
-            step_duration=20.0,
-            max_duration=900.0,
-        )
+        return cls.model_validate({
+            "quality": AnimationQuality.HIGH,
+            "fps": 60,
+            "width": 1920,
+            "height": 1080,
+            "base_duration": 45.0,
+            "step_duration": 20.0,
+            "max_duration": 900.0,
+        })
 
     @classmethod
     def accessible(cls) -> "AnimationConfig":
         """Create config optimized for accessibility."""
-        return cls(
-            style=AnimationStyle.ACCESSIBLE,
-            background_color="#000000",
-            text_color="#FFFFFF",
-            accent_color="#FFFF00",
-            font_size=48,
-            transition_time=3.0,
-            pause_time=4.0,
-        )
+        return cls.model_validate({
+            "style": AnimationStyle.ACCESSIBLE,
+            "background_color": "#000000",
+            "text_color": "#FFFFFF",
+            "accent_color": "#FFFF00",
+            "font_size": 48,
+            "transition_time": 3.0,
+            "pause_time": 4.0,
+        })
 
 
 class FormulaComponent(BaseModel):
@@ -221,7 +221,7 @@ class AnimationRequest(BaseModel):
     # Content
     segments: List[AnimationSegment] = Field(..., description="Animation segments")
     config: AnimationConfig = Field(
-        default_factory=AnimationConfig, description="Animation configuration"
+        default_factory=lambda: AnimationConfig.model_validate({}), description="Animation configuration"
     )
 
     # Metadata
@@ -256,7 +256,7 @@ class AnimationRequest(BaseModel):
                 scene_content += f"{scene.initial_formula}→{scene.final_formula}"
 
         if scene_content:
-            scene_hash = hashlib.md5(scene_content.encode()).hexdigest()[:8]
+            scene_hash = hashlib.md5(scene_content.encode(), usedforsecurity=False).hexdigest()[:8]
             content += f":{scene_hash}"
 
         return hashlib.sha256(content.encode()).hexdigest()
@@ -341,7 +341,7 @@ class AnimationResponse(BaseModel):
             p.exists() for p in self.segments_paths
         )
 
-    def get_playback_info(self) -> Dict[str, Union[str, float, List[Dict]]]:
+    def get_playback_info(self) -> Dict[str, Union[str, float, List[Dict[str, Any]]]]:
         """Get information for video playback."""
         info = {
             "video_path": str(self.video_path) if self.video_path else None,
@@ -426,23 +426,23 @@ class ManimConfig(BaseModel):
     @classmethod
     def development(cls) -> "ManimConfig":
         """Create config for development."""
-        return cls(
-            server_timeout=60.0,
-            max_concurrent_renders=1,
-            render_timeout=120.0,
-            keep_temp_files=True,
-        )
+        return cls.model_validate({
+            "server_timeout": 60.0,
+            "max_concurrent_renders": 1,
+            "render_timeout": 120.0,
+            "keep_temp_files": True,
+        })
 
     @classmethod
     def production(cls) -> "ManimConfig":
         """Create config for production."""
-        return cls(
-            server_timeout=600.0,
-            max_concurrent_renders=4,
-            render_timeout=1200.0,
-            memory_limit_mb=4096,
-            health_check_interval=60.0,
-        )
+        return cls.model_validate({
+            "server_timeout": 600.0,
+            "max_concurrent_renders": 4,
+            "render_timeout": 1200.0,
+            "memory_limit_mb": 4096,
+            "health_check_interval": 60.0,
+        })
 
     class Config:
         """Pydantic configuration."""

@@ -140,7 +140,7 @@ class LeanToLatexConverter:
             # Start with the original expression
             latex = lean_expr.strip()
 
-            # Handle type annotations (remove for cleaner display)
+            # Handle type annotations (this now includes Unicode conversion)
             latex = self._clean_type_annotations(latex)
 
             # Convert function applications
@@ -151,9 +151,6 @@ class LeanToLatexConverter:
 
             # Convert infix operators
             latex = self._convert_infix_operators(latex)
-
-            # Convert Unicode symbols
-            latex = self._convert_unicode_symbols(latex)
 
             # Handle parentheses and spacing
             latex = self._improve_formatting(latex)
@@ -166,14 +163,35 @@ class LeanToLatexConverter:
             ) from e
 
     def _clean_type_annotations(self, expr: str) -> str:
-        """Remove or simplify type annotations."""
-        # Remove simple type annotations like (n : Nat)
+        """Remove or simplify type annotations while preserving mathematical symbols."""
+        # Remove simple type annotations like (n : Nat) BEFORE Unicode conversion
         expr = re.sub(
-            r"\(([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*[A-Za-z][A-Za-z0-9_.]*\)", r"\1", expr
+            r"\(([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*[^)]+\)", r"\1", expr
         )
 
-        # Remove standalone type declarations
-        expr = re.sub(r":\s*[A-Za-z][A-Za-z0-9_.]*(?=\s|$)", "", expr)
+        # Remove standalone type declarations like "x : Real" or "f : Nat → Nat"
+        # But preserve mathematical symbols that appear in types
+        def remove_type_annotation(match):
+            var = match.group(1)
+            type_part = match.group(2)
+            # Keep mathematical symbols from the type, but exclude arrows in type declarations
+            math_symbols = re.findall(r"[ℕℤℚℝℂ∀∃¬∧∨⊤⊥∈∉⊆⊇⊂⊃∪∩∅≤≥≠≈≡±∞]", type_part)
+            if math_symbols:
+                return var + " " + "".join(math_symbols)
+            else:
+                return var
+            
+        expr = re.sub(
+            r"([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*([^,]+?)(?=\s*,|\s*$)", 
+            remove_type_annotation, 
+            expr
+        )
+        
+        # Now convert Unicode symbols
+        expr = self._convert_unicode_symbols(expr)
+        
+        # Clean up extra spaces
+        expr = re.sub(r"\s+", " ", expr).strip()
 
         return expr
 
@@ -182,26 +200,31 @@ class LeanToLatexConverter:
         # Convert known functions
         for lean_func, latex_func in self.function_map.items():
             if lean_func in expr:
-                if latex_func in ["+", "-", r"\cdot", r"\div"]:
+                if latex_func in ["+", "-", r"\cdot", r"\div", r"\cup", r"\cap", r"\setminus"]:
                     # Infix operators
                     pattern = rf"{re.escape(lean_func)}\s+([^\s]+)\s+([^\s]+)"
-                    expr = re.sub(pattern, rf"\1 {latex_func} \2", expr)
+                    # Use lambda to avoid escape issues
+                    def make_replacement(latex_func):
+                        return lambda m: f"{m.group(1)} {latex_func} {m.group(2)}"
+                    expr = re.sub(pattern, make_replacement(latex_func), expr)
                 elif latex_func == "^":
-                    # Exponentiation
-                    pattern = rf"{re.escape(lean_func)}\s+([^\s]+)\s+([^\s]+)"
+                    # Exponentiation - be careful about parentheses in the exponent
+                    pattern = rf"{re.escape(lean_func)}\s+([^\s]+)\s+([^\s)]+)"
                     expr = re.sub(pattern, r"\1^{\2}", expr)
                 elif latex_func == "!":
                     # Factorial (postfix)
                     pattern = rf"{re.escape(lean_func)}\s+([^\s]+)"
                     expr = re.sub(pattern, r"\1!", expr)
                 elif latex_func.startswith(r"\sqrt"):
-                    # Square root
-                    pattern = rf"{re.escape(lean_func)}\s+([^\s]+)"
-                    expr = re.sub(pattern, r"\\sqrt{\1}", expr)
+                    # Square root - handle parenthesized expressions properly
+                    pattern = rf"{re.escape(lean_func)}\s+(\([^)]*\)|[^\s]+)"
+                    expr = re.sub(pattern, lambda m: f"\\sqrt{{{m.group(1)}}}", expr)
                 else:
-                    # Function notation
+                    # Function notation - use lambda to avoid escape issues
                     pattern = rf"{re.escape(lean_func)}\s+([^\s]+)"
-                    expr = re.sub(pattern, rf"{latex_func}(\1)", expr)
+                    def make_func_replacement(latex_func):
+                        return lambda m: f"{latex_func}({m.group(1)})"
+                    expr = re.sub(pattern, make_func_replacement(latex_func), expr)
 
         return expr
 
@@ -219,7 +242,7 @@ class LeanToLatexConverter:
             return f"\\forall {var}, {rest}"
 
         expr = re.sub(
-            r"∀\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*(?::\s*[^,]+)?,\s*(.+)",
+            r"(?:∀|\\forall)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*(?::\s*[^,]+)?,\s*(.+)",
             convert_universal,
             expr,
         )
@@ -235,16 +258,31 @@ class LeanToLatexConverter:
             return f"\\exists {var}, {rest}"
 
         expr = re.sub(
-            r"∃\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*(?::\s*[^,]+)?,\s*(.+)",
+            r"(?:∃|\\exists)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*(?::\s*[^,]+)?,\s*(.+)",
             convert_existential,
             expr,
         )
 
-        # Lambda expressions: λ x, expr
+        # Lambda expressions: λ x, expr or \lambda x, expr
+        def convert_lambda(match):
+            var = match.group(1)
+            body = match.group(2)
+            # Add parentheses to function applications like f x -> f(x)
+            body = re.sub(
+                r"(?<!\\)\b([a-z][a-zA-Z0-9_]*)\s+([a-z][a-zA-Z0-9_]*)\b", r"\1(\2)", body
+            )
+            return f"\\lambda {var}. {body}"
+        
         expr = re.sub(
-            r"λ\s*([a-zA-Z_][a-zA-Z0-9_]*),\s*(.+)",
-            r"\\lambda \1. \2",
+            r"(?:λ|\\lambda)\s*([a-zA-Z_][a-zA-Z0-9_]*),\s*(.+)",
+            convert_lambda,
             expr,
+        )
+
+        # Handle standalone function applications outside quantifiers
+        # But avoid LaTeX commands (starting with \) and single letters
+        expr = re.sub(
+            r"(?<!\\)\b([A-Z][a-z][a-zA-Z0-9_]*)\s+([a-z][a-zA-Z0-9_]*)\b", r"\1(\2)", expr
         )
 
         return expr
@@ -271,14 +309,17 @@ class LeanToLatexConverter:
 
     def _improve_formatting(self, expr: str) -> str:
         """Improve LaTeX formatting."""
-        # Add proper spacing around operators
-        expr = re.sub(r"(\w)(\+|\-|\*|/)(\w)", r"\1 \2 \3", expr)
+        # Add proper spacing around operators (but not LaTeX commands)
+        expr = re.sub(r"(?<!\\)(\w)(\+|\-|\*|/)(\w)", r"\1 \2 \3", expr)
+
+        # Add space after LaTeX commands when followed by variables (but only if no space exists)
+        expr = re.sub(r"(\\(?:neg|land|lor|in))(?=[a-zA-Z])", r"\1 ", expr)
 
         # Handle subscripts (convert _ to LaTeX subscript)
         expr = re.sub(r"(\w+)_(\w+)", r"\1_{\2}", expr)
 
-        # Handle function calls with proper parentheses
-        expr = re.sub(r"(\w+)\s*\(\s*([^)]+)\s*\)", r"\1(\2)", expr)
+        # Handle function calls with proper parentheses (clean up extra spaces)
+        expr = re.sub(r"(\w+)\s*\(\s*([^)]+?)\s*\)", r"\1(\2)", expr)
 
         return expr
 
@@ -469,10 +510,25 @@ class FormulaExtractor:
         # This would need to be enhanced with NLP to extract formulas from text
         # For now, return basic parsing
 
-        # Look for mathematical expressions in the text
+        # Look for mathematical expressions in the text - more targeted approach
+        # First try to find expressions with operators
         math_expressions = re.findall(
-            r"[A-Za-z0-9+\-*/=<>≤≥≠∀∃→↔¬∧∨]+", proof_step_text
+            r"\b[A-Za-z0-9_]+(?:\s*[+\-*/=<>≤≥≠]\s*[A-Za-z0-9_]+)+\b", proof_step_text
         )
+        
+        # If none found, look for simpler patterns
+        if not math_expressions:
+            math_expressions = re.findall(
+                r"\b[A-Za-z0-9_]+\s*[+\-*/=<>≤≥≠∀∃→↔¬∧∨]\s*[A-Za-z0-9_]+\b", proof_step_text
+            )
+        
+        # If still none, look for variable-like patterns
+        if not math_expressions:
+            # Look for single variables or simple expressions
+            math_expressions = re.findall(r"\b[a-zA-Z]\s*[+\-*/=]\s*[a-zA-Z]\b", proof_step_text)
+        
+        # Clean up and filter
+        math_expressions = [expr.strip() for expr in math_expressions if expr.strip()]
 
         if len(math_expressions) >= 2:
             return math_expressions[0], math_expressions[1]
@@ -535,27 +591,33 @@ class FormulaExtractor:
         """
         formulas = []
 
-        # Extract display math ($$...$$)
+        # Extract display math ($$...$$) - handle multiline
         display_pattern = r"\$\$(.*?)\$\$"
-        for match in re.finditer(display_pattern, text):
-            formulas.append(
-                ExtractedFormula(
-                    latex=match.group(1).strip(),
-                    display_mode=True,
-                    position=match.start(),
+        for match in re.finditer(display_pattern, text, re.DOTALL):
+            content = match.group(1).strip()
+            if content:  # Don't include empty formulas
+                formulas.append(
+                    ExtractedFormula(
+                        latex=content,
+                        display_mode=True,
+                        position=match.start(),
+                    )
                 )
-            )
 
-        # Extract inline math ($...$)
-        inline_pattern = r"(?<!\$)\$(?!\$)(.*?)(?<!\$)\$(?!\$)"
+        # Extract inline math ($...$) - avoid matching currency and escaped dollars
+        # Don't match escaped dollars (\$) or currency patterns ($50)
+        inline_pattern = r"(?<!\\)\$(?!\$|\d+\.?\d*)([^$\n]+?)(?<!\d)\$(?!\$)"
         for match in re.finditer(inline_pattern, text):
-            formulas.append(
-                ExtractedFormula(
-                    latex=match.group(1).strip(),
-                    display_mode=False,
-                    position=match.start(),
+            content = match.group(1).strip()
+            # Additional filter: must contain mathematical content or be a single variable
+            if content and (any(c in content for c in r"\{}^_=+-<>≤≥≠∀∃→↔¬∧∨") or re.search(r"[a-zA-Z]\s*[+\-*/=]\s*[a-zA-Z]", content) or (len(content.split()) == 1 and content.isalpha())):
+                formulas.append(
+                    ExtractedFormula(
+                        latex=content,
+                        display_mode=False,
+                        position=match.start(),
+                    )
                 )
-            )
 
         return sorted(formulas, key=lambda f: f.position)
 

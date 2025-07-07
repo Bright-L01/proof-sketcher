@@ -9,12 +9,13 @@ from jinja2 import BaseLoader, Environment, Template
 class PromptBase(ABC):
     """Base class for prompt template providers."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize with Jinja2 environment."""
         self.env = Environment(
             loader=BaseLoader(), 
             trim_blocks=True, 
-            lstrip_blocks=True
+            lstrip_blocks=True,
+            autoescape=True  # Enable XSS protection
         )
         
         # Add custom filters
