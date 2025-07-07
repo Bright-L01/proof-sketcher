@@ -7,7 +7,7 @@ import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from ..core.exceptions import (
     ConfigValidationError,
@@ -15,16 +15,18 @@ from ..core.exceptions import (
     ParserError,
 )
 from ..core.interfaces import IParser
+from ..core.context_optimizer import get_context_optimizer, MathematicalContext, OptimizationStrategy
 from .config import ParserConfig
 from .models import FileMetadata, ParseError, ParseResult, TheoremInfo
 from .enhanced_parser import EnhancedLeanParser
+from .lean_extractor import LeanExtractor, LeanExtractorError
 
 
 class LeanParser(IParser):
     """Parser for extracting theorem information from Lean files."""
 
     def __init__(self, config: Optional[ParserConfig] = None) -> None:
-        """Initialize the Lean parser.
+        """Initialize the Lean parser with optimization capabilities.
 
         Args:
             config: Parser configuration. Uses default if None.
@@ -33,6 +35,14 @@ class LeanParser(IParser):
         self.logger = logging.getLogger(__name__)
         self.extractor_path = Path(__file__).parent / "ExtractTheorem.lean"
         self.enhanced_parser = EnhancedLeanParser()
+        
+        # Initialize optimization system
+        self.optimizer = get_context_optimizer()
+        self.lean_extractor = LeanExtractor()
+        
+        # Track optimization metrics
+        self.strategy_usage = {}
+        self.context_detections = {}
 
         # Validate configuration
         config_errors = self.config.validate()
@@ -70,9 +80,16 @@ class LeanParser(IParser):
                     ],
                 )
 
-            # Read file content for metadata and fallback parsing
+            # Read file content for metadata and optimization
             content = file_path.read_text(encoding="utf-8")
             metadata = self._create_metadata(file_path, content)
+
+            # Detect mathematical context for optimization
+            context, strategy = self.optimizer.optimize_for_theorem(content, str(file_path))
+            self.context_detections[context] = self.context_detections.get(context, 0) + 1
+            self.strategy_usage[strategy] = self.strategy_usage.get(strategy, 0) + 1
+            
+            self.logger.info(f"Optimized parsing: context={context.value}, strategy={strategy.value}")
 
             # Detect and setup Lake project if needed
             lake_setup_errors = []
@@ -80,30 +97,25 @@ class LeanParser(IParser):
                 lake_errors = self._setup_lake_project(file_path)
                 lake_setup_errors.extend(lake_errors)
 
-            # Extract theorems using enhanced parser first
-            enhanced_declarations = self.enhanced_parser.parse_content_enhanced(content)
-            enhanced_theorems = self.enhanced_parser.get_theorems_for_proof_sketcher(enhanced_declarations)
-            
-            # Fall back to basic parsing if enhanced parsing fails or returns no results
-            basic_theorems = []
-            if not enhanced_theorems:
-                basic_theorems = self._extract_theorems_basic(content)
+            # Apply optimized parsing strategy
+            final_theorems, extraction_errors = self._parse_with_strategy(
+                file_path, content, context, strategy
+            )
 
-            # Enhance with Lean extractor if available and we have theorems
-            extraction_errors = []
-            final_theorems = enhanced_theorems or basic_theorems
+            # Update optimizer with performance feedback
+            parse_time = (time.time() - start_time) * 1000
+            success = len(final_theorems) > 0 and len([e for e in extraction_errors if "Error" in str(e)]) == 0
             
-            if final_theorems and self._can_use_lean_extractor():
-                lean_enhanced_theorems, extraction_errors = (
-                    self._extract_all_theorems_with_lean(file_path, final_theorems)
-                )
-                if lean_enhanced_theorems:
-                    final_theorems = lean_enhanced_theorems
+            self.optimizer.update_performance(
+                context=context,
+                strategy=strategy,
+                success=success,
+                processing_time=parse_time / 1000,  # Convert to seconds
+                error_details=str(extraction_errors) if extraction_errors else None
+            )
 
             # Combine all errors
             all_errors = lake_setup_errors + extraction_errors
-
-            parse_time = (time.time() - start_time) * 1000
 
             return ParseResult(
                 theorems=final_theorems,
@@ -682,6 +694,218 @@ class LeanParser(IParser):
         except (subprocess.SubprocessError, FileNotFoundError):
             pass
         return None
+    
+    def _parse_with_strategy(self, file_path: Path, content: str, 
+                           context: MathematicalContext, 
+                           strategy: OptimizationStrategy) -> Tuple[List[TheoremInfo], List[ParseError]]:
+        """Apply optimized parsing strategy based on mathematical context.
+        
+        Args:
+            file_path: Path to the Lean file
+            content: File content
+            context: Detected mathematical context
+            strategy: Selected optimization strategy
+            
+        Returns:
+            Tuple of (theorems, errors)
+        """
+        self.logger.debug(f"Applying strategy {strategy.value} for context {context.value}")
+        extraction_errors = []
+        
+        if strategy == OptimizationStrategy.TUNED_ARITHMETIC:
+            # High precision for arithmetic theorems - try Lean extractor first
+            try:
+                if self.lean_extractor.is_available():
+                    lean_theorems = self.lean_extractor.extract_file(file_path)
+                    if lean_theorems:
+                        return self._convert_lean_theorems(lean_theorems), []
+            except LeanExtractorError as e:
+                extraction_errors.append(ParseError(message=f"Lean extractor failed: {e}"))
+            
+            # Fallback to enhanced parser for arithmetic
+            enhanced_declarations = self.enhanced_parser.parse_content_enhanced(content)
+            enhanced_theorems = self.enhanced_parser.get_theorems_for_proof_sketcher(enhanced_declarations)
+            if enhanced_theorems:
+                return enhanced_theorems, extraction_errors
+                
+            # Final fallback to basic parsing
+            return self._extract_theorems_basic(content), extraction_errors
+            
+        elif strategy == OptimizationStrategy.HYBRID_MIXED:
+            # Balanced approach - try enhanced first, then basic
+            enhanced_declarations = self.enhanced_parser.parse_content_enhanced(content)
+            enhanced_theorems = self.enhanced_parser.get_theorems_for_proof_sketcher(enhanced_declarations)
+            
+            if enhanced_theorems:
+                # Try to enhance with Lean extractor if available
+                if self.lean_extractor.is_available():
+                    try:
+                        lean_enhanced = []
+                        for theorem in enhanced_theorems:
+                            lean_theorem = self.lean_extractor.extract_to_theorem_info(
+                                file_path, theorem.name
+                            )
+                            if lean_theorem:
+                                lean_enhanced.append(lean_theorem)
+                            else:
+                                lean_enhanced.append(theorem)  # Keep original
+                        return lean_enhanced, extraction_errors
+                    except LeanExtractorError as e:
+                        extraction_errors.append(ParseError(message=f"Lean enhancement failed: {e}"))
+                
+                return enhanced_theorems, extraction_errors
+            
+            # Fallback to basic parsing
+            basic_theorems = self._extract_theorems_basic(content)
+            return basic_theorems, extraction_errors
+            
+        elif strategy == OptimizationStrategy.CONSERVATIVE_COMPLEX:
+            # Conservative approach for complex theorems - basic parsing first
+            basic_theorems = self._extract_theorems_basic(content)
+            
+            if basic_theorems:
+                # Try to enhance with enhanced parser selectively
+                try:
+                    enhanced_declarations = self.enhanced_parser.parse_content_enhanced(content)
+                    enhanced_theorems = self.enhanced_parser.get_theorems_for_proof_sketcher(enhanced_declarations)
+                    
+                    # Merge results, preferring enhanced versions when available
+                    merged_theorems = []
+                    enhanced_names = {t.name for t in enhanced_theorems}
+                    
+                    for basic_thm in basic_theorems:
+                        enhanced_match = next(
+                            (t for t in enhanced_theorems if t.name == basic_thm.name), 
+                            None
+                        )
+                        if enhanced_match:
+                            merged_theorems.append(enhanced_match)
+                        else:
+                            merged_theorems.append(basic_thm)
+                    
+                    # Add any enhanced theorems not found in basic parsing
+                    for enhanced_thm in enhanced_theorems:
+                        if enhanced_thm.name not in {t.name for t in merged_theorems}:
+                            merged_theorems.append(enhanced_thm)
+                    
+                    return merged_theorems, extraction_errors
+                    
+                except Exception as e:
+                    extraction_errors.append(ParseError(message=f"Enhanced parsing failed: {e}"))
+                    
+            return basic_theorems, extraction_errors
+            
+        elif strategy == OptimizationStrategy.AGGRESSIVE_FALLBACK:
+            # Maximum compatibility - try everything
+            all_theorems = []
+            theorem_names = set()
+            
+            # Try basic parsing first (most reliable)
+            try:
+                basic_theorems = self._extract_theorems_basic(content)
+                for thm in basic_theorems:
+                    if thm.name not in theorem_names:
+                        all_theorems.append(thm)
+                        theorem_names.add(thm.name)
+            except Exception as e:
+                extraction_errors.append(ParseError(message=f"Basic parsing failed: {e}"))
+            
+            # Try enhanced parsing
+            try:
+                enhanced_declarations = self.enhanced_parser.parse_content_enhanced(content)
+                enhanced_theorems = self.enhanced_parser.get_theorems_for_proof_sketcher(enhanced_declarations)
+                
+                for thm in enhanced_theorems:
+                    if thm.name not in theorem_names:
+                        all_theorems.append(thm)
+                        theorem_names.add(thm.name)
+            except Exception as e:
+                extraction_errors.append(ParseError(message=f"Enhanced parsing failed: {e}"))
+            
+            return all_theorems, extraction_errors
+            
+        elif strategy == OptimizationStrategy.PRECISION_FOCUSED:
+            # Quality over quantity - enhanced parser only
+            try:
+                enhanced_declarations = self.enhanced_parser.parse_content_enhanced(content)
+                enhanced_theorems = self.enhanced_parser.get_theorems_for_proof_sketcher(enhanced_declarations)
+                
+                if enhanced_theorems:
+                    # Try to get high-quality information from Lean extractor
+                    if self.lean_extractor.is_available():
+                        try:
+                            high_quality_theorems = []
+                            for theorem in enhanced_theorems:
+                                lean_theorem = self.lean_extractor.extract_to_theorem_info(
+                                    file_path, theorem.name
+                                )
+                                if lean_theorem:
+                                    high_quality_theorems.append(lean_theorem)
+                            
+                            if high_quality_theorems:
+                                return high_quality_theorems, extraction_errors
+                        except LeanExtractorError as e:
+                            extraction_errors.append(ParseError(message=f"Lean extractor failed: {e}"))
+                    
+                    return enhanced_theorems, extraction_errors
+                else:
+                    extraction_errors.append(ParseError(message="Enhanced parsing returned no theorems"))
+                    
+            except Exception as e:
+                extraction_errors.append(ParseError(message=f"Enhanced parsing failed: {e}"))
+            
+            # No fallback for precision-focused strategy
+            return [], extraction_errors
+        
+        else:
+            # Unknown strategy - use hybrid approach
+            self.logger.warning(f"Unknown strategy {strategy}, using hybrid approach")
+            return self._parse_with_strategy(file_path, content, context, OptimizationStrategy.HYBRID_MIXED)
+    
+    def _convert_lean_theorems(self, lean_theorems: List[Dict]) -> List[TheoremInfo]:
+        """Convert Lean extractor output to TheoremInfo objects.
+        
+        Args:
+            lean_theorems: List of theorem dictionaries from Lean extractor
+            
+        Returns:
+            List of TheoremInfo objects
+        """
+        converted = []
+        for thm_data in lean_theorems:
+            try:
+                theorem = TheoremInfo(
+                    name=thm_data.get("name", "unknown"),
+                    statement=thm_data.get("statement", thm_data.get("type", "")),
+                    proof=thm_data.get("value"),
+                    dependencies=thm_data.get("dependencies", []),
+                    line_number=thm_data.get("lineNumber"),
+                    docstring=thm_data.get("docString"),
+                    tactics=thm_data.get("tactics", []),
+                    is_axiom=thm_data.get("isAxiom", False),
+                )
+                converted.append(theorem)
+            except Exception as e:
+                self.logger.warning(f"Failed to convert theorem data: {e}")
+                continue
+        
+        return converted
+    
+    def get_optimization_stats(self) -> Dict:
+        """Get optimization statistics for this parser instance.
+        
+        Returns:
+            Dictionary with optimization statistics
+        """
+        stats = self.optimizer.get_optimization_stats()
+        stats.update({
+            "parser_instance": {
+                "strategy_usage": dict(self.strategy_usage),
+                "context_detections": dict(self.context_detections),
+                "lean_extractor_available": self.lean_extractor.is_available()
+            }
+        })
+        return stats
     
     def parse_file_enhanced(self, file_path: Path) -> dict:
         """Parse a Lean file and extract all language constructs using enhanced parser.
