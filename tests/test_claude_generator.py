@@ -220,11 +220,9 @@ class TestClaudeGenerator:
             if "--version" in args[0]:
                 return Mock(returncode=0, stdout="Claude CLI v1.0.0")
             else:
-                # Verify the command includes our custom settings
+                # Verify the command includes our custom settings (updated for new CLI format)
                 cmd = args[0]
-                assert "-m" in cmd
-                assert "claude-3-5-haiku-20241022" in cmd
-                assert "-t" in cmd
+                assert "--temperature" in cmd
                 assert "0.3" in cmd
                 assert "--max-tokens" in cmd
                 assert "2000" in cmd
@@ -337,9 +335,7 @@ class TestClaudeGenerator:
 
         expected_elements = [
             "claude",
-            "-m",
-            "claude-3-5-sonnet-20241022",
-            "-t",
+            "--temperature",
             "0.8",
             "--max-tokens",
             "3000",

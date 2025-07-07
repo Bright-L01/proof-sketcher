@@ -477,7 +477,7 @@ class HTMLExporter(BaseExporterImpl):
                 if asset_file.is_file():
                     try:
                         content = asset_file.read_bytes()
-                        hash_value = hashlib.md5(content).hexdigest()[:8]
+                        hash_value = hashlib.md5(content, usedforsecurity=False).hexdigest()[:8]
                         rel_path = asset_file.relative_to(asset_dir)
                         hashes[str(rel_path)] = hash_value
                     except (OSError, IOError):
