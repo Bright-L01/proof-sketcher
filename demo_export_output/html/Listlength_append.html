@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>List.length_append - Proof Sketcher</title>
+    <link rel="stylesheet" href="css/theorem.css">
+</head>
+<body>
+    <nav>
+        <a href="index.html">← Index</a>
+    </nav>
+
+    <main>
+        <h1>List.length_append</h1>
+        
+        <section>
+            <h2>Statement</h2>
+            <pre><code></code></pre>
+        </section>
+
+        <section>
+            <h2>Explanation</h2>
+            <p>We prove by induction that the length of concatenated lists equals the sum of their individual lengths. This fundamental property connects list operations with arithmetic and demonstrates the power of structural induction.</p>
+        </section>
+
+
+        <section>
+            <h2>Proof Steps</h2>
+            <div class="step">
+                <h3>Step 1: Base case: empty list</h3>
+                <p class="math">([] ++ l2).length = [].length + l2.length</p>
+            </div>
+            <div class="step">
+                <h3>Step 2: Simplify the base case</h3>
+                <p class="math">l2.length = 0 + l2.length</p>
+            </div>
+            <div class="step">
+                <h3>Step 3: Inductive step: cons case</h3>
+                <p class="math">((h :: t) ++ l2).length = (h :: t).length + l2.length</p>
+            </div>
+            <div class="step">
+                <h3>Step 4: Expand the cons case</h3>
+                <p class="math">(h :: (t ++ l2)).length = (1 + t.length) + l2.length</p>
+            </div>
+            <div class="step">
+                <h3>Step 5: Apply induction hypothesis</h3>
+                <p class="math">1 + (t ++ l2).length = 1 + t.length + l2.length</p>
+            </div>
+            <div class="step">
+                <h3>Step 6: Substitute induction hypothesis</h3>
+                <p class="math">1 + (t.length + l2.length) = 1 + t.length + l2.length</p>
+            </div>
+            <div class="step">
+                <h3>Step 7: Apply associativity of addition</h3>
+                <p class="math">(1 + t.length) + l2.length = 1 + t.length + l2.length</p>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
