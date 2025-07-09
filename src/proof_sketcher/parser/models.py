@@ -23,9 +23,12 @@ class TheoremInfo(BaseModel):
         "public", description="Visibility (public, private, protected)"
     )
     tactics: List[str] = Field(
-        default_factory=list, description="Tactics used in the proof"
+        default_factory=list, description="Tactics used in the proo"
     )
     is_axiom: bool = Field(False, description="Whether this is an axiom")
+    file_path: Optional[Path] = Field(None, description="Path to source file")
+    start_line: Optional[int] = Field(None, description="Start line in source file")
+    end_line: Optional[int] = Field(None, description="End line in source file")
 
     class Config:
         """Pydantic configuration."""
@@ -67,11 +70,11 @@ class ParseError(BaseModel):
             )
         else:
             return cls(
-                message=str(exc), 
+                message=str(exc),
                 error_type=exc.__class__.__name__.lower(),
                 line_number=None,
                 column=None,
-                severity="error"
+                severity="error",
             )
 
 
