@@ -4,24 +4,26 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "proof-sketcher"
-version = "0.1.0"
-description = "Transform Lean 4 theorems into natural language explanations with synchronized animations"
+version = "0.0.1a1"
+description = "Experimental documentation generator for Lean 4 (ALPHA)"
 authors = [
     {name = "Bright Liu", email = "brightliu@college.harvard.edu"}
 ]
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.9"
-keywords = ["lean", "theorem-proving", "documentation", "manim", "mathematics"]
+requires-python = ">=3.10"
+keywords = ["lean", "theorem-proving", "documentation", "manim", "mathematics", "experimental", "alpha"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 2 - Pre-Alpha",  # NOT Production!
+    "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
+    "Topic :: Software Development :: Documentation",
     "Topic :: Scientific/Engineering :: Mathematics",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
 ]
 
 dependencies = [
@@ -76,7 +78,7 @@ proof_sketcher = [
     "py.typed",
     "exporter/templates/**/*.jinja2",
     "exporter/templates/**/*.j2",
-    "exporter/templates/**/*.css", 
+    "exporter/templates/**/*.css",
     "exporter/templates/**/*.js",
     "exporter/templates/**/*.html",
 ]
