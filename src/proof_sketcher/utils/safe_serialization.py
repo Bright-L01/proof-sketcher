@@ -201,8 +201,8 @@ class LegacyPickleConverter:
         """
         Convert a pickle file to safe JSON format.
         
-        WARNING: This still uses pickle.load() but only for migration.
-        Only use on files you trust completely.
+        SECURITY WARNING: This function has been DISABLED for security reasons.
+        Pickle deserialization is inherently unsafe and can lead to arbitrary code execution.
         
         Args:
             pickle_path: Path to pickle file
@@ -210,22 +210,16 @@ class LegacyPickleConverter:
             compress: Whether to compress output
             
         Returns:
-            True if conversion successful
+            False (always fails for security)
+            
+        Raises:
+            SecurityError: Always raised to prevent pickle usage
         """
-        import pickle
+        raise SecurityError(
+            "Pickle deserialization is disabled for security reasons. "
+            "Pickle files can contain arbitrary code and are inherently unsafe. "
+            "Please use JSON serialization instead with SafeSerializer.dump()"
+        )
         
-        try:
-            # Load pickle data (DANGEROUS - only for migration)
-            if pickle_path.suffix == '.gz':
-                with gzip.open(pickle_path, 'rb') as f:
-                    data = pickle.load(f)
-            else:
-                with open(pickle_path, 'rb') as f:
-                    data = pickle.load(f)
-            
-            # Convert to safe JSON
-            SafeSerializer.dump(data, json_path, compress=compress)
-            return True
-            
-        except Exception as e:
-            raise SecurityError(f"Failed to convert pickle file: {e}")
+        # REMOVED: Dangerous pickle.load() code
+        # This prevents arbitrary code execution vulnerabilities
