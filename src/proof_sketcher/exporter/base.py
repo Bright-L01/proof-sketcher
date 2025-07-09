@@ -262,7 +262,7 @@ class BaseExporterImpl:
         # Create TemplateContext using the BaseExporter method
         template_context = TemplateContext(
             theorem_name=sketch.theorem_name,
-            theorem_statement="",  # ProofSketch doesn't have theorem_statement
+            theorem_statement=sketch.theorem_statement,
             explanation=sketch.introduction,
             proof_steps=[
                 {
