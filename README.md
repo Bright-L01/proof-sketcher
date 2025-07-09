@@ -1,257 +1,258 @@
-# Proof Sketcher
+# Proof Sketcher (Alpha)
 
-**⚠️ ALPHA SOFTWARE - EARLY DEVELOPMENT STAGE ⚠️**
+⚠️ **ALPHA SOFTWARE - NOT PRODUCTION READY** ⚠️
 
-An experimental tool for generating natural language explanations of Lean 4 theorems.
+**Current version**: 0.0.1-alpha1  
+**Test coverage**: ~38% (improved but still limited)  
+**Known issues**: See [KNOWN_ISSUES.md](KNOWN_ISSUES.md)
 
-## ⚠️ Current Status: Development Phase
+## What It Actually Does (Updated Reality)
 
-**This software is in early alpha development.** Many features are incomplete or experimental. See [Known Issues](#-known-issues) before using.
+Proof Sketcher is an experimental tool that attempts to generate documentation for simple Lean 4 theorems. After recent development work, some features now work better, but significant limitations remain.
 
 ### What Currently Works ✅
 
+- ✅ **Animation System**: 3-tier fallback (Manim → matplotlib → placeholder)
+- ✅ **Export System**: HTML, Markdown, and PDF export (with caveats)
+- ✅ **Basic Parsing**: Simple Lean 4 theorem syntax parsing
 - ✅ **CLI Interface**: Functional command-line interface
-- ✅ **Basic Processing**: Can process Lean files and extract basic theorem information
-- ✅ **Multi-format Export**: Generates HTML, Markdown, and Jupyter notebook outputs
-- ✅ **Offline Mode**: Template-based explanation generation (no AI required)
-- ✅ **Project Structure**: Well-organized codebase with modular design
+- ✅ **Offline Mode**: Template-based explanations (no AI required)
+- ✅ **Error Handling**: Graceful degradation (won't crash on animation failures)
 
 ### What Doesn't Work Yet ❌
 
-- ❌ **AI Integration**: Claude API integration not fully functional
-- ❌ **Lean Parsing**: Limited theorem extraction (often produces empty statements)
-- ❌ **Animations**: Manim integration incomplete
-- ❌ **Content Quality**: Generates generic template content, not theorem-specific explanations
-- ❌ **Production Ready**: Multiple security and quality issues (see [Production Readiness](#-production-readiness))
+- ❌ **Complex Lean Parsing**: Only handles the most basic theorem syntax
+- ❌ **Reliable Animation**: Manim integration works only when properly installed
+- ❌ **Infrastructure Issues**: Contains duplicate export systems (see below)
+- ❌ **Performance**: Memory issues with large files
+- ❌ **Production Features**: No caching, optimization, or proper error recovery
+- ❌ **Real AI Integration**: Limited AI integration capabilities
 
-## 🚀 Quick Start (Alpha Testing)
+## Critical Infrastructure Issues (Honest Assessment)
 
-### Prerequisites
+### Export System Duplication
+**Problem**: The codebase contains **TWO separate export systems**:
 
-- Python 3.10+
-- Lean 4 with Elan (optional - basic functionality works without)
+1. **`src/proof_sketcher/exporter/`** - Comprehensive system with:
+   - Full template management
+   - Doc-gen4 compatibility  
+   - Asset optimization
+   - Advanced features
 
-### Installation
+2. **`src/proof_sketcher/export/`** - Simplified system with:
+   - Basic HTML/Markdown/PDF export
+   - Simple templates
+   - Limited features
+
+**Impact**: This duplication causes confusion and wastes development effort.
+
+**Current Status**: Both systems work but should be consolidated.
+
+### Model Changes
+**Recent Change**: Added `file_path`, `start_line`, `end_line` to `TheoremInfo` model to support export functionality.
+
+**Impact**: This may affect existing code that uses `TheoremInfo` objects.
+
+## Installation (Alpha Testing Only)
+
+**Requirements:**
+- Python 3.8+
+- Optional: Lean 4 installation
+- Optional: Manim for animations (may not work)
+- Optional: LaTeX for PDF export
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/proof-sketcher
+# Clone repository (not on PyPI)
+git clone https://github.com/yourusername/proof-sketcher.git
 cd proof-sketcher
 
 # Install in development mode
 pip install -e .
+
+# Install optional dependencies (may fail)
+pip install manim matplotlib jinja2
 ```
 
-### Basic Usage
+## Basic Usage (What Actually Works)
 
 ```bash
-# Create a simple test file
-echo 'theorem test : 1 = 1 := rfl' > test.lean
+# Simple theorem (likely to work)
+proof-sketcher prove simple.lean --offline
 
-# Generate documentation (offline mode)
-python -m proof_sketcher prove test.lean --offline --format markdown
+# Specify output format
+proof-sketcher prove simple.lean --format html --output ./docs/
 
-# Check output
-ls output/
+# Test animation system (falls back gracefully)
+proof-sketcher prove simple.lean --format html
 ```
 
-**Expected Output**: Basic HTML/Markdown files with template content (not theorem-specific content yet).
+### Example That Should Work
 
-## 📋 Current Capabilities
+Create `simple.lean`:
+```lean
+theorem add_zero (n : ℕ) : n + 0 = n := by
+  rw [Nat.add_zero]
+```
 
-### Working Features
+Run:
+```bash
+proof-sketcher prove simple.lean --offline --format html
+```
 
-1. **Command-Line Interface**
-   ```bash
-   python -m proof_sketcher --help
-   python -m proof_sketcher prove file.lean --offline
-   python -m proof_sketcher batch directory/ --offline
-   ```
+**Expected result**: HTML file with static diagram visualization.
 
-2. **File Processing**
-   - Reads Lean files
-   - Attempts basic theorem extraction
-   - Generates structured output files
+## Current Capabilities (Realistic Assessment)
 
-3. **Export Formats**
-   - HTML with CSS styling
-   - Markdown with LaTeX math
-   - Jupyter notebooks (basic)
+### Animation System
+- **Manim detection**: Automatically checks if Manim is available
+- **Graceful fallback**: Animation → Static diagram → Placeholder file
+- **Never fails**: Always produces some visualization
+- **Timeout protection**: Won't hang indefinitely
 
-4. **Offline Mode**
-   - Works without external API dependencies
-   - Generates template-based explanations
-   - Suitable for testing and development
+### Export System
+- **HTML**: Professional templates with MathJax support
+- **Markdown**: GitHub-compatible with media embedding
+- **PDF**: LaTeX-based (requires LaTeX installation)
+- **Templates**: Basic template system with CSS styling
 
-### Experimental Features
+### Parser
+- **Basic theorems**: Handles simple theorem statements
+- **Limited syntax**: Fails on complex mathlib constructs
+- **No tactics**: Limited tactic support
+- **Small files**: Works best with simple examples
 
-- **Batch Processing**: Can process multiple files
-- **Caching System**: Basic caching implementation
-- **Configuration**: YAML-based configuration support
+## Known Issues (Critical)
 
-## ⚠️ Known Issues
+### High Priority
+1. **Export system duplication**: Two separate systems need consolidation
+2. **Parser limitations**: Only handles basic Lean syntax
+3. **Memory usage**: No streaming, loads entire files
+4. **Animation reliability**: Manim integration fragile
+5. **Limited testing**: Many edge cases untested
 
-### Critical Issues
-- **Security Vulnerabilities**: 69 security issues identified (6 HIGH severity)
-- **Empty Content**: Theorem statements often empty in output
-- **Build Failures**: Lean extractor fails to build properly
-- **Generic Output**: Explanations are template-based, not theorem-specific
-
-### Code Quality Issues
-- 3,625 linting violations
-- 11% test coverage
-- Multiple test modules broken
-- Inconsistent formatting
+### Infrastructure Issues
+- **Code duplication**: Export vs exporter modules
+- **Inconsistent APIs**: Different interfaces for similar functionality
+- **Limited documentation**: Many modules undocumented
+- **Technical debt**: Multiple architectural patterns mixed
 
 ### Limitations
-- No real AI integration yet
-- Limited Lean 4 parsing capabilities
-- Animations not functional
-- Performance issues (30+ seconds for simple theorems)
+- **Complex Lean code**: Most real theorems will fail to parse
+- **Performance**: Slow processing, high memory usage
+- **Error messages**: Poor user feedback on failures
+- **Configuration**: Limited customization options
 
-## 🛠️ Development Setup
+## What Will Probably Fail
 
-### For Contributors
+- Theorems with complex tactics
+- Large Lean files (>500 lines)
+- Advanced mathlib constructs
+- Batch processing large numbers of files
+- PDF export (if LaTeX not properly configured)
+
+## Workarounds
+
+- **Use simple theorems**: Stick to basic syntax
+- **Small files**: Keep under 100 lines
+- **Offline mode**: Avoid API dependencies
+- **HTML/Markdown**: Avoid PDF export unless needed
+- **Restart frequently**: If memory usage grows
+
+## Development Status
+
+**Current phase**: Alpha development with working basic features
+
+**Recent progress:**
+- ✅ Animation system implemented with fallback
+- ✅ Export system functional (though duplicated)
+- ✅ Basic end-to-end pipeline working
+- ✅ Test coverage improved to ~38%
+
+**Next priorities:**
+1. Consolidate export systems
+2. Improve parser for more Lean syntax
+3. Add proper error handling
+4. Optimize memory usage
+5. Create user documentation
+
+## Contributing (Areas That Need Help)
+
+### Critical Issues
+1. **Consolidate export systems**: Merge duplicate functionality
+2. **Parser improvements**: Support more Lean syntax
+3. **Performance optimization**: Reduce memory usage
+4. **Error handling**: Better user feedback
+5. **Documentation**: User guides and examples
+
+### Infrastructure
+- **Testing**: Increase coverage beyond 38%
+- **Code quality**: Address remaining linting issues
+- **Architecture**: Resolve design inconsistencies
+- **Performance**: Add benchmarking and optimization
+
+## Architecture Status
+
+### Recent Improvements
+- ✅ Animation system with proper fallback chain
+- ✅ Export templates and styling
+- ✅ Basic error handling in key components
+- ✅ Test coverage for new features
+
+### Remaining Issues
+- ⚠️ Export system duplication (needs consolidation)
+- ⚠️ Limited parser capabilities
+- ⚠️ No proper logging strategy
+- ⚠️ Mixed architectural patterns
+- ⚠️ Hardcoded configuration
+
+## Testing
 
 ```bash
-# Clone and setup development environment
-git clone https://github.com/yourusername/proof-sketcher
-cd proof-sketcher
-
-# Install development dependencies
-pip install -e ".[dev]"
-
-# Run tests (many currently broken)
+# Run all tests
 pytest
 
-# Check code quality
-flake8 src/proof_sketcher/
-black --check src/proof_sketcher/
+# Run specific test suites
+pytest tests/test_animation.py      # Animation system tests
+pytest tests/test_exporters.py     # Export system tests  
+pytest tests/test_end_to_end.py    # End-to-end pipeline tests
+
+# Current status: 35+ new tests added for Phase 3 features
 ```
 
-### Testing
+## Support and Expectations
 
-```bash
-# Run working tests only
-pytest tests/test_core_utils.py tests/unit/test_coverage_boost.py
+**Support**: Limited - this is alpha software  
+**Bug reports**: Welcome but may not be addressed quickly  
+**Production use**: **Absolutely not recommended**  
+**Learning tool**: Good for understanding the problem space  
 
-# Generate coverage report
-pytest --cov=src/proof_sketcher --cov-report=html
-```
+## Roadmap (Realistic)
 
-**Current Test Status**: 29/33 tests passing, 11% coverage
+- **Alpha 2**: Consolidate export systems, improve parser
+- **Alpha 3**: Performance optimization, better error handling  
+- **Beta 1**: Stable for simple use cases
+- **1.0**: Maybe, if development continues
 
-## 📊 Production Readiness
+## License
 
-**Status: NOT PRODUCTION READY**
+MIT License - Use at your own risk.
 
-| Component | Status | Issues |
-|-----------|--------|---------|
-| Security | ❌ Critical | 69 vulnerabilities |
-| Code Quality | ❌ Poor | 3,625 violations |
-| Test Coverage | ❌ Low | 11% coverage |
-| Core Functionality | ⚠️ Limited | Basic parsing only |
-| Documentation | ⚠️ Partial | This document |
+## Honest Disclaimer
 
-**Estimated time to production readiness**: 4-6 weeks of focused development.
+This software:
+- ✅ Works for simple examples
+- ✅ Has reasonable test coverage for new features
+- ✅ Won't crash on animation failures
+- ❌ Can't handle complex Lean code
+- ❌ Has architecture issues (duplicate systems)
+- ❌ Uses too much memory
+- ❌ Is not ready for real use
 
-## 🔧 Configuration
-
-Create `.proof-sketcher.yaml` in your project root:
-
-```yaml
-# Basic configuration
-generation:
-  offline_mode: true  # Recommended for current version
-  timeout_seconds: 60
-
-export:
-  formats: ["html", "markdown"]
-  output_dir: "output"
-  
-# Development settings
-debug: true
-verbose_logging: true
-```
-
-## 🤝 Contributing
-
-**We welcome contributions!** This project needs help in several areas:
-
-### High Priority Areas
-1. **Security Fixes**: Address 69 security vulnerabilities
-2. **Core Functionality**: Improve Lean theorem parsing
-3. **Test Coverage**: Expand from 11% to 70%+
-4. **Code Quality**: Fix 3,625 linting violations
-
-### How to Contribute
-
-1. Check the [issues page](https://github.com/yourusername/proof-sketcher/issues)
-2. Focus on items labeled `good-first-issue` or `help-wanted`
-3. Read `CONTRIBUTING.md` for guidelines
-4. Submit pull requests with tests
-
-### Development Priorities
-
-1. **Fix security vulnerabilities** (especially pickle usage, XSS issues)
-2. **Implement proper Lean parsing** (currently produces empty statements)
-3. **Improve test coverage** (fix broken test modules)
-4. **Code quality improvements** (formatting, linting)
-
-## 📖 Documentation
-
-### Available Documentation
-- [Production Readiness Assessment](PRODUCTION_READINESS_ASSESSMENT.md)
-- [Testing Milestone Report](TESTING_MILESTONE_REPORT.md)
-- Basic API documentation (auto-generated)
-
-### Missing Documentation
-- User guide (in development)
-- API reference (needs completion)
-- Deployment guide (not ready yet)
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**"Empty theorem statements in output"**
-- Known issue with current parser
-- Working on improved Lean integration
-
-**"Build failed" or "Lean extractor errors"**
-- Lean extractor build is currently broken
-- System falls back to basic text parsing
-
-**"Security warnings"**
-- Multiple known security issues
-- Use only in development environments
-- Do not deploy to production
-
-### Getting Help
-
-1. Check [existing issues](https://github.com/yourusername/proof-sketcher/issues)
-2. Create a new issue with:
-   - System information
-   - Full error messages
-   - Minimal reproduction example
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file.
-
-## ⚠️ Disclaimer
-
-**This is alpha software under active development.** 
-
-- **Not suitable for production use**
-- **Contains known security vulnerabilities**
-- **Core functionality is limited**
-- **API may change significantly**
-
-Use at your own risk and only in development environments.
+**Use for**: Learning, experimentation, testing basic concepts  
+**Don't use for**: Anything important, production systems, complex Lean projects
 
 ---
 
-**Last Updated**: 2025-07-08  
-**Version**: 0.1.0-alpha  
-**Development Status**: Alpha - Major features incomplete
+**Last Updated**: 2025-07-09  
+**Development Status**: Alpha - Core features work but limited scope  
+**Recommendation**: Useful for simple examples, not ready for real work
