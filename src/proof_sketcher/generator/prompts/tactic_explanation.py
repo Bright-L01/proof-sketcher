@@ -5,7 +5,7 @@ from .base import PromptBase
 
 class TacticExplanationTemplate(PromptBase):
     """Template for explaining Lean tactics with pedagogical insight."""
-    
+
     def get_template_string(self) -> str:
         """Enhanced template for explaining Lean tactics."""
         return """

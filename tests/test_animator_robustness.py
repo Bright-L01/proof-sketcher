@@ -9,8 +9,8 @@ import os
 import tempfile
 import time
 from pathlib import Path
+from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, Any
 
 import pytest
 
@@ -20,13 +20,13 @@ from proof_sketcher.animator.manim_mcp import ManimMCPClient
 from proof_sketcher.animator.mock_mcp import MockMCPServer, MockMCPTransport
 from proof_sketcher.animator.models import (
     AnimationConfig,
+    AnimationQuality,
     AnimationRequest,
     AnimationResponse,
     AnimationStyle,
     ManimConfig,
-    AnimationQuality,
 )
-from proof_sketcher.core.exceptions import AnimatorError, AnimationTimeoutError
+from proof_sketcher.core.exceptions import AnimationTimeoutError, AnimatorError
 from proof_sketcher.generator.models import ProofSketch, ProofStep
 
 
@@ -90,7 +90,9 @@ class TestAnimatorRobustness:
     """Test suite for animator robustness and failure scenarios."""
 
     @pytest.mark.asyncio
-    async def test_mock_server_success_path(self, robust_animation_config, robust_manim_config, complex_proof_sketch):
+    async def test_mock_server_success_path(
+        self, robust_animation_config, robust_manim_config, complex_proof_sketch
+    ):
         """Test successful animation with mock server."""
         animator = ProductionAnimator(
             animation_config=robust_animation_config,
@@ -100,6 +102,7 @@ class TestAnimatorRobustness:
 
         # Create progress tracking
         progress_calls = []
+
         def track_progress(message: str, progress: float):
             progress_calls.append((message, progress))
 
@@ -110,15 +113,15 @@ class TestAnimatorRobustness:
 
         # Verify response structure (mock might succeed or fail)
         assert response is not None
-        
+
         # The system should always produce some response, even if it's an error
         if isinstance(response, dict):
             # Dictionary response from fallback
-            assert 'video_path' in response or 'error' in response
+            assert "video_path" in response or "error" in response
         else:
             # Pydantic model response
-            assert hasattr(response, 'video_path') or hasattr(response, 'error')
-        
+            assert hasattr(response, "video_path") or hasattr(response, "error")
+
         # Verify progress was tracked
         assert len(progress_calls) >= 1  # At least start
         assert progress_calls[0][0] == "Starting animation generation"
@@ -128,7 +131,9 @@ class TestAnimatorRobustness:
         assert robust_manim_config.output_dir.exists()
 
     @pytest.mark.asyncio
-    async def test_fallback_to_static_images(self, robust_animation_config, robust_manim_config, complex_proof_sketch):
+    async def test_fallback_to_static_images(
+        self, robust_animation_config, robust_manim_config, complex_proof_sketch
+    ):
         """Test fallback to static image generation when MCP fails."""
         animator = ProductionAnimator(
             animation_config=robust_animation_config,
@@ -142,16 +147,18 @@ class TestAnimatorRobustness:
         animator.mcp_client = mock_client
 
         # Test fallback behavior
-        with patch.object(animator.static_generator, 'generate_static_animation') as mock_static:
+        with patch.object(
+            animator.static_generator, "generate_static_animation"
+        ) as mock_static:
             # Create a simple response for static generation
             mock_static.return_value = {
-                'video_path': robust_manim_config.output_dir / 'fallback.mp4',
-                'thumbnail_path': None,
-                'duration': 45.0,
-                'frame_count': 1350,
-                'size_bytes': 1024 * 512,
-                'error': None,
-                'metadata': {'fallback_used': True, 'generator': 'static'}
+                "video_path": robust_manim_config.output_dir / "fallback.mp4",
+                "thumbnail_path": None,
+                "duration": 45.0,
+                "frame_count": 1350,
+                "size_bytes": 1024 * 512,
+                "error": None,
+                "metadata": {"fallback_used": True, "generator": "static"},
             }
 
             response = await animator.animate_proof(complex_proof_sketch)
@@ -179,21 +186,25 @@ class TestAnimatorRobustness:
         simple_proof = ProofSketch(
             theorem_name="timeout_test",
             introduction="Test timeout handling",
-            key_steps=[ProofStep(
-                step_number=1,
-                description="Simple step",
-                mathematical_content="x = x",
-                tactics=["rfl"],
-            )],
+            key_steps=[
+                ProofStep(
+                    step_number=1,
+                    description="Simple step",
+                    mathematical_content="x = x",
+                    tactics=["rfl"],
+                )
+            ],
             conclusion="Timeout test complete",
         )
 
         # Mock fallback animator to take longer than timeout
         async def slow_animate(*args, **kwargs):
             await asyncio.sleep(70)  # 70 seconds, longer than 60s timeout
-            return {'video_path': None, 'error': None}
+            return {"video_path": None, "error": None}
 
-        with patch.object(animator.fallback_animator, 'animate', side_effect=slow_animate):
+        with patch.object(
+            animator.fallback_animator, "animate", side_effect=slow_animate
+        ):
             response = await animator.animate_proof(simple_proof)
 
             # Should get timeout response
@@ -202,7 +213,9 @@ class TestAnimatorRobustness:
             assert isinstance(response, dict)
 
     @pytest.mark.asyncio
-    async def test_memory_limit_handling(self, robust_animation_config, robust_manim_config):
+    async def test_memory_limit_handling(
+        self, robust_animation_config, robust_manim_config
+    ):
         """Test memory limit checking and handling."""
         # Set low memory limit (minimum allowed is 128MB)
         config = AnimationConfig(
@@ -219,36 +232,42 @@ class TestAnimatorRobustness:
         simple_proof = ProofSketch(
             theorem_name="memory_test",
             introduction="Test memory limit",
-            key_steps=[ProofStep(
-                step_number=1,
-                description="Memory test step",
-                mathematical_content="y = y",
-                tactics=["rfl"],
-            )],
+            key_steps=[
+                ProofStep(
+                    step_number=1,
+                    description="Memory test step",
+                    mathematical_content="y = y",
+                    tactics=["rfl"],
+                )
+            ],
             conclusion="Memory test complete",
         )
 
         # Test with psutil available
         try:
             import psutil
-            
+
             # Mock psutil to report high memory usage
-            with patch('psutil.Process') as mock_process:
+            with patch("psutil.Process") as mock_process:
                 # Simulate high memory usage (200MB > 128MB limit)
-                mock_process.return_value.memory_info.return_value.rss = 200 * 1024 * 1024
-                
+                mock_process.return_value.memory_info.return_value.rss = (
+                    200 * 1024 * 1024
+                )
+
                 response = await animator.animate_proof(simple_proof)
-                
+
                 # Should handle memory limit error gracefully
                 assert response is not None
-                
+
         except ImportError:
             # If psutil not available, test should still work
             response = await animator.animate_proof(simple_proof)
             assert response is not None
 
     @pytest.mark.asyncio
-    async def test_circuit_breaker_functionality(self, robust_animation_config, robust_manim_config):
+    async def test_circuit_breaker_functionality(
+        self, robust_animation_config, robust_manim_config
+    ):
         """Test circuit breaker prevents cascading failures."""
         animator = ProductionAnimator(
             animation_config=robust_animation_config,
@@ -264,12 +283,14 @@ class TestAnimatorRobustness:
         simple_proof = ProofSketch(
             theorem_name="circuit_test",
             introduction="Circuit breaker test",
-            key_steps=[ProofStep(
-                step_number=1,
-                description="Circuit test step",
-                mathematical_content="z = z",
-                tactics=["rfl"],
-            )],
+            key_steps=[
+                ProofStep(
+                    step_number=1,
+                    description="Circuit test step",
+                    mathematical_content="z = z",
+                    tactics=["rfl"],
+                )
+            ],
             conclusion="Circuit test complete",
         )
 
@@ -278,7 +299,9 @@ class TestAnimatorRobustness:
             await animator.mcp_client.connect()
 
     @pytest.mark.asyncio
-    async def test_batch_processing_with_failures(self, robust_animation_config, robust_manim_config):
+    async def test_batch_processing_with_failures(
+        self, robust_animation_config, robust_manim_config
+    ):
         """Test batch processing with partial failures."""
         animator = ProductionAnimator(
             animation_config=robust_animation_config,
@@ -292,45 +315,54 @@ class TestAnimatorRobustness:
             proof = ProofSketch(
                 theorem_name=f"batch_test_{i}",
                 introduction=f"Batch test theorem {i}",
-                key_steps=[ProofStep(
-                    step_number=1,
-                    description=f"Batch step {i}",
-                    mathematical_content=f"x_{i} = x_{i}",
-                    tactics=["rfl"],
-                )],
+                key_steps=[
+                    ProofStep(
+                        step_number=1,
+                        description=f"Batch step {i}",
+                        mathematical_content=f"x_{i} = x_{i}",
+                        tactics=["rfl"],
+                    )
+                ],
                 conclusion=f"Batch test {i} complete",
             )
             proofs.append(proof)
 
         # Mock fallback animator to fail every other request
         call_count = 0
+
         def mock_animate(*args, **kwargs):
             nonlocal call_count
             call_count += 1
             if call_count % 2 == 0:  # Fail every second request
                 raise Exception(f"Simulated failure {call_count}")
             return {
-                'video_path': robust_manim_config.output_dir / f"batch_{call_count}.mp4",
-                'error': None,
-                'metadata': {'batch_id': call_count}
+                "video_path": robust_manim_config.output_dir
+                / f"batch_{call_count}.mp4",
+                "error": None,
+                "metadata": {"batch_id": call_count},
             }
 
-        with patch.object(animator.fallback_animator, 'animate', side_effect=mock_animate):
+        with patch.object(
+            animator.fallback_animator, "animate", side_effect=mock_animate
+        ):
             responses = await animator.animate_batch(proofs, max_concurrent=2)
 
             # Should get responses for all requests (some success, some failure)
             assert len(responses) == 5
-            
+
             # Check that we have both successes and failures
-            successes = [r for r in responses if not r.get('error')]
-            failures = [r for r in responses if r.get('error')]
-            
+            successes = [r for r in responses if not r.get("error")]
+            failures = [r for r in responses if r.get("error")]
+
             # With 50% failure rate, we should have both
             assert len(successes) + len(failures) == 5
 
     @pytest.mark.asyncio
-    async def test_progress_callback_error_handling(self, robust_animation_config, robust_manim_config):
+    async def test_progress_callback_error_handling(
+        self, robust_animation_config, robust_manim_config
+    ):
         """Test that progress callback errors don't break animation."""
+
         def failing_callback(message: str, progress: float):
             raise Exception("Progress callback failed")
 
@@ -344,12 +376,14 @@ class TestAnimatorRobustness:
         simple_proof = ProofSketch(
             theorem_name="callback_test",
             introduction="Progress callback test",
-            key_steps=[ProofStep(
-                step_number=1,
-                description="Callback test step",
-                mathematical_content="a = a",
-                tactics=["rfl"],
-            )],
+            key_steps=[
+                ProofStep(
+                    step_number=1,
+                    description="Callback test step",
+                    mathematical_content="a = a",
+                    tactics=["rfl"],
+                )
+            ],
             conclusion="Callback test complete",
         )
 
@@ -358,7 +392,9 @@ class TestAnimatorRobustness:
         assert response is not None
 
     @pytest.mark.asyncio
-    async def test_filename_sanitization_edge_cases(self, robust_animation_config, robust_manim_config):
+    async def test_filename_sanitization_edge_cases(
+        self, robust_animation_config, robust_manim_config
+    ):
         """Test filename sanitization with problematic theorem names."""
         animator = ProductionAnimator(
             animation_config=robust_animation_config,
@@ -379,12 +415,14 @@ class TestAnimatorRobustness:
             proof = ProofSketch(
                 theorem_name=name,
                 introduction="Filename test",
-                key_steps=[ProofStep(
-                    step_number=1,
-                    description="Filename test step",
-                    mathematical_content="b = b",
-                    tactics=["rfl"],
-                )],
+                key_steps=[
+                    ProofStep(
+                        step_number=1,
+                        description="Filename test step",
+                        mathematical_content="b = b",
+                        tactics=["rfl"],
+                    )
+                ],
                 conclusion="Filename test complete",
             )
 
@@ -397,7 +435,9 @@ class TestAnimatorRobustness:
                 assert "__" not in sanitized
 
     @pytest.mark.asyncio
-    async def test_async_context_manager(self, robust_animation_config, robust_manim_config):
+    async def test_async_context_manager(
+        self, robust_animation_config, robust_manim_config
+    ):
         """Test async context manager functionality."""
         cleanup_called = False
 
@@ -413,29 +453,33 @@ class TestAnimatorRobustness:
         ) as animator:
             # Patch cleanup method
             animator.cleanup = mock_cleanup
-            
+
             assert isinstance(animator, ProductionAnimator)
-            
+
             # Use the animator
             simple_proof = ProofSketch(
                 theorem_name="context_test",
                 introduction="Context manager test",
-                key_steps=[ProofStep(
-                    step_number=1,
-                    description="Context test step",
-                    mathematical_content="c = c",
-                    tactics=["rfl"],
-                )],
+                key_steps=[
+                    ProofStep(
+                        step_number=1,
+                        description="Context test step",
+                        mathematical_content="c = c",
+                        tactics=["rfl"],
+                    )
+                ],
                 conclusion="Context test complete",
             )
-            
+
             response = await animator.animate_proof(simple_proof)
             assert response is not None
 
-        # Cleanup should be called when exiting context  
+        # Cleanup should be called when exiting context
         # Note: In mock mode, cleanup might not be called since it's mocked
 
-    def test_proof_sketch_validation_edge_cases(self, robust_animation_config, robust_manim_config):
+    def test_proof_sketch_validation_edge_cases(
+        self, robust_animation_config, robust_manim_config
+    ):
         """Test proof sketch validation with edge cases."""
         animator = ProductionAnimator(
             animation_config=robust_animation_config,
@@ -448,12 +492,14 @@ class TestAnimatorRobustness:
             invalid_proof = ProofSketch(
                 theorem_name="",
                 introduction="Test",
-                key_steps=[ProofStep(
-                    step_number=1,
-                    description="Step",
-                    mathematical_content="d = d",
-                    tactics=["rfl"],
-                )],
+                key_steps=[
+                    ProofStep(
+                        step_number=1,
+                        description="Step",
+                        mathematical_content="d = d",
+                        tactics=["rfl"],
+                    )
+                ],
                 conclusion="Test",
             )
             animator._validate_proof_sketch(invalid_proof)
@@ -478,14 +524,14 @@ class TestAnimatorRobustness:
             )
             for i in range(25)  # More than 20 steps
         ]
-        
+
         long_proof = ProofSketch(
             theorem_name="long_theorem",
             introduction="Long test",
             key_steps=long_steps,
             conclusion="Long test complete",
         )
-        
+
         # Should not raise exception, just warn
         animator._validate_proof_sketch(long_proof)
 
@@ -501,12 +547,14 @@ class TestStaticAnimationGenerator:
         simple_proof = ProofSketch(
             theorem_name="static_test",
             introduction="Static generation test",
-            key_steps=[ProofStep(
-                step_number=1,
-                description="Static step",
-                mathematical_content="e = e",
-                tactics=["rfl"],
-            )],
+            key_steps=[
+                ProofStep(
+                    step_number=1,
+                    description="Static step",
+                    mathematical_content="e = e",
+                    tactics=["rfl"],
+                )
+            ],
             conclusion="Static test complete",
         )
 
@@ -565,7 +613,7 @@ class TestMockMCPServer:
         params = {
             "proof_sketch": {
                 "theorem_name": "test",
-                "key_steps": [{"step_number": 1, "description": "test"}]
+                "key_steps": [{"step_number": 1, "description": "test"}],
             },
             "style": "modern",
             "quality": "medium",
@@ -594,7 +642,7 @@ class TestMockMCPServer:
                 "proof_sketch": {"theorem_name": "test", "key_steps": []},
                 "style": "modern",
                 "quality": "medium",
-            }
+            },
         )
 
         # Should get JSON-RPC response
@@ -674,12 +722,14 @@ class TestIntegrationScenarios:
             proof = ProofSketch(
                 theorem_name="integration_success",
                 introduction="End-to-end success test",
-                key_steps=[ProofStep(
-                    step_number=1,
-                    description="Integration step",
-                    mathematical_content="f = f",
-                    tactics=["rfl"],
-                )],
+                key_steps=[
+                    ProofStep(
+                        step_number=1,
+                        description="Integration step",
+                        mathematical_content="f = f",
+                        tactics=["rfl"],
+                    )
+                ],
                 conclusion="Integration test complete",
             )
 
@@ -706,12 +756,14 @@ class TestIntegrationScenarios:
             proof = ProofSketch(
                 theorem_name="integration_fallback",
                 introduction="End-to-end fallback test",
-                key_steps=[ProofStep(
-                    step_number=1,
-                    description="Fallback step",
-                    mathematical_content="g = g",
-                    tactics=["rfl"],
-                )],
+                key_steps=[
+                    ProofStep(
+                        step_number=1,
+                        description="Fallback step",
+                        mathematical_content="g = g",
+                        tactics=["rfl"],
+                    )
+                ],
                 conclusion="Fallback test complete",
             )
 
@@ -738,12 +790,14 @@ class TestIntegrationScenarios:
                 proof = ProofSketch(
                     theorem_name=f"stress_test_{i}",
                     introduction=f"Stress test {i}",
-                    key_steps=[ProofStep(
-                        step_number=1,
-                        description=f"Stress step {i}",
-                        mathematical_content=f"h_{i} = h_{i}",
-                        tactics=["rfl"],
-                    )],
+                    key_steps=[
+                        ProofStep(
+                            step_number=1,
+                            description=f"Stress step {i}",
+                            mathematical_content=f"h_{i} = h_{i}",
+                            tactics=["rfl"],
+                        )
+                    ],
                     conclusion=f"Stress test {i} complete",
                 )
                 proofs.append(proof)

@@ -74,9 +74,9 @@ services:
     command: >
       bash -c "
         echo '=== Security Scan (69 known vulnerabilities) ===' &&
-        bandit -r src -f json -o /app/bandit_report.json || 
+        bandit -r src -f json -o /app/bandit_report.json ||
         echo 'Security issues found - see bandit_report.json' &&
-        safety check --json > /app/safety_report.json || 
+        safety check --json > /app/safety_report.json ||
         echo 'Dependency vulnerabilities found'
       "
     networks:
@@ -142,7 +142,7 @@ volumes:
   postgresql_data:
 
 # Usage Examples:
-# 
+#
 # Build all images:
 #   docker-compose build
 #

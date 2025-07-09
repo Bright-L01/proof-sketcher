@@ -215,7 +215,7 @@ class BatchProcessingRequest(BaseModel):
         if v is not None and v <= 0:
             raise ValidationError(
                 "max_workers must be positive",
-                details={"value": v, "constraint": "positive integer"}
+                details={"value": v, "constraint": "positive integer"},
             )
         return v
 

@@ -5,14 +5,14 @@
 theorem add_zero (n : Nat) : n + 0 = n := by
   induction n with
   | zero => rfl
-  | succ n ih => 
+  | succ n ih =>
     rw [Nat.add_succ, ih]
 
 /-- Zero is the additive identity on the left -/
 theorem zero_add (n : Nat) : 0 + n = n := by
   induction n with
   | zero => rfl
-  | succ n ih => 
+  | succ n ih =>
     rw [Nat.succ_eq_add_one, ← ih]
     rfl
 
@@ -24,5 +24,5 @@ lemma add_one (n : Nat) : n + 1 = n.succ := by
 theorem succ_add (n m : Nat) : n.succ + m = (n + m).succ := by
   induction m with
   | zero => rfl
-  | succ m ih => 
+  | succ m ih =>
     rw [Nat.add_succ, ih, Nat.add_succ]

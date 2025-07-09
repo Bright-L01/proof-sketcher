@@ -19,24 +19,28 @@ This guide outlines how to handle community feedback, contributions, and engagem
 ### Priority Levels
 
 **🔥 Critical (P0) - Immediate Response**
+
 - Security vulnerabilities
 - Data loss or corruption
 - System crashes on valid input
 - Installation failures on supported platforms
 
 **⚡ High (P1) - 24-48 Hours**
+
 - Incorrect mathematical explanations
 - Performance degradation > 50%
 - Core functionality broken
 - Accessibility barriers
 
 **🎯 Medium (P2) - 1 Week**
+
 - Feature requests with clear use cases
 - Non-breaking functional issues
 - Documentation improvements
 - Enhancement suggestions
 
 **📝 Low (P3) - 2+ Weeks**
+
 - Nice-to-have features
 - Minor UI/UX improvements
 - Code quality improvements
@@ -45,6 +49,7 @@ This guide outlines how to handle community feedback, contributions, and engagem
 ### Issue Labels System
 
 **Type Labels**:
+
 - `bug` - Something isn't working correctly
 - `enhancement` - New feature or improvement
 - `documentation` - Documentation improvements
@@ -53,6 +58,7 @@ This guide outlines how to handle community feedback, contributions, and engagem
 - `accessibility` - Accessibility improvements
 
 **Component Labels**:
+
 - `parser` - Lean file parsing issues
 - `generator` - Natural language generation
 - `exporter` - Output format generation
@@ -61,12 +67,14 @@ This guide outlines how to handle community feedback, contributions, and engagem
 - `batch` - Batch processing functionality
 
 **Priority Labels**:
+
 - `critical` - P0 issues requiring immediate attention
 - `high-priority` - P1 issues for next release
 - `medium-priority` - P2 issues for upcoming releases
 - `low-priority` - P3 issues for future consideration
 
 **Status Labels**:
+
 - `needs-triage` - Requires initial assessment
 - `needs-reproduction` - Cannot reproduce the issue
 - `needs-more-info` - Waiting for additional information
@@ -83,7 +91,7 @@ This guide outlines how to handle community feedback, contributions, and engagem
 ```markdown
 Thank you for reporting this issue! 🐛
 
-I've labeled this as a `bug` and assigned priority level based on impact. 
+I've labeled this as a `bug` and assigned priority level based on impact.
 
 **Next steps:**
 1. I'll investigate the issue within [timeframe]
@@ -163,18 +171,21 @@ Thanks for making Proof Sketcher better! 🙏
 ### Proactive Engagement
 
 **Regular Updates** (Weekly):
+
 - Progress reports on major issues
 - Roadmap updates and milestone achievements
 - Community highlights and contributions
 - Performance improvements and optimizations
 
 **Educational Content** (Bi-weekly):
+
 - Blog posts on advanced features
 - Tutorial videos for complex workflows
 - Case studies from community users
 - Tips and tricks for optimal usage
 
 **Community Building** (Monthly):
+
 - Community contributor spotlights
 - Feature request voting/prioritization
 - Open development discussions
@@ -183,24 +194,28 @@ Thanks for making Proof Sketcher better! 🙏
 ### Response Best Practices
 
 **Be Responsive**:
+
 - Acknowledge all issues within stated timeframes
 - Provide regular updates on progress
 - Set clear expectations for resolution
 - Follow up to ensure satisfaction
 
 **Be Helpful**:
+
 - Provide detailed explanations and examples
 - Suggest workarounds when possible
 - Point to relevant documentation
 - Offer to help with implementation
 
 **Be Transparent**:
+
 - Explain decision-making processes
 - Share roadmap priorities and constraints
 - Admit when something is outside scope
 - Communicate about delays or changes
 
 **Be Appreciative**:
+
 - Thank users for feedback and contributions
 - Recognize valuable community members
 - Celebrate milestones and achievements
@@ -213,18 +228,21 @@ Thanks for making Proof Sketcher better! 🙏
 ### Key Metrics to Monitor
 
 **Response Metrics**:
+
 - Average time to first response
 - Time to resolution by priority level
 - Number of issues closed vs opened
 - Community satisfaction ratings
 
 **Quality Metrics**:
+
 - Bug report accuracy and reproducibility
 - Feature request alignment with roadmap
 - Documentation effectiveness
 - User adoption and retention
 
 **Engagement Metrics**:
+
 - GitHub stars, forks, and watches
 - Discussion participation levels
 - Pull request contribution rate
@@ -270,18 +288,21 @@ Thanks for making Proof Sketcher better! 🙏
 ### 1. Initial Triage (Within 24 hours)
 
 **For all new issues:**
+
 1. Apply appropriate labels (type, component, priority)
 2. Ask for clarification if needed (`needs-more-info`)
 3. Provide initial response and timeline
 4. Assign to milestone if appropriate
 
 **For bug reports:**
+
 1. Attempt to reproduce the issue
 2. Add `needs-reproduction` if unable to reproduce
 3. Escalate critical issues immediately
 4. Create test cases for confirmed bugs
 
 **For feature requests:**
+
 1. Evaluate against roadmap and project goals
 2. Ask for additional use case details
 3. Mark as `enhancement` and appropriate priority
@@ -290,12 +311,14 @@ Thanks for making Proof Sketcher better! 🙏
 ### 2. Active Work (Regular intervals)
 
 **Weekly review:**
+
 - Update progress on all in-progress issues
 - Identify blocked issues and work to unblock
 - Reassess priorities based on new information
 - Communicate status changes to stakeholders
 
 **Release planning:**
+
 - Group related issues into milestones
 - Balance new features with bug fixes
 - Consider community feedback in prioritization
@@ -304,6 +327,7 @@ Thanks for making Proof Sketcher better! 🙏
 ### 3. Resolution & Follow-up
 
 **For completed issues:**
+
 1. Test thoroughly before closing
 2. Update documentation if needed
 3. Communicate resolution to issue reporter
@@ -311,6 +335,7 @@ Thanks for making Proof Sketcher better! 🙏
 5. Include in release notes
 
 **For rejected/wontfix issues:**
+
 1. Provide clear explanation for decision
 2. Suggest alternatives if possible
 3. Keep door open for future consideration
@@ -425,6 +450,7 @@ When users share success stories or positive feedback, document them systematica
 ### Use in Marketing Materials
 
 Success stories should be prominently featured in:
+
 - Project README and documentation
 - Conference presentations and demos
 - Blog posts and announcements
@@ -437,6 +463,7 @@ Success stories should be prominently featured in:
 Effective feedback management is crucial for building a thriving mathematical software community. By being responsive, helpful, transparent, and appreciative, we can foster an environment where users feel valued and contributors feel motivated.
 
 **Key principles:**
+
 1. **Respond quickly** to build trust and engagement
 2. **Be thorough** in investigating mathematical issues
 3. **Communicate clearly** about timelines and decisions

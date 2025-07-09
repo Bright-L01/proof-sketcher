@@ -50,7 +50,7 @@ A detailed analysis comparing Proof Sketcher's automated approach with tradition
    - Extract theorem statement and proof
    - Generate natural language explanation
 
-2. **Export** (1-3 seconds)  
+2. **Export** (1-3 seconds)
    - Create HTML, Markdown, PDF, Jupyter formats
    - Apply consistent styling and formatting
    - Generate cross-references and links
@@ -78,7 +78,7 @@ A detailed analysis comparing Proof Sketcher's automated approach with tradition
 
 **❌ Common Issues:**
 - **Inconsistent terminology** across different authors
-- **Varying explanation depth** and detail levels  
+- **Varying explanation depth** and detail levels
 - **Missing context** for mathematical significance
 - **Outdated content** when proofs are revised
 - **Access barriers** due to expert-level writing
@@ -88,7 +88,7 @@ A detailed analysis comparing Proof Sketcher's automated approach with tradition
 
 **📊 Quality Metrics from Literature Review:**
 - **Consistency score**: 3.2/10 across mathematical documentation
-- **Accessibility rating**: 4.1/10 for non-expert readability  
+- **Accessibility rating**: 4.1/10 for non-expert readability
 - **Maintenance burden**: 60% of documentation becomes outdated within 1 year
 - **Format diversity**: 85% of projects provide only single format
 
@@ -118,7 +118,7 @@ A detailed analysis comparing Proof Sketcher's automated approach with tradition
 
 **Personnel Costs** (per 100 theorems):
 - **Graduate student** (20 hours/week × 3 weeks): $1,800
-- **Postdoc researcher** (40 hours/week × 1.5 weeks): $3,600  
+- **Postdoc researcher** (40 hours/week × 1.5 weeks): $3,600
 - **Faculty time** (10 hours review): $1,500
 - **Total labor cost**: $6,900
 
@@ -142,7 +142,7 @@ A detailed analysis comparing Proof Sketcher's automated approach with tradition
 
 **Per-project Costs** (100 theorems):
 - **Processing time**: 5 hours
-- **Review time**: 10 hours  
+- **Review time**: 10 hours
 - **Customization**: 5 hours (optional)
 - **Total cost**: $600 (vs $6,900 manual)
 
@@ -158,7 +158,7 @@ A detailed analysis comparing Proof Sketcher's automated approach with tradition
 
 ### Project: Advanced Group Theory Course
 
-**Background**: 
+**Background**:
 - **Scope**: 85 theorems across 12 mathematical topics
 - **Audience**: Graduate students and researchers
 - **Requirements**: Multiple formats, consistent quality, mathematical rigor
@@ -177,7 +177,7 @@ A detailed analysis comparing Proof Sketcher's automated approach with tradition
 
 **Issues encountered**:
 - Different writing styles between contributors
-- Mathematical notation inconsistencies  
+- Mathematical notation inconsistencies
 - Missing explanations for 23% of theorems
 - No cross-references between related concepts
 - Difficult to update when proofs were revised
@@ -399,7 +399,7 @@ A detailed analysis comparing Proof Sketcher's automated approach with tradition
 
 **For most mathematical documentation projects**, Proof Sketcher provides **superior value** through:
 - ⚡ **90%+ time savings**
-- 📊 **Consistent, high-quality output**  
+- 📊 **Consistent, high-quality output**
 - 🔄 **Zero-maintenance documentation**
 - 📱 **Multiple accessible formats**
 - 💰 **Significant cost reduction**

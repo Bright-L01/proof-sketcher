@@ -29,16 +29,16 @@ theorem nat_add_assoc (a b c : ℕ) : (a + b) + c = a + (b + c) := by
 
 **Generated Explanation**:
 > **Commutativity of Addition (nat_add_comm)**
-> 
+>
 > This fundamental theorem establishes that addition of natural numbers is commutative - the order of operands doesn't affect the result. For any natural numbers n and m, we have n + m = m + n.
 >
 > **Mathematical Significance**: This property is so fundamental that we often take it for granted, but it's actually a non-trivial result that must be proven from the basic axioms of natural numbers.
 >
 > **Proof Strategy**: The proof leverages Lean's built-in `Nat.add_comm` lemma, which is proven by induction on the first argument.
 
-**Processing Stats**: 
+**Processing Stats**:
 - Parse time: 15ms
-- Generation time: 200ms  
+- Generation time: 200ms
 - Export time: 50ms
 - **Total**: 265ms for 2 theorems
 
@@ -50,7 +50,7 @@ theorem nat_add_assoc (a b c : ℕ) : (a + b) + c = a + (b + c) := by
 
 **Lean Source** (`examples/classical/group_theory.lean`):
 ```lean
-theorem unique_identity (G : Type*) [Group G] : 
+theorem unique_identity (G : Type*) [Group G] :
   ∃! e : G, ∀ a : G, e * a = a ∧ a * e = a := by
   use 1
   constructor
@@ -95,12 +95,12 @@ theorem supremum_property (S : Set ℝ) (hne : S.Nonempty) (hbdd : BddAbove S) :
   ∃ sup : ℝ, IsLUB S sup := by
   exact Real.exists_isLUB hne hbdd
 
-theorem squeeze_theorem {f g h : ℝ → ℝ} {a L : ℝ} 
+theorem squeeze_theorem {f g h : ℝ → ℝ} {a L : ℝ}
   (hfg : ∀ x, f x ≤ g x) (hgh : ∀ x, g x ≤ h x)
   (hf_lim : Tendsto f (𝓝 a) (𝓝 L)) (hh_lim : Tendsto h (𝓝 a) (𝓝 L)) :
   Tendsto g (𝓝 a) (𝓝 L) := by
   apply tendsto_of_tendsto_of_tendsto_of_le_of_le hf_lim hh_lim
-  · exact eventually_of_forall hfg  
+  · exact eventually_of_forall hfg
   · exact eventually_of_forall hgh
 ```
 
@@ -134,14 +134,14 @@ theorem squeeze_theorem {f g h : ℝ → ℝ} {a L : ℝ}
 **Lean Source** (`examples/classical/topology.lean`):
 ```lean
 theorem open_sets_form_topology (X : Type*) [TopologicalSpace X] :
-  (∅ : Set X).IsOpen ∧ 
+  (∅ : Set X).IsOpen ∧
   (Set.univ : Set X).IsOpen ∧
   (∀ (𝒪 : Set (Set X)), (∀ U ∈ 𝒪, U.IsOpen) → (⋃ U ∈ 𝒪, U).IsOpen) ∧
   (∀ U V : Set X, U.IsOpen → V.IsOpen → (U ∩ V).IsOpen) := by
   exact ⟨isOpen_empty, isOpen_univ, isOpen_iUnion, isOpen_inter⟩
 
 theorem hausdorff_separation (X : Type*) [TopologicalSpace X] [T2Space X]
-  (x y : X) (h : x ≠ y) : 
+  (x y : X) (h : x ≠ y) :
   ∃ U V : Set X, U.IsOpen ∧ V.IsOpen ∧ x ∈ U ∧ y ∈ V ∧ Disjoint U V := by
   exact T2Space.t2 h
 ```
@@ -152,7 +152,7 @@ theorem hausdorff_separation (X : Type*) [TopologicalSpace X] [T2Space X]
 > This theorem verifies that the collection of open sets in any topological space satisfies the three fundamental axioms that define a topology:
 >
 > 1. **Empty Set and Universal Set**: Both ∅ and X are open
-> 2. **Arbitrary Unions**: Any union of open sets is open  
+> 2. **Arbitrary Unions**: Any union of open sets is open
 > 3. **Finite Intersections**: The intersection of finitely many open sets is open
 >
 > **Hausdorff Separation Property**
@@ -164,7 +164,7 @@ theorem hausdorff_separation (X : Type*) [TopologicalSpace X] [T2Space X]
 > **Significance**: Hausdorff spaces are "nice" - limits of sequences are unique, compact sets are closed, and many pathological behaviors are excluded.
 
 **Processing Stats**:
-- Parse time: 120ms  
+- Parse time: 120ms
 - Generation time: 1500ms
 - Export time: 250ms
 - **Total**: 1870ms for advanced topology
@@ -221,11 +221,11 @@ Memory Efficiency: 0.64MB per theorem average
 
 **Lean Source**:
 ```lean
-theorem sum_first_n_naturals (n : ℕ) : 
+theorem sum_first_n_naturals (n : ℕ) :
   (Finset.range (n + 1)).sum id = n * (n + 1) / 2 := by
   induction n with
   | zero => simp
-  | succ k ih => 
+  | succ k ih =>
     rw [Finset.sum_range_succ]
     rw [ih]
     ring
@@ -233,7 +233,7 @@ theorem sum_first_n_naturals (n : ℕ) :
 
 **Animation Sequence** (Generated via Manim MCP):
 1. **Base Case**: Visual representation of 0 = 0*(0+1)/2
-2. **Inductive Step**: Animation showing k+1 terms summing 
+2. **Inductive Step**: Animation showing k+1 terms summing
 3. **Algebraic Manipulation**: Step-by-step algebraic simplification
 4. **Conclusion**: Final formula verification
 
@@ -254,7 +254,7 @@ theorem sum_first_n_naturals (n : ℕ) :
 - **📊 Mathematical Notation**: Rendered with MathJax
 - **🌓 Dark/Light Mode**: Theme switching support
 
-### Markdown Output Features  
+### Markdown Output Features
 - **📖 GitHub Compatible**: Renders perfectly on GitHub
 - **📝 Plain Text Fallback**: Accessible without rendering
 - **🔗 Relative Links**: Navigable documentation structure
@@ -295,7 +295,7 @@ python -m proof_sketcher batch examples/ \
 
 ### Expected Results
 - **Simple theorems**: < 1 second processing
-- **Complex proofs**: 2-5 seconds processing  
+- **Complex proofs**: 2-5 seconds processing
 - **Large files**: Linear scaling with theorem count
 - **Memory usage**: < 200MB for typical workloads
 
@@ -309,7 +309,7 @@ python -m proof_sketcher batch examples/ \
 - **🎯 Learning Objectives**: Highlighted key concepts
 - **💡 Intuitive Insights**: Geometric and algebraic intuition
 
-### For Educators  
+### For Educators
 - **📖 Course Materials**: Ready-to-use documentation
 - **🎬 Visual Aids**: Animated proof demonstrations
 - **📊 Assessment Tools**: Complexity and difficulty metrics
@@ -325,13 +325,13 @@ python -m proof_sketcher batch examples/ \
 
 ## 🌟 Success Stories
 
-> **"Proof Sketcher transformed our abstract algebra course. Students finally understand why group axioms matter!"**  
+> **"Proof Sketcher transformed our abstract algebra course. Students finally understand why group axioms matter!"**
 > — Dr. Sarah Chen, Mathematics Professor
 
-> **"Processing 500+ theorems from our research group took 3 minutes instead of 3 weeks of manual documentation."**  
+> **"Processing 500+ theorems from our research group took 3 minutes instead of 3 weeks of manual documentation."**
 > — Prof. Michael Rodriguez, Topology Research Group
 
-> **"The animations help students visualize inductive proofs in a way that blackboard diagrams never could."**  
+> **"The animations help students visualize inductive proofs in a way that blackboard diagrams never could."**
 > — Dr. Lisa Wang, Educational Technology
 
 ---

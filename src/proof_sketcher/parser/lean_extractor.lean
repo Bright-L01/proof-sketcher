@@ -25,12 +25,12 @@ deriving ToJson, FromJson
 -- Helper to extract dependencies from expression
 partial def extractDependencies (expr : Expr) : MetaM (Array Name) := do
   let mut deps : Array Name := #[]
-  
+
   let rec visit (e : Expr) : MetaM (Array Name) := do
     match e with
-    | .const name _ => 
+    | .const name _ =>
       -- Filter out built-in constants and focus on meaningful dependencies
-      if name.toString.startsWith "Nat." || 
+      if name.toString.startsWith "Nat." ||
          name.toString.startsWith "List." ||
          name.toString.startsWith "Eq." ||
          name.toString.startsWith "And." ||
@@ -51,33 +51,33 @@ partial def extractDependencies (expr : Expr) : MetaM (Array Name) := do
       return vdeps ++ bdeps
     | .mdata _ expr => visit expr
     | _ => return #[]
-  
+
   visit expr
 
 -- Extract theorem information from environment
 def extractTheoremInfo (env : Environment) (theoremName : String) : MetaM TheoremInfo := do
   let name := theoremName.toName
-  
+
   match env.find? name with
-  | none => 
-    return { 
-      name := theoremName, 
-      type := "", 
-      dependencies := #[], 
-      docString := none, 
-      success := false 
+  | none =>
+    return {
+      name := theoremName,
+      type := "",
+      dependencies := #[],
+      docString := none,
+      success := false
     }
   | some cinfo => do
     -- Get the type as a string
     let typeStr := toString cinfo.type
-    
+
     -- Extract dependencies
     let deps ← extractDependencies cinfo.type
     let depStrings := deps.map (·.toString)
-    
+
     -- Get docstring if available
     let docString := env.getModuleDocString? name
-    
+
     return {
       name := theoremName,
       type := typeStr,
@@ -90,24 +90,24 @@ def extractTheoremInfo (env : Environment) (theoremName : String) : MetaM Theore
 def parseArgs (args : List String) : Option (String × String) := do
   let rec go (args : List String) (file : Option String) (theorem : Option String) : Option (String × String) :=
     match args with
-    | [] => 
+    | [] =>
       match file, theorem with
       | some f, some t => some (f, t)
       | _, _ => none
     | "--file" :: f :: rest => go rest (some f) theorem
     | "--theorem" :: t :: rest => go rest file (some t)
     | _ :: rest => go rest file theorem
-  
+
   go args none none
 
 -- Main extraction function
 def extractMain (filePath : String) (theoremName : String) : IO Unit := do
   -- Initialize Lean environment
   initSearchPath (← findSysroot)
-  
+
   let inputCtx := Parser.mkInputContext (← IO.FS.readFile filePath) filePath
   let (header, parserState, messages) := Parser.parseHeader inputCtx
-  
+
   -- Check for parsing errors
   if messages.hasErrors then
     let errorInfo : TheoremInfo := {
@@ -119,9 +119,9 @@ def extractMain (filePath : String) (theoremName : String) : IO Unit := do
     }
     IO.println (toJson errorInfo).compress
     return
-  
+
   let (env, messages) ← processHeader header {} messages inputCtx
-  
+
   if messages.hasErrors then
     let errorInfo : TheoremInfo := {
       name := theoremName,
@@ -132,21 +132,21 @@ def extractMain (filePath : String) (theoremName : String) : IO Unit := do
     }
     IO.println (toJson errorInfo).compress
     return
-  
+
   -- Parse the rest of the file
   let commandState := Command.mkState env messages {}
   let s ← IO.processCommands inputCtx parserState commandState
-  
+
   -- Extract theorem information
   let result ← extractTheoremInfo s.env theoremName |>.run' {}
-  
+
   -- Output JSON
   IO.println (toJson result).compress
 
 -- Entry point
 def main (args : List String) : IO UInt32 := do
   match parseArgs args with
-  | none => 
+  | none =>
     IO.eprintln "Usage: lean --run lean_extractor.lean -- --file <path> --theorem <name>"
     return 1
   | some (filePath, theoremName) => do

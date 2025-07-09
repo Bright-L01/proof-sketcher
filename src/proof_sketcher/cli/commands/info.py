@@ -17,28 +17,28 @@ console = Console()
 @click.pass_context
 def list_theorems(ctx: click.Context, lean_file: Path) -> None:
     """List all theorems found in a Lean file with their statements and locations.
-    
+
     This command parses a Lean 4 file and extracts all theorem declarations,
     displaying them in a formatted table with their statements and line numbers.
     Useful for exploring unfamiliar Lean files or selecting specific theorems.
-    
+
     \b
     Examples:
       # List all theorems in a file
       python -m proof_sketcher list-theorems examples/group_theory.lean
-      
+
       # Explore classical mathematics examples
       python -m proof_sketcher list-theorems examples/classical/real_analysis.lean
-      
+
       # Check a file before processing
       python -m proof_sketcher list-theorems my_theorems.lean
-    
+
     \b
     Output Format:
       • Name: Theorem identifier
       • Statement: Theorem statement (truncated if long)
       • Line: Line number in source file
-    
+
     \b
     Troubleshooting:
       • File must have .lean extension
@@ -50,8 +50,12 @@ def list_theorems(ctx: click.Context, lean_file: Path) -> None:
     # Validate file extension with helpful error message
     if not lean_file.suffix == ".lean":
         console.print(f"[red]Error: Invalid file extension '{lean_file.suffix}'[/red]")
-        console.print("[yellow]Proof Sketcher only processes Lean 4 files with .lean extension[/yellow]")
-        console.print(f"[dim]Suggestion: Rename '{lean_file}' to '{lean_file.stem}.lean'[/dim]")
+        console.print(
+            "[yellow]Proof Sketcher only processes Lean 4 files with .lean extension[/yellow]"
+        )
+        console.print(
+            f"[dim]Suggestion: Rename '{lean_file}' to '{lean_file.stem}.lean'[/dim]"
+        )
         raise click.Abort()
 
     console.print(f"[bold blue]Parsing {lean_file.name}...[/bold blue]\n")
@@ -74,7 +78,9 @@ def list_theorems(ctx: click.Context, lean_file: Path) -> None:
         console.print("  • File is missing required imports")
         console.print("\n[yellow]Example valid theorem:[/yellow]")
         console.print("[dim]  theorem add_zero (n : ℕ) : n + 0 = n := by simp[/dim]")
-        console.print("\n[dim]For more examples, see: examples/classical/simple_examples.lean[/dim]")
+        console.print(
+            "\n[dim]For more examples, see: examples/classical/simple_examples.lean[/dim]"
+        )
         return
 
     # Create table for theorems

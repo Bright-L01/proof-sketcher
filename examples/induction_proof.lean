@@ -8,12 +8,12 @@ def sum_to_n : Nat → Nat
 /-- Formula for sum of first n natural numbers -/
 theorem sum_formula (n : Nat) : 2 * sum_to_n n = n * (n + 1) := by
   induction n with
-  | zero => 
+  | zero =>
     -- Base case: 2 * sum_to_n 0 = 0 * (0 + 1)
     simp [sum_to_n]
   | succ n ih =>
     -- Inductive step: assume true for n, prove for n + 1
-    calc 2 * sum_to_n (n + 1) 
+    calc 2 * sum_to_n (n + 1)
       = 2 * ((n + 1) + sum_to_n n) := by rfl
       _ = 2 * (n + 1) + 2 * sum_to_n n := by ring
       _ = 2 * (n + 1) + n * (n + 1) := by rw [ih]
@@ -25,7 +25,7 @@ theorem sum_formula (n : Nat) : 2 * sum_to_n n = n * (n + 1) := by
 theorem pow_two_pos (n : Nat) : 0 < 2^n := by
   induction n with
   | zero => norm_num
-  | succ n ih => 
+  | succ n ih =>
     calc 0 < 2^n := ih
          _ < 2 * 2^n := by linarith
          _ = 2^(n + 1) := by rw [pow_succ]

@@ -44,10 +44,7 @@ def main():
     # Export to HTML
     if sketches:
         print("\nExporting to HTML...")
-        options = ExportOptions(
-            output_dir=Path("output"),
-            create_index=True
-        )
+        options = ExportOptions(output_dir=Path("output"), create_index=True)
 
         exporter = HTMLExporter(options)
         result = exporter.export_multiple(sketches)

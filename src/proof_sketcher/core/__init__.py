@@ -22,14 +22,7 @@ from .exceptions import (
     TemplateError,
     ValidationError,
 )
-from .interfaces import (
-    IAnimator,
-    ICache,
-    IConfigurable,
-    IExporter,
-    IGenerator,
-    IParser,
-)
+from .interfaces import IAnimator, ICache, IConfigurable, IExporter, IGenerator, IParser
 from .models import (
     BaseConfig,
     BatchProcessingRequest,
@@ -94,7 +87,7 @@ __all__ = [
     "format_duration",
     "truncate_text",
     "deep_merge",
-    "retry_with_backoff",
+    "retry_with_backof",
     "get_timestamp",
     "calculate_hash",
     "chunk_list",

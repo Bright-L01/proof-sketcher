@@ -7,6 +7,7 @@ Common issues and solutions for Proof Sketcher users.
 ### "command not found: proof-sketcher"
 
 **Symptoms:**
+
 ```bash
 $ proof-sketcher --version
 bash: proof-sketcher: command not found
@@ -15,31 +16,36 @@ bash: proof-sketcher: command not found
 **Solutions:**
 
 1. **Check if installed correctly:**
+
    ```bash
    pip show proof-sketcher
    ```
 
 2. **Verify pip installation path:**
+
    ```bash
    pip show -f proof-sketcher | grep Location
    ```
 
 3. **Add to PATH if needed:**
+
    ```bash
    # For bash/zsh
    export PATH="$HOME/.local/bin:$PATH"
-   
+
    # Make permanent
    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
    source ~/.bashrc
    ```
 
 4. **Reinstall with user flag:**
+
    ```bash
    pip install --user proof-sketcher
    ```
 
 5. **Use pipx (recommended):**
+
    ```bash
    pipx install proof-sketcher
    ```
@@ -47,6 +53,7 @@ bash: proof-sketcher: command not found
 ### Python Version Incompatibility
 
 **Symptoms:**
+
 ```
 ERROR: proof-sketcher requires Python >=3.10
 ```
@@ -54,26 +61,29 @@ ERROR: proof-sketcher requires Python >=3.10
 **Solutions:**
 
 1. **Check Python version:**
+
    ```bash
    python --version
    python3 --version
    ```
 
 2. **Install compatible Python:**
+
    ```bash
    # macOS with Homebrew
    brew install python@3.12
-   
+
    # Ubuntu/Debian
    sudo apt update
    sudo apt install python3.12 python3.12-pip
-   
+
    # Using pyenv
    pyenv install 3.12.0
    pyenv global 3.12.0
    ```
 
 3. **Use virtual environment:**
+
    ```bash
    python3.12 -m venv proof-sketcher-env
    source proof-sketcher-env/bin/activate
@@ -83,6 +93,7 @@ ERROR: proof-sketcher requires Python >=3.10
 ### Dependency Conflicts
 
 **Symptoms:**
+
 ```
 ERROR: pip's dependency resolver does not currently consider pre-releases
 ```
@@ -90,11 +101,13 @@ ERROR: pip's dependency resolver does not currently consider pre-releases
 **Solutions:**
 
 1. **Update pip:**
+
    ```bash
    pip install --upgrade pip
    ```
 
 2. **Use clean virtual environment:**
+
    ```bash
    python -m venv clean-env
    source clean-env/bin/activate
@@ -102,6 +115,7 @@ ERROR: pip's dependency resolver does not currently consider pre-releases
    ```
 
 3. **Install with no-deps and resolve manually:**
+
    ```bash
    pip install --no-deps proof-sketcher
    pip install -r requirements.txt
@@ -112,6 +126,7 @@ ERROR: pip's dependency resolver does not currently consider pre-releases
 ### "Lean executable not found"
 
 **Symptoms:**
+
 ```
 Error: Cannot find Lean executable. Please ensure Lean 4 is installed.
 ```
@@ -119,24 +134,28 @@ Error: Cannot find Lean executable. Please ensure Lean 4 is installed.
 **Solutions:**
 
 1. **Check Lean installation:**
+
    ```bash
    which lean
    lean --version
    ```
 
 2. **Install Lean 4 via elan:**
+
    ```bash
    curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh
    source ~/.elan/env
    ```
 
 3. **Verify PATH includes Lean:**
+
    ```bash
    echo $PATH | grep -o elan
    export PATH="$HOME/.elan/bin:$PATH"
    ```
 
 4. **Configure custom Lean path:**
+
    ```yaml
    # .proof-sketcher.yaml
    parser:
@@ -147,6 +166,7 @@ Error: Cannot find Lean executable. Please ensure Lean 4 is installed.
 ### Lake Project Not Found
 
 **Symptoms:**
+
 ```
 Warning: No lakefile.lean found. Proceeding without project context.
 ```
@@ -154,6 +174,7 @@ Warning: No lakefile.lean found. Proceeding without project context.
 **Solutions:**
 
 1. **Initialize Lake project:**
+
    ```bash
    lake init MyProject
    cd MyProject
@@ -161,6 +182,7 @@ Warning: No lakefile.lean found. Proceeding without project context.
    ```
 
 2. **Navigate to project root:**
+
    ```bash
    # Find lakefile.lean
    find . -name "lakefile.lean" -type f
@@ -168,6 +190,7 @@ Warning: No lakefile.lean found. Proceeding without project context.
    ```
 
 3. **Disable Lake integration:**
+
    ```bash
    proof-sketcher prove myfile.lean --no-lake
    ```
@@ -175,6 +198,7 @@ Warning: No lakefile.lean found. Proceeding without project context.
 ### Mathlib Dependencies
 
 **Symptoms:**
+
 ```
 Error: Unknown identifier 'Mathlib.Data.Nat.Basic'
 ```
@@ -182,18 +206,21 @@ Error: Unknown identifier 'Mathlib.Data.Nat.Basic'
 **Solutions:**
 
 1. **Update dependencies:**
+
    ```bash
    lake update
    lake build
    ```
 
 2. **Check dependency versions:**
+
    ```bash
    lake env lean --version
    cat lake-manifest.json | grep mathlib
    ```
 
 3. **Clean and rebuild:**
+
    ```bash
    lake clean
    lake build
@@ -204,6 +231,7 @@ Error: Unknown identifier 'Mathlib.Data.Nat.Basic'
 ### No Theorems Found
 
 **Symptoms:**
+
 ```
 Warning: No theorems found in file.lean
 ```
@@ -211,28 +239,32 @@ Warning: No theorems found in file.lean
 **Solutions:**
 
 1. **Check file syntax:**
+
    ```bash
    lean --check yourfile.lean
    ```
 
 2. **Verify theorem structure:**
+
    ```lean
    -- Correct format
    theorem my_theorem : 1 = 1 := by
      rfl
-   
+
    -- Common mistakes to avoid
    def my_function : Nat := 1  -- This is a definition, not a theorem
    #check 1 = 1               -- This is a command, not a theorem
    ```
 
 3. **Check file encoding:**
+
    ```bash
    file --mime-encoding yourfile.lean
    # Should output: text/plain; charset=utf-8
    ```
 
 4. **Increase parser timeout:**
+
    ```bash
    proof-sketcher prove yourfile.lean --parser-timeout 60
    ```
@@ -240,6 +272,7 @@ Warning: No theorems found in file.lean
 ### Parsing Timeout
 
 **Symptoms:**
+
 ```
 Error: Parser timeout after 30 seconds
 ```
@@ -247,6 +280,7 @@ Error: Parser timeout after 30 seconds
 **Solutions:**
 
 1. **Increase timeout:**
+
    ```yaml
    # .proof-sketcher.yaml
    parser:
@@ -254,12 +288,14 @@ Error: Parser timeout after 30 seconds
    ```
 
 2. **Split large files:**
+
    ```bash
    # Process files individually
    proof-sketcher batch ./src/ --chunk-size 1
    ```
 
 3. **Check file complexity:**
+
    ```bash
    wc -l *.lean  # Count lines
    grep -c "theorem\|lemma\|def" *.lean  # Count definitions
@@ -268,6 +304,7 @@ Error: Parser timeout after 30 seconds
 ### Unicode Issues
 
 **Symptoms:**
+
 ```
 Error: Invalid character in Lean file
 ```
@@ -275,6 +312,7 @@ Error: Invalid character in Lean file
 **Solutions:**
 
 1. **Check file encoding:**
+
    ```bash
    file --mime-encoding yourfile.lean
    iconv -f utf-8 -t utf-8 yourfile.lean > temp.lean
@@ -282,12 +320,14 @@ Error: Invalid character in Lean file
    ```
 
 2. **Handle BOM (Byte Order Mark):**
+
    ```bash
    # Remove BOM if present
    sed -i '1s/^\xEF\xBB\xBF//' yourfile.lean
    ```
 
 3. **Validate Unicode:**
+
    ```bash
    python3 -c "
    with open('yourfile.lean', 'r', encoding='utf-8') as f:
@@ -301,6 +341,7 @@ Error: Invalid character in Lean file
 ### Claude API Errors
 
 **Symptoms:**
+
 ```
 Error: Claude API rate limit exceeded
 Error: Claude API authentication failed
@@ -309,11 +350,13 @@ Error: Claude API authentication failed
 **Solutions:**
 
 1. **Use offline mode:**
+
    ```bash
    proof-sketcher prove yourfile.lean --offline
    ```
 
 2. **Configure retry settings:**
+
    ```yaml
    # .proof-sketcher.yaml
    generator:
@@ -323,12 +366,14 @@ Error: Claude API authentication failed
    ```
 
 3. **Check Claude CLI installation:**
+
    ```bash
    which claude
    claude --version
    ```
 
 4. **Use cached responses:**
+
    ```yaml
    generator:
      cache_responses: true
@@ -338,6 +383,7 @@ Error: Claude API authentication failed
 ### Generation Timeout
 
 **Symptoms:**
+
 ```
 Error: Generation timeout after 60 seconds
 ```
@@ -345,11 +391,13 @@ Error: Generation timeout after 60 seconds
 **Solutions:**
 
 1. **Increase timeout:**
+
    ```bash
    proof-sketcher prove yourfile.lean --timeout 180
    ```
 
 2. **Use simpler model:**
+
    ```yaml
    generator:
      model: "claude-3-haiku-20240307"  # Faster model
@@ -357,6 +405,7 @@ Error: Generation timeout after 60 seconds
    ```
 
 3. **Process smaller theorems:**
+
    ```bash
    # Filter by complexity
    proof-sketcher batch ./src/ --max-proof-length 50
@@ -365,6 +414,7 @@ Error: Generation timeout after 60 seconds
 ### Poor Quality Output
 
 **Symptoms:**
+
 - Generic explanations
 - Missing mathematical content
 - Incorrect step descriptions
@@ -372,6 +422,7 @@ Error: Generation timeout after 60 seconds
 **Solutions:**
 
 1. **Adjust model parameters:**
+
    ```yaml
    generator:
      model: "claude-3-opus-20240229"  # Higher quality
@@ -380,11 +431,12 @@ Error: Generation timeout after 60 seconds
    ```
 
 2. **Provide better context:**
+
    ```lean
-   /-- 
+   /--
    This theorem proves the fundamental property of addition
    that adding zero to any natural number leaves it unchanged.
-   
+
    This is proved by mathematical induction on the natural number.
    -/
    theorem add_zero (n : Nat) : n + 0 = n := by
@@ -394,6 +446,7 @@ Error: Generation timeout after 60 seconds
    ```
 
 3. **Use difficulty-appropriate prompts:**
+
    ```bash
    proof-sketcher prove advanced.lean --difficulty advanced
    proof-sketcher prove intro.lean --difficulty beginner
@@ -404,6 +457,7 @@ Error: Generation timeout after 60 seconds
 ### MCP Server Connection Failed
 
 **Symptoms:**
+
 ```
 Error: Cannot connect to Manim MCP server
 ```
@@ -411,15 +465,17 @@ Error: Cannot connect to Manim MCP server
 **Solutions:**
 
 1. **Check server status:**
+
    ```bash
    # Start server manually
    manim-mcp-server --port 8000
-   
+
    # Test connection
    curl http://localhost:8000/health
    ```
 
 2. **Configure server settings:**
+
    ```yaml
    # .proof-sketcher.yaml
    manim:
@@ -430,11 +486,13 @@ Error: Cannot connect to Manim MCP server
    ```
 
 3. **Use fallback mode:**
+
    ```bash
    proof-sketcher prove yourfile.lean --no-animation
    ```
 
 4. **Check dependencies:**
+
    ```bash
    pip install manim
    ffmpeg -version
@@ -443,6 +501,7 @@ Error: Cannot connect to Manim MCP server
 ### Animation Rendering Failed
 
 **Symptoms:**
+
 ```
 Error: Animation rendering failed with exit code 1
 ```
@@ -450,18 +509,20 @@ Error: Animation rendering failed with exit code 1
 **Solutions:**
 
 1. **Check video codecs:**
+
    ```bash
    # macOS
    brew install ffmpeg
-   
+
    # Ubuntu/Debian
    sudo apt install ffmpeg
-   
+
    # Test rendering
    ffmpeg -f lavfi -i testsrc=duration=1:size=320x240:rate=1 test.mp4
    ```
 
 2. **Reduce animation quality:**
+
    ```yaml
    animator:
      animation_config:
@@ -472,12 +533,14 @@ Error: Animation rendering failed with exit code 1
    ```
 
 3. **Check disk space:**
+
    ```bash
    df -h /tmp
    df -h .
    ```
 
 4. **Use alternative temp directory:**
+
    ```yaml
    manim:
      temp_dir: "/path/to/writable/temp"
@@ -488,6 +551,7 @@ Error: Animation rendering failed with exit code 1
 ### High Memory Usage
 
 **Symptoms:**
+
 ```
 Error: MemoryError - insufficient memory
 Process killed (OOM)
@@ -496,6 +560,7 @@ Process killed (OOM)
 **Solutions:**
 
 1. **Limit memory usage:**
+
    ```yaml
    # .proof-sketcher.yaml
    performance:
@@ -504,16 +569,19 @@ Process killed (OOM)
    ```
 
 2. **Process in smaller batches:**
+
    ```bash
    proof-sketcher batch ./src/ --chunk-size 10 --max-workers 2
    ```
 
 3. **Clear cache regularly:**
+
    ```bash
    proof-sketcher cache clear --older-than 24h
    ```
 
 4. **Use streaming mode:**
+
    ```bash
    proof-sketcher batch ./src/ --stream --no-cache
    ```
@@ -521,6 +589,7 @@ Process killed (OOM)
 ### Slow Processing
 
 **Symptoms:**
+
 - Very slow batch processing
 - Long waits between theorems
 - High CPU usage
@@ -528,26 +597,30 @@ Process killed (OOM)
 **Solutions:**
 
 1. **Optimize concurrency:**
+
    ```bash
    # Use all CPU cores
    proof-sketcher batch ./src/ --max-workers $(nproc)
-   
+
    # Conservative approach
    proof-sketcher batch ./src/ --max-workers 2
    ```
 
 2. **Enable caching:**
+
    ```yaml
    generator:
      cache_responses: true
    ```
 
 3. **Skip animations for speed:**
+
    ```bash
    proof-sketcher batch ./src/ --no-animation
    ```
 
 4. **Use faster model:**
+
    ```yaml
    generator:
      model: "claude-3-haiku-20240307"
@@ -556,6 +629,7 @@ Process killed (OOM)
 ### Large File Issues
 
 **Symptoms:**
+
 ```
 Error: File too large (>10MB)
 Error: Too many theorems in single file
@@ -564,6 +638,7 @@ Error: Too many theorems in single file
 **Solutions:**
 
 1. **Increase limits:**
+
    ```yaml
    parser:
      max_file_size: 52428800  # 50MB
@@ -571,23 +646,25 @@ Error: Too many theorems in single file
    ```
 
 2. **Split large files:**
+
    ```python
    # split_lean_file.py
    import re
-   
+
    def split_lean_file(filename, max_theorems=50):
        with open(filename) as f:
            content = f.read()
-       
+
        theorems = re.findall(r'theorem .*?(?=theorem|\Z)', content, re.DOTALL)
-       
-       for i, chunk in enumerate([theorems[i:i+max_theorems] 
+
+       for i, chunk in enumerate([theorems[i:i+max_theorems]
                                  for i in range(0, len(theorems), max_theorems)]):
            with open(f'{filename}.part{i}.lean', 'w') as f:
                f.write(''.join(chunk))
    ```
 
 3. **Process selectively:**
+
    ```bash
    # Process only specific theorems
    proof-sketcher prove largefile.lean --theorem-pattern "main_*"
@@ -598,6 +675,7 @@ Error: Too many theorems in single file
 ### HTML Export Errors
 
 **Symptoms:**
+
 ```
 Error: Template not found
 Error: Asset file missing
@@ -606,21 +684,25 @@ Error: Asset file missing
 **Solutions:**
 
 1. **Check template paths:**
+
    ```bash
    proof-sketcher config show | grep template_paths
    ```
 
 2. **Use built-in templates:**
+
    ```bash
    proof-sketcher prove yourfile.lean --template default
    ```
 
 3. **Install missing dependencies:**
+
    ```bash
    pip install jinja2 markdown beautifulsoup4
    ```
 
 4. **Verify output directory:**
+
    ```bash
    mkdir -p output/html
    chmod 755 output/html
@@ -629,6 +711,7 @@ Error: Asset file missing
 ### PDF Generation Issues
 
 **Symptoms:**
+
 ```
 Error: LaTeX not found
 Error: PDF compilation failed
@@ -637,24 +720,27 @@ Error: PDF compilation failed
 **Solutions:**
 
 1. **Install LaTeX:**
+
    ```bash
    # macOS
    brew install mactex
-   
+
    # Ubuntu/Debian
    sudo apt install texlive-full
-   
+
    # Minimal install
    sudo apt install texlive-latex-base texlive-fonts-recommended
    ```
 
 2. **Check LaTeX installation:**
+
    ```bash
    which pdflatex
    pdflatex --version
    ```
 
 3. **Use alternative PDF method:**
+
    ```bash
    # Generate HTML then convert
    proof-sketcher prove yourfile.lean --format html
@@ -666,6 +752,7 @@ Error: PDF compilation failed
 ### Invalid Configuration
 
 **Symptoms:**
+
 ```
 Error: Invalid configuration file
 YAML parsing error
@@ -674,56 +761,64 @@ YAML parsing error
 **Solutions:**
 
 1. **Validate YAML syntax:**
+
    ```bash
    python -c "import yaml; yaml.safe_load(open('.proof-sketcher.yaml'))"
    ```
 
 2. **Use configuration validator:**
+
    ```bash
    proof-sketcher config validate
    proof-sketcher config validate --file myconfig.yaml
    ```
 
 3. **Reset to defaults:**
+
    ```bash
    proof-sketcher config save --output .proof-sketcher.yaml --defaults
    ```
 
 4. **Check for common YAML errors:**
+
    ```yaml
    # Correct indentation
    parser:
      lean_timeout: 30
-   
+
    # Incorrect (mixing tabs and spaces)
    parser:
-   	lean_timeout: 30
+    lean_timeout: 30
    ```
 
 ### Environment Variables Not Working
 
 **Symptoms:**
+
 - Settings not applied
 - Environment overrides ignored
 
 **Solutions:**
 
 1. **Check variable names:**
+
    ```bash
    # Correct format
    export PROOF_SKETCHER_DEBUG=true
    export PROOF_SKETCHER_PARSER_LEAN_TIMEOUT=60
-   
+
    # Verify
    env | grep PROOF_SKETCHER
    ```
 
 2. **Test override:**
+
    ```bash
    PROOF_SKETCHER_DEBUG=true proof-sketcher config show
    ```
 
 3. **Check shell configuration:**
+
    ```bash
    # Make permanent
    echo 'export PROOF_SKETCHER_DEBUG=true' >> ~/.bashrc
@@ -788,31 +883,35 @@ proof-sketcher test-config
 
 ### Community Resources
 
-1. **GitHub Issues**: https://github.com/brightliu/proof-sketcher/issues
-2. **Documentation**: https://proof-sketcher.readthedocs.io
-3. **Lean Zulip**: https://leanprover.zulipchat.com
+1. **GitHub Issues**: <https://github.com/brightliu/proof-sketcher/issues>
+2. **Documentation**: <https://proof-sketcher.readthedocs.io>
+3. **Lean Zulip**: <https://leanprover.zulipchat.com>
 
 ### Creating Bug Reports
 
 When filing an issue, include:
 
 1. **System information:**
+
    ```bash
    proof-sketcher info > system-info.txt
    ```
 
 2. **Error logs:**
+
    ```bash
    proof-sketcher prove problematic.lean --debug --log-file error.log 2>&1
    ```
 
 3. **Minimal example:**
+
    ```lean
    -- Simplest file that reproduces the issue
    theorem simple_issue : 1 = 1 := by rfl
    ```
 
 4. **Configuration:**
+
    ```bash
    proof-sketcher config show --anonymized > config.yaml
    ```
@@ -834,6 +933,7 @@ Before reporting issues:
 If Proof Sketcher is completely broken:
 
 1. **Reset everything:**
+
    ```bash
    pip uninstall proof-sketcher
    rm -rf ~/.proof-sketcher/
@@ -842,15 +942,17 @@ If Proof Sketcher is completely broken:
    ```
 
 2. **Use Docker alternative:**
+
    ```bash
    docker run --rm -v $(pwd):/workspace proof-sketcher/cli prove /workspace/yourfile.lean
    ```
 
 3. **Manual processing:**
+
    ```bash
    # Use Lean directly for parsing
    lean --json yourfile.lean > ast.json
-   
+
    # Use Claude CLI directly for generation
    claude "Explain this Lean theorem: $(cat yourfile.lean)"
    ```

@@ -37,7 +37,8 @@ class MathlibTestFixtures:
 
         # Basic arithmetic file
         basic_file = test_dir / "Basic.lean"
-        basic_file.write_text("""
+        basic_file.write_text(
+            """
 -- Basic arithmetic theorems with mathlib notation
 namespace Nat
 
@@ -45,14 +46,14 @@ namespace Nat
 theorem add_comm (a b : ℕ) : a + b = b + a := by
   induction a with
   | zero => simp [zero_add]
-  | succ a ih => 
+  | succ a ih =>
     rw [succ_add, ih, add_succ]
 
 /-- Addition is associative -/
 theorem add_assoc (a b c : ℕ) : (a + b) + c = a + (b + c) := by
   induction a with
   | zero => simp [zero_add]
-  | succ a ih => 
+  | succ a ih =>
     rw [succ_add, succ_add, ih, succ_add]
 
 /-- Zero is the right identity for addition -/
@@ -62,12 +63,14 @@ theorem add_zero (a : ℕ) : a + 0 = a := by
   | succ a ih => rw [succ_add, ih]
 
 end Nat
-""")
+"""
+        )
         files["basic"] = basic_file
 
         # Set theory file with Unicode notation
         set_file = test_dir / "Set.lean"
-        set_file.write_text("""
+        set_file.write_text(
+            """
 -- Set theory with Unicode notation
 namespace Set
 
@@ -96,12 +99,14 @@ theorem empty_subset (s : Set α) : ∅ ⊆ s := by
   exact False.elim h
 
 end Set
-""")
+"""
+        )
         files["set"] = set_file
 
         # Topology file with advanced notation
         topology_file = test_dir / "Topology.lean"
-        topology_file.write_text("""
+        topology_file.write_text(
+            """
 -- Topology with advanced mathematical notation
 import Set
 
@@ -125,7 +130,8 @@ theorem IsCompact.image {Y : Type*} [TopologicalSpace Y] {f : X → Y} {s : Set 
   sorry  -- Proof omitted for demo
 
 end TopologicalSpace
-""")
+"""
+        )
         files["topology"] = topology_file
 
         return files
@@ -163,12 +169,12 @@ class TestMathlibNotationHandler:
         table = handler.get_notation_table(text)
 
         # Should find all symbols used
-        symbols = {entry['symbol'] for entry in table}
-        assert '∀' in symbols
-        assert '∃' in symbols
-        assert '∈' in symbols
-        assert 'ℕ' in symbols
-        assert 'ℝ' in symbols
+        symbols = {entry["symbol"] for entry in table}
+        assert "∀" in symbols
+        assert "∃" in symbols
+        assert "∈" in symbols
+        assert "ℕ" in symbols
+        assert "ℝ" in symbols
 
     def test_mathematical_area_detection(self):
         """Test detection of mathematical areas."""
@@ -222,7 +228,10 @@ class TestMathlibExporter:
 
         # Check that mathematical areas were detected/preserved
         assert enhanced.mathematical_areas
-        assert "Number Theory" in enhanced.mathematical_areas or "Algebra" in enhanced.mathematical_areas
+        assert (
+            "Number Theory" in enhanced.mathematical_areas
+            or "Algebra" in enhanced.mathematical_areas
+        )
 
         # Check that text was processed
         assert enhanced.introduction  # Should be preserved and potentially enhanced
@@ -310,21 +319,25 @@ class TestMathlibIntegration:
         """Test that mathlib notation is handled correctly in parsing."""
         # Create file with Unicode notation
         test_file = tmp_path / "Unicode.lean"
-        test_file.write_text("""
+        test_file.write_text(
+            """
 theorem unicode_test (A B : Set ℕ) : A ∪ B = B ∪ A := by
   ext x
   simp [Set.mem_union]
   tauto
-""")
+"""
+        )
 
         # Parse file
         parser = LeanParser()
         try:
             theorems = parser.parse_file(test_file)
-            
+
             # Should not crash on Unicode
-            assert len(theorems) >= 0  # May be 0 if parser has issues, but shouldn't crash
-            
+            assert (
+                len(theorems) >= 0
+            )  # May be 0 if parser has issues, but shouldn't crash
+
         except Exception as e:
             # If parsing fails, it should be a graceful failure, not a crash
             assert "unicode" not in str(e).lower() or "encoding" not in str(e).lower()
@@ -349,13 +362,15 @@ theorem unicode_test (A B : Set ℕ) : A ∪ B = B ∪ A := by
                 for theorem in theorems[:2]:  # Limit to first 2 theorems per file
                     # Generate explanation
                     sketch = generator.generate_proof_sketch(theorem)
-                    
+
                     if sketch:
-                        processed_theorems.append({
-                            'theorem': theorem,
-                            'sketch': sketch,
-                            'file_type': file_type
-                        })
+                        processed_theorems.append(
+                            {
+                                "theorem": theorem,
+                                "sketch": sketch,
+                                "file_type": file_type,
+                            }
+                        )
 
             except Exception as e:
                 # Log but don't fail - some failures are expected in testing
@@ -367,7 +382,10 @@ theorem unicode_test (A B : Set ℕ) : A ∪ B = B ∪ A := by
         # Test export of processed theorems
         for item in processed_theorems[:3]:  # Test first 3
             try:
-                from src.proof_sketcher.exporter.models import ExportContext, ExportOptions
+                from src.proof_sketcher.exporter.models import (
+                    ExportContext,
+                    ExportOptions,
+                )
 
                 options = ExportOptions(output_dir=tmp_path / "output")
                 exporter = MathlibExporter(options)
@@ -375,11 +393,13 @@ theorem unicode_test (A B : Set ℕ) : A ∪ B = B ∪ A := by
                 context = ExportContext(
                     format=exporter.format,
                     output_dir=tmp_path / "output",
-                    sketches=[item['sketch']],
+                    sketches=[item["sketch"]],
                 )
 
-                result = exporter.export_single(item['sketch'], context)
-                assert result.success or len(result.errors) > 0  # Either success or documented failure
+                result = exporter.export_single(item["sketch"], context)
+                assert (
+                    result.success or len(result.errors) > 0
+                )  # Either success or documented failure
 
             except Exception as e:
                 print(f"Export failed for {item['theorem'].name}: {e}")
@@ -406,12 +426,10 @@ theorem unicode_test (A B : Set ℕ) : A ∪ B = B ∪ A := by
 
         try:
             import asyncio
-            
+
             async def run_test():
                 result = await processor.process_project(
-                    project_data,
-                    tmp_path / "batch_output",
-                    options
+                    project_data, tmp_path / "batch_output", options
                 )
                 return result
 
@@ -419,14 +437,16 @@ theorem unicode_test (A B : Set ℕ) : A ∪ B = B ∪ A := by
 
             # Verify batch processing results
             assert result["total_theorems"] > 0
-            assert result["processed"] >= 0  # May be 0 if all failed, but shouldn't crash
+            assert (
+                result["processed"] >= 0
+            )  # May be 0 if all failed, but shouldn't crash
 
             # Check that some output was generated (even if errors occurred)
             output_dir = tmp_path / "batch_output"
             if output_dir.exists():
                 output_files = list(output_dir.rglob("*"))
                 # May have created some files even with errors
-                
+
         except Exception as e:
             # Batch processing might fail in test environment, but shouldn't crash
             print(f"Batch processing test failed (expected in some environments): {e}")
@@ -440,9 +460,7 @@ class TestMathlibPerformance:
         handler = MathlibNotationHandler()
 
         # Large text with lots of notation
-        large_text = " ".join([
-            "∀ x ∈ ℕ, ∃ y ∈ ℝ, x + y ∈ ℂ ∧ x ⊆ y ∪ z ∩ w"
-        ] * 100)
+        large_text = " ".join(["∀ x ∈ ℕ, ∃ y ∈ ℝ, x + y ∈ ℂ ∧ x ⊆ y ∪ z ∩ w"] * 100)
 
         start_time = time.time()
         result = handler.convert_to_latex(large_text)
@@ -459,16 +477,19 @@ class TestMathlibPerformance:
         # Create a complex sketch
         complex_sketch = ProofSketch(
             theorem_name="ComplexTheorem",
-            introduction="A complex theorem with lots of mathematical notation: ∀ x ∈ ℕ, ∃ y ∈ ℝ, x + y ∈ ℂ ∧ x ⊆ y ∪ z ∩ w" * 10,
+            introduction="A complex theorem with lots of mathematical notation: ∀ x ∈ ℕ, ∃ y ∈ ℝ, x + y ∈ ℂ ∧ x ⊆ y ∪ z ∩ w"
+            * 10,
             key_steps=[
                 ProofStep(
                     step_number=i,
                     description=f"Step {i} with notation: ∀ x ∈ ℕ, x + 0 = x",
                     mathematical_content=f"step_{i}: ∀ x ∈ ℕ, ∃ y ∈ ℝ, x + y = y + x",
                     tactics=[f"tactic_{i}"],
-                ) for i in range(20)
+                )
+                for i in range(20)
             ],
-            conclusion="Complex conclusion with notation: ∀ x ∈ ℕ, ∃ y ∈ ℝ, x + y ∈ ℂ" * 5,
+            conclusion="Complex conclusion with notation: ∀ x ∈ ℕ, ∃ y ∈ ℝ, x + y ∈ ℂ"
+            * 5,
         )
 
         # Test export performance
@@ -488,7 +509,7 @@ class TestMathlibPerformance:
 
         # Should export reasonably quickly even with complex content
         assert export_time < 5.0  # Less than 5 seconds
-        
+
         if result.success:
             # Check that complex notation was handled
             html_file = result.files_created[0]
@@ -534,24 +555,26 @@ class TestRealMathlibIntegration:
                     theorems = parser.parse_file(file_path)
                     if theorems:
                         parsed_any = True
-                        
+
                         # Test that we can handle real mathlib notation
                         for theorem in theorems[:3]:  # Test first 3 theorems
                             assert theorem.name
                             assert theorem.statement
-                            
+
                             # Test notation handling
                             handler = MathlibNotationHandler()
-                            latex_statement = handler.convert_to_latex(theorem.statement)
+                            latex_statement = handler.convert_to_latex(
+                                theorem.statement
+                            )
                             assert len(latex_statement) > 0
-                            
+
                 except Exception as e:
                     print(f"Failed to parse {file_path}: {e}")
 
         if not parsed_any:
             pytest.skip("No parseable mathlib files found")
 
-    @pytest.mark.skipif(not Path("mathlib4").exists(), reason="Mathlib4 not available") 
+    @pytest.mark.skipif(not Path("mathlib4").exists(), reason="Mathlib4 not available")
     def test_real_mathlib_batch_processing(self):
         """Test batch processing on real mathlib content."""
         if not self.mathlib_available:
@@ -565,18 +588,18 @@ class TestRealMathlibIntegration:
         from src.proof_sketcher.batch import ProjectScanner
 
         scanner = ProjectScanner()
-        
+
         try:
             # Scan just the Nat directory (should be manageable)
             result = scanner.scan_project(test_dir)
-            
+
             # Should find some theorems
             assert result["statistics"]["total_theorems"] > 0
             assert result["statistics"]["total_files"] > 0
-            
+
             # Test that dependency analysis works
             assert "dependency_graph" in result
-            
+
         except Exception as e:
             pytest.skip(f"Failed to scan real mathlib content: {e}")
 

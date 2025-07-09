@@ -4,8 +4,8 @@ import asyncio
 import tempfile
 import time
 from pathlib import Path
+from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, Any
 
 import pytest
 
@@ -15,12 +15,12 @@ from proof_sketcher.animator.manim_mcp import ManimMCPClient
 from proof_sketcher.animator.mock_mcp import MockMCPServer, MockMCPTransport
 from proof_sketcher.animator.models import (
     AnimationConfig,
+    AnimationQuality,
     AnimationResponse,
     AnimationStyle,
     ManimConfig,
-    AnimationQuality,
 )
-from proof_sketcher.core.exceptions import AnimatorError, AnimationTimeoutError
+from proof_sketcher.core.exceptions import AnimationTimeoutError, AnimatorError
 from proof_sketcher.generator.models import ProofSketch, ProofStep
 
 
@@ -137,13 +137,14 @@ class TestProductionAnimator:
 
         # Create a mock request first
         from proof_sketcher.animator.models import AnimationRequest
+
         mock_request = AnimationRequest(
             theorem_name=sample_proof_sketch.theorem_name,
             request_id="test-request",
             segments=[],
             config=animation_config,
         )
-        
+
         # Mock the fallback animator to return success
         mock_response = AnimationResponse(
             request=mock_request,
@@ -188,9 +189,13 @@ class TestProductionAnimator:
         # Mock the fallback animator to take too long
         async def slow_animate(*args, **kwargs):
             await asyncio.sleep(0.2)  # Longer than timeout
-            return AnimationResponse(video_path=None, duration=0, frame_count=0, size_bytes=0)
+            return AnimationResponse(
+                video_path=None, duration=0, frame_count=0, size_bytes=0
+            )
 
-        with patch.object(animator.fallback_animator, "animate", side_effect=slow_animate):
+        with patch.object(
+            animator.fallback_animator, "animate", side_effect=slow_animate
+        ):
             response = await animator.animate_proof(sample_proof_sketch)
 
             assert response.error is not None
@@ -217,24 +222,29 @@ class TestProductionAnimator:
         minimal_proof = ProofSketch(
             theorem_name="test",
             introduction="Test",
-            key_steps=[ProofStep(
-                step_number=1,
-                description="Test step",
-                mathematical_content="x = x",
-                tactics=["rfl"],
-            )],
+            key_steps=[
+                ProofStep(
+                    step_number=1,
+                    description="Test step",
+                    mathematical_content="x = x",
+                    tactics=["rfl"],
+                )
+            ],
             conclusion="Done",
         )
 
         # psutil might not be available, so test both cases
         try:
             import psutil
+
             # If psutil is available, mock it to return high memory usage
             with patch("psutil.Process") as mock_process:
-                mock_process.return_value.memory_info.return_value.rss = 2 * 1024 * 1024  # 2MB
-                
+                mock_process.return_value.memory_info.return_value.rss = (
+                    2 * 1024 * 1024
+                )  # 2MB
+
                 response = await animator.animate_proof(minimal_proof)
-                
+
                 assert response.error is not None
                 assert "memory limit" in response.error.lower()
                 assert response.metadata["error_type"] == "memory_limit"
@@ -285,12 +295,14 @@ class TestProductionAnimator:
             ProofSketch(
                 theorem_name="test2",
                 introduction="Second test",
-                key_steps=[ProofStep(
-                    step_number=1,
-                    description="Test",
-                    mathematical_content="y = y",
-                    tactics=["rfl"],
-                )],
+                key_steps=[
+                    ProofStep(
+                        step_number=1,
+                        description="Test",
+                        mathematical_content="y = y",
+                        tactics=["rfl"],
+                    )
+                ],
                 conclusion="Done",
             ),
         ]
@@ -306,9 +318,7 @@ class TestProductionAnimator:
         with patch.object(
             animator.fallback_animator, "animate", return_value=mock_response
         ):
-            responses = await animator.animate_batch(
-                proof_sketches, max_concurrent=2
-            )
+            responses = await animator.animate_batch(proof_sketches, max_concurrent=2)
 
             assert len(responses) == 2
             assert all(r.video_path is not None for r in responses)
@@ -329,6 +339,7 @@ class TestProductionAnimator:
 
         # Mock alternating success/failure
         call_count = 0
+
         def mock_animate(*args, **kwargs):
             nonlocal call_count
             call_count += 1
@@ -376,6 +387,7 @@ class TestProductionAnimator:
 
     def test_progress_callback_error_handling(self, animation_config, manim_config):
         """Test progress callback error handling."""
+
         def failing_callback(message: str, progress: float):
             raise Exception("Callback failed")
 
@@ -425,12 +437,14 @@ class TestProductionAnimator:
         valid_proof = ProofSketch(
             theorem_name="valid_theorem",
             introduction="Valid intro",
-            key_steps=[ProofStep(
-                step_number=1,
-                description="Valid step",
-                mathematical_content="x = x",
-                tactics=["rfl"],
-            )],
+            key_steps=[
+                ProofStep(
+                    step_number=1,
+                    description="Valid step",
+                    mathematical_content="x = x",
+                    tactics=["rfl"],
+                )
+            ],
             conclusion="Valid conclusion",
         )
 
@@ -442,12 +456,14 @@ class TestProductionAnimator:
             invalid_proof = ProofSketch(
                 theorem_name="",
                 introduction="Intro",
-                key_steps=[ProofStep(
-                    step_number=1,
-                    description="Step",
-                    mathematical_content="x = x",
-                    tactics=["rfl"],
-                )],
+                key_steps=[
+                    ProofStep(
+                        step_number=1,
+                        description="Step",
+                        mathematical_content="x = x",
+                        tactics=["rfl"],
+                    )
+                ],
                 conclusion="Conclusion",
             )
             animator._validate_proof_sketch(invalid_proof)
@@ -596,7 +612,9 @@ class TestStaticAnimationGenerator:
         assert temp_output_dir.exists()
 
     @pytest.mark.asyncio
-    async def test_generate_static_animation(self, temp_output_dir, sample_proof_sketch):
+    async def test_generate_static_animation(
+        self, temp_output_dir, sample_proof_sketch
+    ):
         """Test static animation generation."""
         generator = StaticAnimationGenerator(output_dir=temp_output_dir)
 
@@ -721,7 +739,7 @@ class TestProductionAnimatorIntegration:
     async def test_end_to_end_with_mock(self, temp_output_dir, sample_proof_sketch):
         """Test complete end-to-end animation with mock server."""
         config = AnimationConfig(output_dir=temp_output_dir)
-        
+
         async with ProductionAnimator(
             animation_config=config,
             use_mock=True,
@@ -736,19 +754,21 @@ class TestProductionAnimatorIntegration:
     async def test_stress_test_batch(self, temp_output_dir):
         """Stress test with multiple concurrent animations."""
         config = AnimationConfig(output_dir=temp_output_dir)
-        
+
         # Create multiple proof sketches
         proof_sketches = []
         for i in range(5):
             sketch = ProofSketch(
                 theorem_name=f"stress_test_{i}",
                 introduction=f"Stress test theorem {i}",
-                key_steps=[ProofStep(
-                    step_number=1,
-                    description=f"Step for theorem {i}",
-                    mathematical_content=f"x_{i} = x_{i}",
-                    tactics=["rfl"],
-                )],
+                key_steps=[
+                    ProofStep(
+                        step_number=1,
+                        description=f"Step for theorem {i}",
+                        mathematical_content=f"x_{i} = x_{i}",
+                        tactics=["rfl"],
+                    )
+                ],
                 conclusion=f"Theorem {i} complete",
             )
             proof_sketches.append(sketch)

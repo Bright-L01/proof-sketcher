@@ -7,15 +7,17 @@ Get up and running with Proof Sketcher in 5 minutes.
 Before starting, ensure you have:
 
 1. **Python 3.9+**
+
    ```bash
    python --version  # Should be 3.9 or higher
    ```
 
 2. **Claude Code CLI** (required for explanations)
+
    ```bash
    # Install Claude CLI if not already installed
    curl -fsSL https://claude.ai/install.sh | sh
-   
+
    # Verify installation
    claude --version
    ```
@@ -46,8 +48,9 @@ python -m proof_sketcher list-theorems examples/classical/simple_examples.lean
 ```
 
 You should see output like:
+
 ```
-                  Theorems in simple_examples.lean                   
+                  Theorems in simple_examples.lean
 ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
 ┃ Name          ┃ Statement                               ┃    Line ┃
 ┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
@@ -122,7 +125,7 @@ generator:
 
 export:
   output_dir: output/configured
-  
+
 cache:
   enabled: true
   ttl_hours: 48
@@ -137,17 +140,20 @@ python -m proof_sketcher prove examples/classical/simple_examples.lean \
 ## Common Commands
 
 ### List all available commands
+
 ```bash
 python -m proof_sketcher --help
 ```
 
 ### Get help for specific commands
+
 ```bash
 python -m proof_sketcher prove --help
 python -m proof_sketcher cache --help
 ```
 
 ### Process multiple theorems
+
 ```bash
 python -m proof_sketcher prove examples/classical/simple_examples.lean \
   --theorem add_zero \
@@ -157,6 +163,7 @@ python -m proof_sketcher prove examples/classical/simple_examples.lean \
 ```
 
 ### Check cache status
+
 ```bash
 python -m proof_sketcher cache status
 ```
@@ -164,6 +171,7 @@ python -m proof_sketcher cache status
 ## Troubleshooting
 
 ### Command not found
+
 ```bash
 # Make sure you're in the project directory
 pwd
@@ -174,6 +182,7 @@ python -m proof_sketcher --version
 ```
 
 ### No theorems found
+
 ```bash
 # Check if Lean file is valid
 python -m proof_sketcher list-theorems examples/classical/simple_examples.lean
@@ -183,6 +192,7 @@ ls examples/classical/simple_examples.lean
 ```
 
 ### Claude command fails
+
 This is expected if Claude CLI isn't properly configured. The parsing and theorem extraction still work!
 
 ## What's Next?

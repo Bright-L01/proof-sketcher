@@ -31,7 +31,7 @@ Proof Sketcher is currently in an **alpha state** with critical functionality br
 
 #### Export Functionality: ⚠️ PARTIALLY WORKING
 - **HTML**: Generates but with empty content
-- **Markdown**: Generates but with empty content  
+- **Markdown**: Generates but with empty content
 - **PDF**: Untested due to upstream failures
 - **Jupyter**: Untested due to upstream failures
 

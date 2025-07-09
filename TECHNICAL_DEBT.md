@@ -20,11 +20,11 @@ This codebase has accumulated significant technical debt across all major compon
 ### 1. Empty Theorem Statements ⚠️
 **Component**: Lean Parser
 **Impact**: Core functionality broken
-**Details**: 
+**Details**:
 - `parse_theorems()` returns empty statements for all theorems
 - Root cause: Subprocess Lean invocation failing silently
 - Affects ALL theorem processing
-**Fix Required**: 
+**Fix Required**:
 - Rewrite Lean integration using proper FFI or server mode
 - Add comprehensive error handling
 - Implement validation for parsed content

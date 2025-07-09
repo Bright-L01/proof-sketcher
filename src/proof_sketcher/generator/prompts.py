@@ -8,11 +8,11 @@ The actual implementation has been moved to prompts/ package.
 from .prompts import (
     PromptTemplates,
     prompt_templates,
-    render_proof_sketch_prompt,
     render_eli5_prompt,
-    render_tactic_explanation_prompt,
-    render_step_by_step_prompt,
     render_mathematical_context_prompt,
+    render_proof_sketch_prompt,
+    render_step_by_step_prompt,
+    render_tactic_explanation_prompt,
 )
 
 __all__ = [

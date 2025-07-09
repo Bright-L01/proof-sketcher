@@ -5,7 +5,7 @@ Complete guide to using Proof Sketcher for transforming Lean 4 theorems into nat
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
-2. [Understanding the Workflow](#understanding-the-workflow) 
+2. [Understanding the Workflow](#understanding-the-workflow)
 3. [Command Line Interface](#command-line-interface)
 4. [Configuration](#configuration)
 5. [Working with Different Mathematical Areas](#working-with-different-mathematical-areas)
@@ -59,16 +59,19 @@ Lean File → Parse Theorems → Generate Explanations → Export Formats
 ```
 
 ### 1. Parsing Phase
+
 - Extracts theorem statements, proofs, and dependencies
 - Handles Lean syntax and mathlib imports
 - Creates structured representation
 
-### 2. Generation Phase  
+### 2. Generation Phase
+
 - Uses Claude AI to create natural language explanations
 - Generates different explanation styles (concise, detailed, tutorial)
 - Incorporates mathematical context and intuition
 
 ### 3. Export Phase
+
 - Converts explanations to various formats
 - Adds mathematical notation rendering
 - Creates navigation and cross-references
@@ -138,11 +141,13 @@ python -m proof_sketcher config init
 ### Command Options
 
 #### Global Options
+
 - `--verbose, -v`: Enable detailed logging
 - `--config, -c`: Specify configuration file
 - `--help`: Show help information
 
 #### Prove Command Options
+
 - `--theorem, -t`: Process specific theorems only
 - `--format, -f`: Output format (html, markdown, pdf, jupyter, all)
 - `--output, -o`: Output directory
@@ -233,8 +238,9 @@ python -m proof_sketcher prove examples/classical/group_theory.lean \
 ```
 
 **Common group theory theorems:**
+
 - Identity uniqueness
-- Inverse uniqueness  
+- Inverse uniqueness
 - Cancellation laws
 - Subgroup properties
 - Homomorphism theorems
@@ -250,6 +256,7 @@ python -m proof_sketcher prove examples/classical/real_analysis.lean \
 ```
 
 **Typical real analysis concepts:**
+
 - Completeness properties
 - Limit theorems
 - Continuity and differentiability
@@ -267,6 +274,7 @@ python -m proof_sketcher prove examples/classical/topology.lean \
 ```
 
 **Key topological concepts:**
+
 - Open and closed sets
 - Compactness and connectedness
 - Separation axioms
@@ -299,6 +307,7 @@ python -m proof_sketcher prove my_theorems.lean --format all
 ### HTML Format
 
 **Features:**
+
 - Interactive navigation
 - Syntax highlighting
 - Mathematical notation rendering
@@ -306,11 +315,13 @@ python -m proof_sketcher prove my_theorems.lean --format all
 - Mobile-responsive design
 
 **Usage:**
+
 ```bash
 python -m proof_sketcher prove file.lean --format html
 ```
 
 **Customization:**
+
 ```yaml
 export:
   html_theme: doc-gen4  # doc-gen4, minimal, academic
@@ -322,17 +333,20 @@ export:
 ### Markdown Format
 
 **Features:**
+
 - GitHub-flavored markdown
 - KaTeX/MathJax support
 - Collapsible sections
 - Code blocks with syntax highlighting
 
 **Usage:**
+
 ```bash
 python -m proof_sketcher prove file.lean --format markdown
 ```
 
 **Example output:**
+
 ```markdown
 # Theorem: nat_add_comm
 
@@ -351,34 +365,40 @@ The proof proceeds by induction on n:
 ### PDF Format
 
 **Features:**
+
 - Professional LaTeX formatting
 - Custom document classes
 - Bibliography support
 - Hyperlinked references
 
 **Usage:**
+
 ```bash
 python -m proof_sketcher prove file.lean --format pdf
 ```
 
 **Requirements:**
+
 - LaTeX distribution (TeX Live, MiKTeX)
 - Required packages: amsmath, amsthm, hyperref
 
 ### Jupyter Notebook Format
 
 **Features:**
+
 - Interactive code cells
 - Rich media output
 - Educational widgets
 - Exportable to various formats
 
 **Usage:**
+
 ```bash
 python -m proof_sketcher prove file.lean --format jupyter
 ```
 
 **Running notebooks:**
+
 ```bash
 jupyter lab output/theorem_name.ipynb
 ```
@@ -424,13 +444,13 @@ generator = AIGenerator(default_config=gen_config)
 for theorem in result.theorems:
     # Proof sketch
     sketch = generator.generate_proof_sketch(theorem)
-    
+
     # ELI5 explanation
     eli5 = generator.generate_eli5_explanation(theorem)
-    
+
     # Tactic explanation
     tactics = generator.generate_tactic_explanation(theorem)
-    
+
     print(f"Theorem: {theorem.name}")
     print(f"Sketch: {sketch.introduction}")
     print(f"ELI5: {eli5}")
@@ -450,13 +470,13 @@ async def generate_animations():
         style="modern",
         fps=60
     )
-    
+
     # Initialize animator
     animator = ManimAnimator(config=anim_config)
-    
+
     # Generate animation for proof sketch
     animation_response = await animator.animate_proof(sketch)
-    
+
     if animation_response.success:
         print(f"Animation saved to: {animation_response.video_path}")
         print(f"Duration: {animation_response.duration} seconds")
@@ -524,25 +544,25 @@ cat > config/development.yaml << EOF
 generator:
   verbosity: detailed
   cache_responses: true
-  
+
 export:
   output_dir: output/dev
   include_source: true
-  
+
 debug: true
 EOF
 
-# Production configuration  
+# Production configuration
 cat > config/production.yaml << EOF
 generator:
   verbosity: concise
   cache_responses: true
   cache_ttl_hours: 48
-  
+
 export:
   output_dir: docs/
   include_source: false
-  
+
 performance:
   parallel_processing: true
   max_workers: 8
@@ -562,13 +582,13 @@ echo "Generating documentation for all theorem files..."
 # Process each mathematical area
 for area in group_theory real_analysis topology; do
     echo "Processing $area..."
-    
+
     python -m proof_sketcher prove "src/${area}/" \
         --config config/production.yaml \
         --format all \
         --output "docs/${area}" \
         --verbose
-        
+
     echo "✓ Completed $area"
 done
 
@@ -581,6 +601,7 @@ echo "Documentation generation complete!"
 ### Performance Optimization
 
 1. **Use caching effectively**:
+
    ```yaml
    cache:
      enabled: true
@@ -589,12 +610,14 @@ echo "Documentation generation complete!"
    ```
 
 2. **Batch processing**:
+
    ```bash
    # Process multiple files together
    python -m proof_sketcher prove src/*.lean --format markdown
    ```
 
 3. **Incremental updates**:
+
    ```bash
    # Only process changed files
    find src/ -name "*.lean" -newer last_run.timestamp \
@@ -610,6 +633,7 @@ echo "Documentation generation complete!"
 **Cause**: File parsing failed or no valid theorem syntax
 
 **Solutions**:
+
 ```bash
 # Check Lean syntax
 lean --check your_file.lean
@@ -626,6 +650,7 @@ head -10 your_file.lean  # Should show import statements
 **Cause**: Claude CLI not installed or configured
 
 **Solutions**:
+
 ```bash
 # Reinstall Claude CLI
 curl -fsSL https://claude.ai/install.sh | sh
@@ -642,6 +667,7 @@ claude --help
 **Cause**: Manim MCP server not available
 
 **Solutions**:
+
 ```bash
 # Install Manim MCP server
 npm install -g @manim-mcp/server
@@ -658,6 +684,7 @@ curl http://localhost:3000/health
 **Cause**: Output directory permissions
 
 **Solutions**:
+
 ```bash
 # Check permissions
 ls -la output/

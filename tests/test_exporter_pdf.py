@@ -2,12 +2,17 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
+from proof_sketcher.exporter.models import (
+    ExportContext,
+    ExportFormat,
+    ExportOptions,
+    TemplateContext,
+)
 from proof_sketcher.exporter.pdf import PDFExporter
-from proof_sketcher.exporter.models import ExportContext, ExportFormat, ExportOptions, TemplateContext
 from proof_sketcher.generator.models import ProofSketch, ProofStep
 
 
@@ -21,7 +26,7 @@ class TestPDFExporter:
             output_dir=tmp_path,
             pdf_engine="pdflatex",
             pdf_document_class="article",
-            pdf_font_size=11
+            pdf_font_size=11,
         )
         return PDFExporter(options)
 
@@ -37,7 +42,7 @@ class TestPDFExporter:
                     description="Base case: prove for n = 0",
                     tactics=["simp"],
                     mathematical_content="0 + m = m = m + 0",
-                    intuition="Zero is the additive identity"
+                    intuition="Zero is the additive identity",
                 ),
                 ProofStep(
                     step_number=2,
@@ -56,7 +61,7 @@ class TestPDFExporter:
         """Test PDF exporter initialization."""
         options = ExportOptions(output_dir=tmp_path)
         exporter = PDFExporter(options)
-        
+
         assert exporter.options == options
         assert exporter.format == ExportFormat.PDF
         assert exporter.latex_engine == "pdflatex"  # default
@@ -71,65 +76,68 @@ class TestPDFExporter:
             assert result is not None
         except Exception as e:
             # If it fails due to missing LaTeX or other issues, that's ok
-            assert "LaTeX" in str(e) or "pdflatex" in str(e) or "_create_context" in str(e)
+            assert (
+                "LaTeX" in str(e) or "pdflatex" in str(e) or "_create_context" in str(e)
+            )
 
     def test_export_sketch_with_compile(self, exporter, sample_proof_sketch, tmp_path):
         """Test _export_sketch method with mocked compilation."""
-        context = ExportContext(
-            format=ExportFormat.PDF,
-            output_dir=tmp_path
-        )
-        
+        context = ExportContext(format=ExportFormat.PDF, output_dir=tmp_path)
+
         # Mock the _compile_latex method
         mock_pdf_path = tmp_path / "nat_add_comm.pdf"
-        with patch.object(exporter, '_compile_latex', return_value=mock_pdf_path) as mock_compile:
+        with patch.object(
+            exporter, "_compile_latex", return_value=mock_pdf_path
+        ) as mock_compile:
             # Mock template rendering
-            with patch.object(exporter.template_manager, 'render_template', return_value="\\documentclass{article}\\begin{document}Test\\end{document}"):
+            with patch.object(
+                exporter.template_manager,
+                "render_template",
+                return_value="\\documentclass{article}\\begin{document}Test\\end{document}",
+            ):
                 files = exporter._export_sketch(sample_proof_sketch, context)
-                
+
                 # Should have called compile
                 mock_compile.assert_called_once()
-                
+
                 # Should return the PDF file
                 assert mock_pdf_path in files
 
     def test_compile_latex_success(self, exporter, tmp_path):
         """Test successful LaTeX compilation (mocked)."""
         latex_content = "\\documentclass{article}\\begin{document}Test\\end{document}"
-        
-        with patch('subprocess.run') as mock_run:
+
+        with patch("subprocess.run") as mock_run:
             # Mock successful compilation
             mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout="Output written on test.pdf",
-                stderr=""
+                returncode=0, stdout="Output written on test.pdf", stderr=""
             )
-            
+
             # Need to also mock tempfile to control where files are created
-            with patch('tempfile.NamedTemporaryFile') as mock_temp:
+            with patch("tempfile.NamedTemporaryFile") as mock_temp:
                 mock_temp_file = MagicMock()
                 mock_temp_file.name = str(tmp_path / "temp.tex")
                 mock_temp.return_value.__enter__.return_value = mock_temp_file
-                
+
                 pdf_path = exporter._compile_latex(latex_content, "test")
-                
+
                 # Should have called subprocess
                 mock_run.assert_called()
 
     def test_compile_latex_failure(self, exporter):
         """Test LaTeX compilation failure."""
-        latex_content = "\\documentclass{article}\\begin{document}\\undefined\\end{document}"
-        
-        with patch('subprocess.run') as mock_run:
+        latex_content = (
+            "\\documentclass{article}\\begin{document}\\undefined\\end{document}"
+        )
+
+        with patch("subprocess.run") as mock_run:
             # Mock compilation failure
             mock_run.return_value = MagicMock(
-                returncode=1,
-                stdout="",
-                stderr="Undefined control sequence"
+                returncode=1, stdout="", stderr="Undefined control sequence"
             )
-            
+
             result = exporter._compile_latex(latex_content, "test")
-            
+
             # Should return None on failure
             assert result is None
 
@@ -141,35 +149,40 @@ class TestPDFExporter:
             key_steps=[],
             conclusion="QED",
         )
-        
-        with patch.object(exporter, '_compile_latex', return_value=Path("fake.pdf")):
-            with patch.object(exporter.template_manager, 'render_template', return_value="\\documentclass{article}\\begin{document}Test\\end{document}"):
+
+        with patch.object(exporter, "_compile_latex", return_value=Path("fake.pdf")):
+            with patch.object(
+                exporter.template_manager,
+                "render_template",
+                return_value="\\documentclass{article}\\begin{document}Test\\end{document}",
+            ):
                 result = exporter.export_multiple([sample_proof_sketch, proof2])
-                
+
                 assert result is not None
 
     def test_create_template_context(self, exporter, sample_proof_sketch):
         """Test template context creation."""
-        context = ExportContext(
-            format=ExportFormat.PDF,
-            output_dir=Path("/tmp")
+        context = ExportContext(format=ExportFormat.PDF, output_dir=Path("/tmp"))
+
+        template_context = exporter._create_template_context(
+            sample_proof_sketch, context
         )
-        
-        template_context = exporter._create_template_context(sample_proof_sketch, context)
-        
+
         assert isinstance(template_context, TemplateContext)
         assert template_context.theorem_name == "nat_add_comm"
-        assert hasattr(template_context, 'explanation')  # PDF uses explanation instead of introduction
+        assert hasattr(
+            template_context, "explanation"
+        )  # PDF uses explanation instead of introduction
         # PDF exporter doesn't set format in the template context
 
     def test_copy_latex_assets(self, exporter, tmp_path):
         """Test copying LaTeX assets."""
         target_dir = tmp_path / "assets"
         target_dir.mkdir()
-        
+
         # This might not do anything if no assets exist
         exporter._copy_latex_assets(target_dir)
-        
+
         # Just check it doesn't raise an error
         assert True
 
@@ -179,35 +192,45 @@ class TestPDFExporter:
             output_dir=tmp_path,
             pdf_engine="xelatex",
             pdf_document_class="book",
-            pdf_font_size=12
+            pdf_font_size=12,
         )
         exporter = PDFExporter(options)
-        
+
         assert exporter.latex_engine == "xelatex"
 
-    def test_export_with_animation_context(self, exporter, sample_proof_sketch, tmp_path):
+    def test_export_with_animation_context(
+        self, exporter, sample_proof_sketch, tmp_path
+    ):
         """Test export with animation in context."""
         animation_path = tmp_path / "animation.mp4"
         animation_path.write_text("fake video")
-        
+
         context = ExportContext(
             format=ExportFormat.PDF,
             output_dir=tmp_path,
-            animations={"nat_add_comm": animation_path}
+            animations={"nat_add_comm": animation_path},
         )
-        
-        with patch.object(exporter, '_compile_latex', return_value=None):
-            with patch.object(exporter.template_manager, 'render_template', return_value="\\documentclass{article}\\begin{document}Test\\end{document}"):
+
+        with patch.object(exporter, "_compile_latex", return_value=None):
+            with patch.object(
+                exporter.template_manager,
+                "render_template",
+                return_value="\\documentclass{article}\\begin{document}Test\\end{document}",
+            ):
                 files = exporter._export_sketch(sample_proof_sketch, context)
-                
+
                 # PDF export might not include animations directly
                 assert isinstance(files, list)
 
     def test_error_handling(self, exporter, sample_proof_sketch):
         """Test error handling during export."""
-        with patch.object(exporter.template_manager, 'render_template', side_effect=Exception("Template error")):
+        with patch.object(
+            exporter.template_manager,
+            "render_template",
+            side_effect=Exception("Template error"),
+        ):
             result = exporter.export_single(sample_proof_sketch)
-            
+
             assert not result.success
             assert len(result.errors) > 0
 
@@ -217,17 +240,20 @@ class TestPDFExporter:
             theorem_name="theorem:with/special_chars",
             introduction="Test",
             key_steps=[],
-            conclusion="Done"
+            conclusion="Done",
         )
-        
-        context = ExportContext(
-            format=ExportFormat.PDF,
-            output_dir=tmp_path
-        )
-        
-        with patch.object(exporter, '_compile_latex', return_value=tmp_path / "output.pdf"):
-            with patch.object(exporter.template_manager, 'render_template', return_value="\\documentclass{article}\\begin{document}Test\\end{document}"):
+
+        context = ExportContext(format=ExportFormat.PDF, output_dir=tmp_path)
+
+        with patch.object(
+            exporter, "_compile_latex", return_value=tmp_path / "output.pdf"
+        ):
+            with patch.object(
+                exporter.template_manager,
+                "render_template",
+                return_value="\\documentclass{article}\\begin{document}Test\\end{document}",
+            ):
                 files = exporter._export_sketch(sketch, context)
-                
+
                 # Should handle special characters gracefully
                 assert len(files) > 0

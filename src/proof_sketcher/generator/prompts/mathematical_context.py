@@ -5,7 +5,7 @@ from .base import PromptBase
 
 class MathematicalContextTemplate(PromptBase):
     """Template for generating rich mathematical context and connections."""
-    
+
     def get_template_string(self) -> str:
         """Template for mathematical context generation."""
         return """
@@ -61,7 +61,7 @@ Provide a comprehensive mathematical context analysis:
     },
     "conceptual_foundations": {
       "core_concepts": ["fundamental", "mathematical", "ideas"],
-      "proof_paradigms": ["common", "proof", "techniques"],
+      "proof_paradigms": ["common", "proo", "techniques"],
       "mental_models": ["ways", "to", "think", "about", "this"],
       "common_patterns": ["recurring", "mathematical", "themes"]
     },

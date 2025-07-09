@@ -148,7 +148,7 @@ class CacheManager:
         except Exception as e:
             self.logger.error(f"Error caching response {cache_key}: {e}")
             return False
-        
+
         return False  # Default return if no exception but also not stored
 
     def delete(self, cache_key: str) -> bool:
@@ -347,7 +347,9 @@ class CacheManager:
         current_size = self.get_cache_size_mb()
         if current_size > self.max_cache_size_mb:
             self.logger.info(
-                f"Cache size ({current_size:.1f}MB) exceeds limit ({self.max_cache_size_mb}MB)"
+                f"Cache size ({
+                    current_size:.1f}MB) exceeds limit ({
+                    self.max_cache_size_mb}MB)"
             )
             self._cleanup_by_size()
 
@@ -517,7 +519,7 @@ class CachedClaudeGenerator:
                 success=True,
                 generation_time_ms=None,
                 token_count=None,
-                error_message=None
+                error_message=None,
             )
             self.cache.put(cache_key, response)
 

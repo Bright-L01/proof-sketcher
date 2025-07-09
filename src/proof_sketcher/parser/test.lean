@@ -55,7 +55,7 @@ theorem add_assoc_example (a b c : Nat) : (a + b) + c = a + (b + c) := by
   rw [Nat.add_assoc]
 
 /-- A theorem about list length. -/
-theorem list_length_cons {α : Type} (x : α) (xs : List α) : 
+theorem list_length_cons {α : Type} (x : α) (xs : List α) :
   List.length (x :: xs) = List.length xs + 1 := by
   simp [List.length_cons]
 

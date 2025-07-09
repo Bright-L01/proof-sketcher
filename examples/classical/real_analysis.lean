@@ -9,7 +9,7 @@ theorem supremum_property (S : Set ℝ) (hne : S.Nonempty) (hbdd : BddAbove S) :
   exact Real.exists_isLUB hne hbdd
 
 -- Example 2: Squeeze theorem (Sandwich theorem)
-theorem squeeze_theorem {f g h : ℝ → ℝ} {a L : ℝ} 
+theorem squeeze_theorem {f g h : ℝ → ℝ} {a L : ℝ}
   (hfg : ∀ᶠ x in 𝓝[≠] a, f x ≤ g x)
   (hgh : ∀ᶠ x in 𝓝[≠] a, g x ≤ h x)
   (hf : Tendsto f (𝓝[≠] a) (𝓝 L))

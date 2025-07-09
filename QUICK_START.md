@@ -73,11 +73,11 @@ xdg-open output/my_first_theorem.html  # Linux
 
 Your generated HTML includes:
 
-✅ **Clear mathematical statements** in natural language  
-✅ **Intuitive explanations** of what each theorem means  
-✅ **Proof approaches** explaining the logical strategy  
-✅ **Mathematical context** showing why theorems matter  
-✅ **Beautiful formatting** with proper mathematical notation  
+✅ **Clear mathematical statements** in natural language
+✅ **Intuitive explanations** of what each theorem means
+✅ **Proof approaches** explaining the logical strategy
+✅ **Mathematical context** showing why theorems matter
+✅ **Beautiful formatting** with proper mathematical notation
 
 **Example output for `add_comm`:**
 > **Commutativity of Addition**
@@ -98,7 +98,7 @@ python -m proof_sketcher prove my_first_theorem.lean --format all
 
 # This creates:
 # output/my_first_theorem.html    - Web-ready documentation
-# output/my_first_theorem.md      - GitHub-compatible Markdown  
+# output/my_first_theorem.md      - GitHub-compatible Markdown
 # output/my_first_theorem.pdf     - Publication-quality PDF
 # output/my_first_theorem.ipynb   - Interactive Jupyter notebook
 ```
@@ -172,11 +172,11 @@ Create `.proof-sketcher.yaml` in your project:
 # Basic configuration
 generator:
   style: mathematical  # or 'detailed', 'eli5'
-  
+
 export:
   output_dir: docs/
   html_theme: modern
-  
+
 cache:
   enabled: true
   ttl_hours: 24
@@ -251,7 +251,7 @@ python -m proof_sketcher prove --help
 python -m proof_sketcher system-info
 ```
 
-**Still stuck?** 
+**Still stuck?**
 - 📖 See [full documentation](README.md)
 - 🐛 [Report issues](https://github.com/Bright-L01/proof-sketcher/issues)
 - 💬 [Ask questions](https://github.com/Bright-L01/proof-sketcher/discussions)
@@ -271,7 +271,7 @@ theorem my_theorem (n : ℕ) : n + 0 = n := by simp
 ```lean
 import Mathlib.Algebra.Group.Defs
 
-theorem identity_unique (G : Type*) [Group G] (e : G) 
+theorem identity_unique (G : Type*) [Group G] (e : G)
   (h : ∀ a : G, e * a = a ∧ a * e = a) : e = 1 := by
   have : e = e * 1 := by rw [mul_one]
   rw [this, h]
@@ -282,7 +282,7 @@ theorem identity_unique (G : Type*) [Group G] (e : G)
 import Mathlib.Data.Real.Basic
 
 theorem squeeze_example (f g h : ℝ → ℝ) (a L : ℝ)
-  (h1 : ∀ x, f x ≤ g x) (h2 : ∀ x, g x ≤ h x) : 
+  (h1 : ∀ x, f x ≤ g x) (h2 : ∀ x, g x ≤ h x) :
   -- Proof implementation
   sorry
 ```
@@ -330,7 +330,7 @@ python demos/live_demo_script.py --quick
 
 **Level 1: Basics (You're here!)**
 - ✅ Install and verify
-- ✅ Generate first explanation  
+- ✅ Generate first explanation
 - ✅ Try different output formats
 
 **Level 2: Regular Use**

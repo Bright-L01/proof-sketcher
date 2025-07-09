@@ -17,11 +17,13 @@ theorem add_zero (n : Nat) : n + 0 = n := by
 ```
 
 **Generate explanation:**
+
 ```bash
 proof-sketcher prove examples/basic/add_zero.lean
 ```
 
 **Expected output:**
+
 - Natural language explanation of mathematical induction
 - Step-by-step breakdown of the proof strategy
 - HTML output with mathematical formatting
@@ -37,6 +39,7 @@ theorem append_nil (l : List α) : l ++ [] = l := by
 ```
 
 **Usage:**
+
 ```bash
 proof-sketcher prove examples/basic/list_append.lean --format html --output ./docs/
 ```
@@ -77,7 +80,7 @@ theorem ring_sub_self (a : R) : a - a = 0 := by
 -- examples/analysis/continuous.lean
 import Mathlib.Topology.Continuous
 
-theorem continuous_const {α β : Type*} [TopologicalSpace α] [TopologicalSpace β] 
+theorem continuous_const {α β : Type*} [TopologicalSpace α] [TopologicalSpace β]
     (b : β) : Continuous (fun _ : α => b) := by
   exact continuous_const
 ```
@@ -172,11 +175,13 @@ proof-sketcher cache clear --all
 ### HTML Output
 
 **Input:** Simple theorem
+
 ```lean
 theorem simple : 1 + 1 = 2 := by norm_num
 ```
 
 **Output:** `simple.html`
+
 ```html
 <!DOCTYPE html>
 <html>
@@ -200,6 +205,7 @@ theorem simple : 1 + 1 = 2 := by norm_num
 ### Markdown Output
 
 **Output:** `simple.md`
+
 ```markdown
 # simple
 
@@ -266,14 +272,14 @@ jobs:
 .PHONY: docs clean-docs
 
 docs:
-	proof-sketcher batch ./src/ --output ./docs/proofs/ --format html
-	proof-sketcher batch ./examples/ --output ./docs/examples/ --format markdown
+ proof-sketcher batch ./src/ --output ./docs/proofs/ --format html
+ proof-sketcher batch ./examples/ --output ./docs/examples/ --format markdown
 
 clean-docs:
-	rm -rf ./docs/proofs/ ./docs/examples/
+ rm -rf ./docs/proofs/ ./docs/examples/
 
 docs-serve:
-	cd docs && python -m http.server 8000
+ cd docs && python -m http.server 8000
 ```
 
 ## Advanced Usage Patterns
@@ -288,7 +294,7 @@ export:
       base: "html"
       template: "academic.html.j2"
       styles: ["academic.css"]
-    
+
     blog_post:
       base: "markdown"
       template: "blog.md.j2"
@@ -296,6 +302,7 @@ export:
 ```
 
 **Custom template:** `templates/academic.html.j2`
+
 ```html
 <!DOCTYPE html>
 <html>
@@ -311,14 +318,14 @@ export:
         <h1>{{ theorem_name }}</h1>
         <div class="statement">{{ statement }}</div>
         <div class="explanation">{{ introduction }}</div>
-        
+
         {% for step in key_steps %}
         <div class="proof-step">
             <h3>Step {{ step.step_number }}: {{ step.description }}</h3>
             <p>{{ step.mathematical_content }}</p>
         </div>
         {% endfor %}
-        
+
         <div class="conclusion">{{ conclusion }}</div>
     </article>
 </body>
@@ -335,15 +342,15 @@ from pathlib import Path
 
 def generate_course_docs():
     """Generate documentation for all course materials."""
-    
+
     # Load course configuration
     with open('course.yaml') as f:
         config = yaml.safe_load(f)
-    
+
     for chapter in config['chapters']:
         chapter_dir = Path(f"chapters/{chapter['name']}")
         output_dir = Path(f"docs/{chapter['name']}")
-        
+
         # Generate HTML for students
         subprocess.run([
             'proof-sketcher', 'batch', str(chapter_dir),
@@ -351,7 +358,7 @@ def generate_course_docs():
             '--format', 'html',
             '--template', 'student'
         ])
-        
+
         # Generate instructor notes
         subprocess.run([
             'proof-sketcher', 'batch', str(chapter_dir),
@@ -465,7 +472,7 @@ theorem fundamental_theorem_calculus : ... := by ...
 ### Documentation Standards
 
 ```lean
-/-- 
+/--
 The Cauchy-Schwarz inequality for real inner product spaces.
 
 This fundamental inequality relates the inner product of two vectors
@@ -494,6 +501,7 @@ theorem cauchy_schwarz_real {E : Type*} [NormedAddCommGroup E] [InnerProductSpac
 ### Common Issues
 
 **Issue:** No theorems found in file
+
 ```bash
 # Check file syntax
 lean --check myfile.lean
@@ -507,6 +515,7 @@ proof-sketcher prove test.lean
 ```
 
 **Issue:** Generation timeout
+
 ```bash
 # Increase timeout
 proof-sketcher prove myfile.lean --timeout 120
@@ -519,6 +528,7 @@ proof-sketcher batch ./src/ --chunk-size 10
 ```
 
 **Issue:** Memory errors
+
 ```bash
 # Limit memory usage
 proof-sketcher prove myfile.lean --max-memory 1GB

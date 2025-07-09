@@ -9,7 +9,12 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
 from ...animator.manim_mcp import ManimMCPClient
-from ...animator.models import AnimationRequest, AnimationSegment, AnimationScene, TransformationType
+from ...animator.models import (
+    AnimationRequest,
+    AnimationScene,
+    AnimationSegment,
+    TransformationType,
+)
 from ...config.config import ProofSketcherConfig
 from ...exporter import (
     ExportContext,
@@ -30,10 +35,10 @@ console = Console()
 @click.command()
 @click.argument("lean_file", type=click.Path(exists=True, path_type=Path))
 @click.option(
-    "--output", 
-    "-o", 
-    type=click.Path(path_type=Path), 
-    help="Output directory (default: ./output)"
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Output directory (default: ./output)",
 )
 @click.option(
     "--format",
@@ -43,20 +48,20 @@ console = Console()
     help="Export format: html (interactive), markdown (GitHub), pdf (print), jupyter (notebooks), all (everything)",
 )
 @click.option(
-    "--animate", 
-    is_flag=True, 
-    help="Generate mathematical animations using Manim (requires Node.js and MCP server)"
+    "--animate",
+    is_flag=True,
+    help="Generate mathematical animations using Manim (requires Node.js and MCP server)",
 )
 @click.option(
-    "--theorem", 
-    "-t", 
-    multiple=True, 
-    help="Process only specific theorems by name (can be used multiple times)"
+    "--theorem",
+    "-t",
+    multiple=True,
+    help="Process only specific theorems by name (can be used multiple times)",
 )
 @click.option(
     "--offline",
     is_flag=True,
-    help="Use offline mode - generate explanations from AST only, no AI required"
+    help="Use offline mode - generate explanations from AST only, no AI required",
 )
 @click.pass_context
 def prove(
@@ -69,42 +74,42 @@ def prove(
     offline: bool,
 ) -> None:
     """Process a Lean file and generate natural language explanations.
-    
+
     Parses Lean 4 theorems and generates accessible explanations using Claude AI.
     Supports multiple export formats, optional mathematical animations, and offline mode.
-    
+
     \b
     Examples:
       # Basic usage - generate HTML explanation with AI
       python -m proof_sketcher prove theorems.lean
-      
+
       # Generate explanation for specific theorem in Markdown
       python -m proof_sketcher prove file.lean --theorem "add_comm" --format markdown
-      
+
       # Offline mode - no AI required, uses AST analysis only
       python -m proof_sketcher prove file.lean --offline --format markdown
-      
+
       # Generate all formats with animations
       python -m proof_sketcher prove file.lean --format all --animate --output docs/
-      
+
       # Process multiple specific theorems
       python -m proof_sketcher prove file.lean -t "theorem1" -t "theorem2" -f pdf
-    
+
     \b
     Prerequisites:
       • Claude CLI must be installed and configured
       • For animations: Node.js and Manim MCP server
       • For PDF: LaTeX distribution (TeX Live, MiKTeX)
-    
+
     \b
     Supported File Types:
       • .lean files with valid Lean 4 syntax
       • Files must contain theorem declarations
       • Supports mathlib4 imports and dependencies
-    
+
     The generated explanations include:
       • Natural language proof sketches
-      • Step-by-step breakdowns  
+      • Step-by-step breakdowns
       • Mathematical context and intuition
       • Cross-references to dependencies
     """
@@ -113,8 +118,12 @@ def prove(
     # Validate file extension with helpful error message
     if not lean_file.suffix == ".lean":
         console.print(f"[red]Error: Invalid file extension '{lean_file.suffix}'[/red]")
-        console.print("[yellow]Proof Sketcher only processes Lean 4 files with .lean extension[/yellow]")
-        console.print(f"[dim]Suggestion: Rename '{lean_file}' to '{lean_file.stem}.lean'[/dim]")
+        console.print(
+            "[yellow]Proof Sketcher only processes Lean 4 files with .lean extension[/yellow]"
+        )
+        console.print(
+            f"[dim]Suggestion: Rename '{lean_file}' to '{lean_file.stem}.lean'[/dim]"
+        )
         raise click.Abort()
 
     # Set output directory
@@ -146,7 +155,9 @@ def prove(
             return
 
         # Filter theorems if specific ones requested
-        theorems_to_process = _filter_theorems(parse_result.theorems, theorem, lean_file)
+        theorems_to_process = _filter_theorems(
+            parse_result.theorems, theorem, lean_file
+        )
         if not theorems_to_process:
             return
 
@@ -156,11 +167,22 @@ def prove(
 
         # Choose generator based on offline mode
         generator = _setup_generator(offline, config, output)
-        gen_mode_text = "[cyan]Generating offline explanations..." if offline else "[cyan]Generating explanations..."
+        gen_mode_text = (
+            "[cyan]Generating offline explanations..."
+            if offline
+            else "[cyan]Generating explanations..."
+        )
 
         # Generate explanations
         sketches, animations = _generate_explanations(
-            theorems_to_process, generator, animate, offline, config, output, progress, gen_mode_text
+            theorems_to_process,
+            generator,
+            animate,
+            offline,
+            config,
+            output,
+            progress,
+            gen_mode_text,
         )
 
         if not sketches:
@@ -168,7 +190,9 @@ def prove(
             return
 
         # Export results
-        _export_results(sketches, animations, format, output, animate, lean_file, progress)
+        _export_results(
+            sketches, animations, format, output, animate, lean_file, progress
+        )
 
     console.print(f"\n[bold green]✨ Success![/bold green] Output saved to: {output}")
 
@@ -180,7 +204,9 @@ def _show_no_theorems_help(lean_file: Path) -> None:
     console.print("  • File contains no theorem declarations")
     console.print("  • Syntax errors preventing parsing")
     console.print("  • Missing required imports (e.g., import Mathlib.Data.Nat.Basic)")
-    console.print("\n[dim]Try: python -m proof_sketcher list-theorems path/to/working_file.lean[/dim]")
+    console.print(
+        "\n[dim]Try: python -m proof_sketcher list-theorems path/to/working_file.lean[/dim]"
+    )
     console.print("[dim]See: docs/TROUBLESHOOTING.md for more help[/dim]")
 
 
@@ -188,31 +214,41 @@ def _filter_theorems(theorems, theorem_names, lean_file):
     """Filter theorems if specific ones are requested."""
     if not theorem_names:
         return theorems
-    
+
     filtered = [t for t in theorems if t.name in theorem_names]
     if not filtered:
-        console.print(f"[red]❌ None of the specified theorems found: {', '.join(theorem_names)}[/red]")
+        console.print(
+            f"[red]❌ None of the specified theorems found: {', '.join(theorem_names)}[/red]"
+        )
         console.print("\n[yellow]Available theorems in this file:[/yellow]")
         for i, thm in enumerate(theorems[:10], 1):
             console.print(f"  {i}. {thm.name}")
         if len(theorems) > 10:
             console.print(f"  ... and {len(theorems) - 10} more")
-        console.print(f"\n[dim]Use: python -m proof_sketcher list-theorems {lean_file} to see all theorems[/dim]")
-    
+        console.print(
+            f"\n[dim]Use: python -m proof_sketcher list-theorems {lean_file} to see all theorems[/dim]"
+        )
+
     return filtered
 
 
-def _setup_generator(offline: bool, config: ProofSketcherConfig, output: Path) -> Union[OfflineGenerator, ClaudeGenerator]:
+def _setup_generator(
+    offline: bool, config: ProofSketcherConfig, output: Path
+) -> Union[OfflineGenerator, ClaudeGenerator]:
     """Setup the appropriate generator based on mode."""
     if offline:
-        console.print("[bold yellow]🔧 Using offline mode - no AI required[/bold yellow]")
+        console.print(
+            "[bold yellow]🔧 Using offline mode - no AI required[/bold yellow]"
+        )
         cache_dir = output / ".cache" if output else Path(".cache")
         return OfflineGenerator(cache_dir=cache_dir)
     else:
         return ClaudeGenerator(default_config=config.generator)
 
 
-def _generate_explanations(theorems, generator, animate, offline, config, output, progress, gen_mode_text):
+def _generate_explanations(
+    theorems, generator, animate, offline, config, output, progress, gen_mode_text
+):
     """Generate explanations and optionally animations for theorems."""
     gen_task = progress.add_task(gen_mode_text, total=len(theorems))
     sketches = []
@@ -233,14 +269,20 @@ def _generate_explanations(theorems, generator, animate, offline, config, output
                 if anim_path:
                     animations[thm.name] = anim_path
             elif animate and offline:
-                console.print(f"[yellow]⚠️ Skipping animation for {thm.name} in offline mode[/yellow]")
+                console.print(
+                    f"[yellow]⚠️ Skipping animation for {thm.name} in offline mode[/yellow]"
+                )
 
         except Exception as e:
             if offline:
-                console.print(f"[red]Failed to process {thm.name} in offline mode: {e}[/red]")
+                console.print(
+                    f"[red]Failed to process {thm.name} in offline mode: {e}[/red]"
+                )
             else:
                 console.print(f"[red]Failed to process {thm.name}: {e}[/red]")
-                console.print("[yellow]💡 Try using --offline flag for basic explanations without AI[/yellow]")
+                console.print(
+                    "[yellow]💡 Try using --offline flag for basic explanations without AI[/yellow]"
+                )
             progress.update(gen_task, advance=1)
 
     return sketches, animations
@@ -280,12 +322,14 @@ def _export_results(sketches, animations, format, output, animate, lean_file, pr
         include_animations=animate,
     )
 
-    # Export based on format  
-    export_options = ExportOptions.model_validate({
-        "output_dir": output,
-        "include_animations": animate,
-        "create_index": len(sketches) > 1
-    })
+    # Export based on format
+    export_options = ExportOptions.model_validate(
+        {
+            "output_dir": output,
+            "include_animations": animate,
+            "create_index": len(sketches) > 1,
+        }
+    )
 
     if format == "all":
         formats = ["html", "markdown", "pdf", "jupyter"]
@@ -294,7 +338,9 @@ def _export_results(sketches, animations, format, output, animate, lean_file, pr
 
     for fmt in formats:
         try:
-            exporter: Union[HTMLExporter, MarkdownExporter, PDFExporter, JupyterExporter]
+            exporter: Union[
+                HTMLExporter, MarkdownExporter, PDFExporter, JupyterExporter
+            ]
             if fmt == "html":
                 exporter = HTMLExporter(export_options)
             elif fmt == "markdown":
@@ -311,9 +357,7 @@ def _export_results(sketches, animations, format, output, animate, lean_file, pr
             if result.success:
                 console.print(f"[green]✓ Exported to {fmt.upper()}[/green]")
             else:
-                console.print(
-                    f"[red]✗ Failed to export {fmt}: {result.errors}[/red]"
-                )
+                console.print(f"[red]✗ Failed to export {fmt}: {result.errors}[/red]")
 
         except Exception as e:
             console.print(f"[red]Export error ({fmt}): {e}[/red]")
@@ -331,11 +375,12 @@ async def _generate_animation(
 
         # Generate a simple request ID
         import uuid
+
         request_id = str(uuid.uuid4())[:8]
-        
-        # Create basic animation segments from proof steps  
+
+        # Create basic animation segments from proof steps
         segments = []
-        if hasattr(sketch, 'key_steps') and sketch.key_steps:
+        if hasattr(sketch, "key_steps") and sketch.key_steps:
             scenes = []
             for i, step in enumerate(sketch.key_steps):
                 scene = AnimationScene(
@@ -344,17 +389,15 @@ async def _generate_animation(
                     duration=15.0,
                     initial_formula=f"Step {step.step_number}",
                     final_formula=step.description,
-                    transformation_type=TransformationType.SUBSTITUTION
+                    transformation_type=TransformationType.SUBSTITUTION,
                 )
                 scenes.append(scene)
-            
+
             segment = AnimationSegment(
-                segment_id="main",
-                title=theorem_name,
-                scenes=scenes
+                segment_id="main", title=theorem_name, scenes=scenes
             )
             segments = [segment]
-        
+
         request = AnimationRequest(
             theorem_name=theorem_name,
             request_id=request_id,

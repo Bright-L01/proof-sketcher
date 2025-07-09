@@ -23,7 +23,7 @@ from .template_manager import TemplateManager
 
 class HTMLExporter(BaseExporterImpl):
     """Exporter for HTML format with doc-gen4 compatibility.
-    
+
     Features:
     - Full doc-gen4 CSS class compatibility
     - Responsive video embedding with fallbacks
@@ -45,22 +45,22 @@ class HTMLExporter(BaseExporterImpl):
         """
         super().__init__(ExportFormat.HTML, options, template_manager)
         self.logger = logging.getLogger(__name__)
-        
+
         # Asset optimization settings
-        self._minify_assets = getattr(options, 'minify_assets', True)
-        self._compress_assets = getattr(options, 'compress_assets', True)
-        self._generate_poster_frames = getattr(options, 'generate_poster_frames', True)
-        
+        self._minify_assets = getattr(options, "minify_assets", True)
+        self._compress_assets = getattr(options, "compress_assets", True)
+        self._generate_poster_frames = getattr(options, "generate_poster_frames", True)
+
         # Doc-gen4 compatibility
         self._doc_gen4_classes = {
-            'theorem': 'decl',
-            'proof': 'proof',
-            'step': 'step',
-            'formula': 'expr',
-            'navigation': 'nav',
-            'toc': 'toc',
-            'code': 'code',
-            'math': 'math-display'
+            "theorem": "decl",
+            "proo": "proo",
+            "step": "step",
+            "formula": "expr",
+            "navigation": "nav",
+            "toc": "toc",
+            "code": "code",
+            "math": "math-display",
         }
 
     def _export_sketch(self, sketch: ProofSketch, context: ExportContext) -> List[Path]:
@@ -91,7 +91,9 @@ class HTMLExporter(BaseExporterImpl):
                     animation_path, sketch.theorem_name
                 )
                 template_context["animation_assets"] = animation_assets
-                created_files.extend([asset['path'] for asset in animation_assets.values()])
+                created_files.extend(
+                    [asset["path"] for asset in animation_assets.values()]
+                )
 
         # Render theorem template
         html_content = self.template_manager.render_template(
@@ -125,7 +127,7 @@ class HTMLExporter(BaseExporterImpl):
         for sketch in sketches:
             theorem_data = {
                 "name": sketch.theorem_name,
-                "statement": getattr(sketch, 'theorem_statement', ''),
+                "statement": getattr(sketch, "theorem_statement", ""),
                 "url": context.theorem_links.get(sketch.theorem_name, "#"),
                 "summary": (
                     sketch.introduction[:200] + "..."
@@ -251,7 +253,9 @@ class HTMLExporter(BaseExporterImpl):
         if self.options.generate_links:
             # ProofSketch doesn't have dependencies attribute
             base_context["dependencies"] = []
-            base_context["cross_references"] = self._generate_cross_references(sketch, context)
+            base_context["cross_references"] = self._generate_cross_references(
+                sketch, context
+            )
 
         return base_context
 
@@ -278,9 +282,11 @@ class HTMLExporter(BaseExporterImpl):
 
         return dest_path
 
-    def _copy_animation_responsive(self, source: Path, theorem_name: str) -> Dict[str, Dict]:
+    def _copy_animation_responsive(
+        self, source: Path, theorem_name: str
+    ) -> Dict[str, Dict]:
         """Copy animation with responsive embedding support.
-        
+
         Creates multiple formats and poster frames for responsive design.
 
         Args:
@@ -299,49 +305,53 @@ class HTMLExporter(BaseExporterImpl):
         # Copy original video
         original_dest = animations_dir / f"{sanitized_name}_animation{source.suffix}"
         shutil.copy2(source, original_dest)
-        
-        assets['video'] = {
-            'path': original_dest,
-            'url': f"animations/{original_dest.name}",
-            'type': 'video/mp4' if source.suffix.lower() == '.mp4' else 'video/webm',
-            'size': original_dest.stat().st_size
+
+        assets["video"] = {
+            "path": original_dest,
+            "url": f"animations/{original_dest.name}",
+            "type": "video/mp4" if source.suffix.lower() == ".mp4" else "video/webm",
+            "size": original_dest.stat().st_size,
         }
 
         # Generate poster frame if enabled
         if self._generate_poster_frames:
-            poster_path = self._generate_poster_frame(source, sanitized_name, animations_dir)
+            poster_path = self._generate_poster_frame(
+                source, sanitized_name, animations_dir
+            )
             if poster_path:
-                assets['poster'] = {
-                    'path': poster_path,
-                    'url': f"animations/{poster_path.name}",
-                    'type': 'image/jpeg',
-                    'size': poster_path.stat().st_size
+                assets["poster"] = {
+                    "path": poster_path,
+                    "url": f"animations/{poster_path.name}",
+                    "type": "image/jpeg",
+                    "size": poster_path.stat().st_size,
                 }
 
         # Generate fallback formats if needed
-        if source.suffix.lower() == '.mp4':
+        if source.suffix.lower() == ".mp4":
             webm_path = self._convert_to_webm(source, sanitized_name, animations_dir)
             if webm_path:
-                assets['webm'] = {
-                    'path': webm_path,
-                    'url': f"animations/{webm_path.name}",
-                    'type': 'video/webm',
-                    'size': webm_path.stat().st_size
+                assets["webm"] = {
+                    "path": webm_path,
+                    "url": f"animations/{webm_path.name}",
+                    "type": "video/webm",
+                    "size": webm_path.stat().st_size,
                 }
 
         # Generate animated GIF fallback
         gif_path = self._convert_to_gif(source, sanitized_name, animations_dir)
         if gif_path:
-            assets['gif'] = {
-                'path': gif_path,
-                'url': f"animations/{gif_path.name}",
-                'type': 'image/gif',
-                'size': gif_path.stat().st_size
+            assets["gif"] = {
+                "path": gif_path,
+                "url": f"animations/{gif_path.name}",
+                "type": "image/gi",
+                "size": gif_path.stat().st_size,
             }
 
         return assets
 
-    def _generate_poster_frame(self, video_path: Path, name: str, output_dir: Path) -> Optional[Path]:
+    def _generate_poster_frame(
+        self, video_path: Path, name: str, output_dir: Path
+    ) -> Optional[Path]:
         """Generate poster frame from video.
 
         Args:
@@ -354,26 +364,37 @@ class HTMLExporter(BaseExporterImpl):
         """
         try:
             poster_path = output_dir / f"{name}_poster.jpg"
-            
+
             # Use ffmpeg to extract frame at 1 second
             cmd = [
-                'ffmpeg', '-i', str(video_path), '-ss', '00:00:01',
-                '-vframes', '1', '-q:v', '2', str(poster_path), '-y'
+                "ffmpeg",
+                "-i",
+                str(video_path),
+                "-ss",
+                "00:00:01",
+                "-vframes",
+                "1",
+                "-q:v",
+                "2",
+                str(poster_path),
+                "-y",
             ]
-            
+
             result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode == 0 and poster_path.exists():
                 self.logger.debug(f"Generated poster frame: {poster_path}")
                 return poster_path
             else:
                 self.logger.warning(f"Failed to generate poster frame: {result.stderr}")
-                
+
         except (subprocess.SubprocessError, FileNotFoundError) as e:
             self.logger.warning(f"ffmpeg not available for poster generation: {e}")
-            
+
         return None
 
-    def _convert_to_webm(self, source: Path, name: str, output_dir: Path) -> Optional[Path]:
+    def _convert_to_webm(
+        self, source: Path, name: str, output_dir: Path
+    ) -> Optional[Path]:
         """Convert video to WebM format.
 
         Args:
@@ -386,24 +407,36 @@ class HTMLExporter(BaseExporterImpl):
         """
         try:
             webm_path = output_dir / f"{name}_animation.webm"
-            
+
             cmd = [
-                'ffmpeg', '-i', str(source), '-c:v', 'libvpx-vp9',
-                '-crf', '30', '-b:v', '0', '-c:a', 'libopus',
-                str(webm_path), '-y'
+                "ffmpeg",
+                "-i",
+                str(source),
+                "-c:v",
+                "libvpx-vp9",
+                "-cr",
+                "30",
+                "-b:v",
+                "0",
+                "-c:a",
+                "libopus",
+                str(webm_path),
+                "-y",
             ]
-            
+
             result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode == 0 and webm_path.exists():
                 self.logger.debug(f"Generated WebM: {webm_path}")
                 return webm_path
-                
+
         except (subprocess.SubprocessError, FileNotFoundError):
             self.logger.debug("ffmpeg not available for WebM conversion")
-            
+
         return None
 
-    def _convert_to_gif(self, source: Path, name: str, output_dir: Path) -> Optional[Path]:
+    def _convert_to_gif(
+        self, source: Path, name: str, output_dir: Path
+    ) -> Optional[Path]:
         """Convert video to animated GIF.
 
         Args:
@@ -416,26 +449,33 @@ class HTMLExporter(BaseExporterImpl):
         """
         try:
             gif_path = output_dir / f"{name}_animation.gif"
-            
+
             # Generate optimized GIF with palette
             cmd = [
-                'ffmpeg', '-i', str(source), '-vf',
-                'fps=10,scale=640:-1:flags=lanczos,palettegen=stats_mode=diff',
-                '-t', '10',  # Limit to 10 seconds
-                str(gif_path), '-y'
+                "ffmpeg",
+                "-i",
+                str(source),
+                "-v",
+                "fps=10,scale=640:-1:flags=lanczos,palettegen=stats_mode=dif",
+                "-t",
+                "10",  # Limit to 10 seconds
+                str(gif_path),
+                "-y",
             ]
-            
+
             result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode == 0 and gif_path.exists():
                 self.logger.debug(f"Generated GIF: {gif_path}")
                 return gif_path
-                
+
         except (subprocess.SubprocessError, FileNotFoundError):
             self.logger.debug("ffmpeg not available for GIF conversion")
-            
+
         return None
 
-    def _generate_cross_references(self, sketch: ProofSketch, context: ExportContext) -> List[Dict]:
+    def _generate_cross_references(
+        self, sketch: ProofSketch, context: ExportContext
+    ) -> List[Dict]:
         """Generate cross-references for doc-gen4 compatibility.
 
         Args:
@@ -446,21 +486,29 @@ class HTMLExporter(BaseExporterImpl):
             List of cross-reference dictionaries
         """
         cross_refs = []
-        
+
         # Find references in the proof text
         for other_sketch in context.sketches:
             if other_sketch.theorem_name != sketch.theorem_name:
                 # Check if referenced in content
-                if (other_sketch.theorem_name.lower() in sketch.introduction.lower() or
-                    any(other_sketch.theorem_name.lower() in step.description.lower() 
-                        for step in sketch.key_steps)):
-                    cross_refs.append({
-                        'name': other_sketch.theorem_name,
-                        'url': context.theorem_links.get(other_sketch.theorem_name, '#'),
-                        'type': 'theorem',
-                        'statement': getattr(other_sketch, 'theorem_statement', '')
-                    })
-        
+                if (
+                    other_sketch.theorem_name.lower() in sketch.introduction.lower()
+                    or any(
+                        other_sketch.theorem_name.lower() in step.description.lower()
+                        for step in sketch.key_steps
+                    )
+                ):
+                    cross_refs.append(
+                        {
+                            "name": other_sketch.theorem_name,
+                            "url": context.theorem_links.get(
+                                other_sketch.theorem_name, "#"
+                            ),
+                            "type": "theorem",
+                            "statement": getattr(other_sketch, "theorem_statement", ""),
+                        }
+                    )
+
         return cross_refs
 
     def _get_asset_hashes(self) -> Dict[str, str]:
@@ -471,18 +519,20 @@ class HTMLExporter(BaseExporterImpl):
         """
         hashes = {}
         asset_dir = self.template_manager.template_dir / "html" / "assets"
-        
+
         if asset_dir.exists():
             for asset_file in asset_dir.rglob("*"):
                 if asset_file.is_file():
                     try:
                         content = asset_file.read_bytes()
-                        hash_value = hashlib.md5(content, usedforsecurity=False).hexdigest()[:8]
+                        hash_value = hashlib.md5(
+                            content, usedforsecurity=False
+                        ).hexdigest()[:8]
                         rel_path = asset_file.relative_to(asset_dir)
                         hashes[str(rel_path)] = hash_value
                     except (OSError, IOError):
                         continue
-                        
+
         return hashes
 
     def _generate_search_index(self, sketches: List[ProofSketch]) -> Optional[Path]:
@@ -501,10 +551,10 @@ class HTMLExporter(BaseExporterImpl):
             entry = {
                 "id": sketch.theorem_name,
                 "title": sketch.theorem_name,
-                "statement": getattr(sketch, 'theorem_statement', ''),
+                "statement": getattr(sketch, "theorem_statement", ""),
                 "content": sketch.introduction,
                 "url": self._get_output_url(sketch),
-                "keywords": getattr(sketch, 'key_insights', []),
+                "keywords": getattr(sketch, "key_insights", []),
             }
 
             # Add step descriptions to searchable content
@@ -546,17 +596,21 @@ class HTMLExporter(BaseExporterImpl):
             if src.exists():
                 dst = self.options.output_dir / dst_rel
                 dst.parent.mkdir(parents=True, exist_ok=True)
-                
+
                 # Optimize asset if enabled
-                if self._minify_assets and (dst_rel.endswith('.css') or dst_rel.endswith('.js')):
+                if self._minify_assets and (
+                    dst_rel.endswith(".css") or dst_rel.endswith(".js")
+                ):
                     self._copy_and_minify_asset(src, dst)
                 else:
                     shutil.copy2(src, dst)
-                
+
                 # Compress asset if enabled
-                if self._compress_assets and dst.stat().st_size > 1024:  # Only compress files > 1KB
+                if (
+                    self._compress_assets and dst.stat().st_size > 1024
+                ):  # Only compress files > 1KB
                     self._compress_asset(dst)
-                
+
                 copied.append(dst)
 
         return copied
@@ -569,18 +623,23 @@ class HTMLExporter(BaseExporterImpl):
             dst: Destination file path
         """
         try:
-            content = src.read_text(encoding='utf-8')
-            
-            if dst.suffix == '.css':
+            content = src.read_text(encoding="utf-8")
+
+            if dst.suffix == ".css":
                 minified = self._minify_css(content)
-            elif dst.suffix == '.js':
+            elif dst.suffix == ".js":
                 minified = self._minify_js(content)
             else:
                 minified = content
-                
-            dst.write_text(minified, encoding='utf-8')
-            self.logger.debug(f"Minified {src.name}: {len(content)} → {len(minified)} chars")
-            
+
+            dst.write_text(minified, encoding="utf-8")
+            self.logger.debug(
+                f"Minified {
+                    src.name}: {
+                    len(content)} → {
+                    len(minified)} chars"
+            )
+
         except (UnicodeDecodeError, OSError) as e:
             self.logger.warning(f"Failed to minify {src}: {e}, copying as-is")
             shutil.copy2(src, dst)
@@ -595,15 +654,15 @@ class HTMLExporter(BaseExporterImpl):
             Minified CSS
         """
         import re
-        
+
         # Remove comments
-        content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
-        
+        content = re.sub(r"/\*.*?\*/", "", content, flags=re.DOTALL)
+
         # Remove extra whitespace
-        content = re.sub(r'\s+', ' ', content)
-        content = re.sub(r'\s*([{}:;,>+~])\s*', r'\1', content)
-        content = re.sub(r';\s*}', '}', content)
-        
+        content = re.sub(r"\s+", " ", content)
+        content = re.sub(r"\s*([{}:;,>+~])\s*", r"\1", content)
+        content = re.sub(r";\s*}", "}", content)
+
         return content.strip()
 
     def _minify_js(self, content: str) -> str:
@@ -616,17 +675,17 @@ class HTMLExporter(BaseExporterImpl):
             Minified JavaScript
         """
         import re
-        
+
         # Remove single-line comments (be careful with URLs)
-        content = re.sub(r'//.*$', '', content, flags=re.MULTILINE)
-        
+        content = re.sub(r"//.*$", "", content, flags=re.MULTILINE)
+
         # Remove multi-line comments
-        content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
-        
+        content = re.sub(r"/\*.*?\*/", "", content, flags=re.DOTALL)
+
         # Remove extra whitespace
-        content = re.sub(r'\s+', ' ', content)
-        content = re.sub(r'\s*([{}:;,=()[\]+-/*])\s*', r'\1', content)
-        
+        content = re.sub(r"\s+", " ", content)
+        content = re.sub(r"\s*([{}:;,=()[\]+-/*])\s*", r"\1", content)
+
         return content.strip()
 
     def _compress_asset(self, file_path: Path) -> None:
@@ -636,18 +695,21 @@ class HTMLExporter(BaseExporterImpl):
             file_path: Path to file to compress
         """
         try:
-            with open(file_path, 'rb') as f_in:
-                with gzip.open(f"{file_path}.gz", 'wb') as f_out:
+            with open(file_path, "rb") as f_in:
+                with gzip.open(f"{file_path}.gz", "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
-            
+
             # Only keep compressed version if it's significantly smaller
             original_size = file_path.stat().st_size
             compressed_size = Path(f"{file_path}.gz").stat().st_size
-            
+
             if compressed_size < original_size * 0.8:  # 20% improvement threshold
-                self.logger.debug(f"Compressed {file_path.name}: {original_size} → {compressed_size} bytes")
+                self.logger.debug(
+                    f"Compressed {
+                        file_path.name}: {original_size} → {compressed_size} bytes"
+                )
             else:
                 Path(f"{file_path}.gz").unlink()  # Remove if not beneficial
-                
+
         except (OSError, IOError) as e:
             self.logger.warning(f"Failed to compress {file_path}: {e}")

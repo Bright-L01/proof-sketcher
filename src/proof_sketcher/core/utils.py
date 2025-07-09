@@ -236,7 +236,7 @@ def retry_with_backoff(
         raise ProofSketcherError(
             "Retry failed with no recorded exception",
             details={"max_retries": max_retries, "delay": delay},
-            error_code="RETRY_FAILED"
+            error_code="RETRY_FAILED",
         )
 
 

@@ -208,8 +208,8 @@ Sort
 {% macro function_def(name, domain, codomain, def='') -%}
 {% if format == 'html' -%}
 <div class="math-function">
-  <span class="func-name">{{ name }}</span> : 
-  <span class="func-domain">{{ domain }}</span> → 
+  <span class="func-name">{{ name }}</span> :
+  <span class="func-domain">{{ domain }}</span> →
   <span class="func-codomain">{{ codomain }}</span>
   {% if def %}
   <br><span class="func-def">{{ name }} := {{ def }}</span>
@@ -233,7 +233,7 @@ Sort
 {% if format == 'html' -%}
 <div class="theorem-stmt">
   <span class="theorem-type">{{ type }}</span>
-  <span class="theorem-name">{{ name }}</span> : 
+  <span class="theorem-name">{{ name }}</span> :
   <span class="theorem-prop">{{ statement }}</span>
 </div>
 {%- elif format == 'markdown' -%}
@@ -283,7 +283,7 @@ Sort
 </div>
 {%- elif format == 'markdown' -%}
 {{ number }}. **{{ description }}**
-   
+
    {{ content | indent(3) }}
 
 {%- elif format == 'latex' -%}

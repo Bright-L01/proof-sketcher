@@ -54,7 +54,7 @@ updates:
     # Add reviewers
     reviewers:
       - "brightliu"
-    
+
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
