@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ theorem.name }} - Proof Documentation</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async 
+            src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>{{ theorem.name }}</h1>
+            {% if theorem.docstring %}
+            <p class="docstring">{{ theorem.docstring }}</p>
+            {% endif %}
+            <div class="metadata">
+                <span class="file-info">
+                    📄 {{ theorem.file_path.name }} (lines {{ theorem.start_line }}-{{ theorem.end_line }})
+                </span>
+            </div>
+        </header>
+        
+        <section class="statement">
+            <h2>Statement</h2>
+            <div class="math-block">
+                <pre class="lean-code">{{ theorem.statement }}</pre>
+            </div>
+        </section>
+        
+        <section class="explanation">
+            <h2>Explanation</h2>
+            <div class="explanation-text">
+                {{ explanation | safe }}
+            </div>
+        </section>
+        
+        {% if visualization %}
+        <section class="visualization">
+            <h2>Visualization</h2>
+            {% if visualization.type == 'video' %}
+            <video controls width="100%">
+                <source src="{{ visualization.path }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            {% else %}
+            <img src="{{ visualization.path }}" alt="Proof diagram" class="proof-diagram">
+            {% endif %}
+        </section>
+        {% endif %}
+        
+        <footer>
+            <p>Generated on {{ generated_at }} by Proof Sketcher</p>
+        </footer>
+    </div>
+</body>
+</html>
