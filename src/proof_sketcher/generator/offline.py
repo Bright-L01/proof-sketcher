@@ -161,6 +161,7 @@ class OfflineGenerator:
         
         return ProofSketch(
             theorem_name=theorem.name,
+            theorem_statement=theorem.statement or "",
             introduction=intro,
             key_steps=steps,
             conclusion=conclusion,
