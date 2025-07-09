@@ -47,6 +47,7 @@ class ProofSketch(BaseModel):
     """A natural language proof sketch with structured content."""
 
     theorem_name: str = Field(..., description="Name of the theorem")
+    theorem_statement: str = Field(..., description="Formal statement of the theorem")
     introduction: str = Field(..., description="Introduction explaining the theorem")
     key_steps: List[ProofStep] = Field(..., description="Key steps in the proof")
     conclusion: str = Field(..., description="Conclusion tying everything together")
