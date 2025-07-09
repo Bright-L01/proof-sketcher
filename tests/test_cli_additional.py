@@ -3,7 +3,7 @@
 import tempfile
 import time
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from click.testing import CliRunner
@@ -22,10 +22,10 @@ class TestAdditionalCLICommands:
     def test_formats_command(self, runner):
         """Test formats command that shows supported export formats."""
         result = runner.invoke(cli, ["formats"])
-        
+
         assert result.exit_code == 0
         assert "HTML" in result.output
-        assert "Markdown" in result.output  
+        assert "Markdown" in result.output
         assert "PDF" in result.output
         assert "Jupyter" in result.output
         assert ".html" in result.output
@@ -36,7 +36,7 @@ class TestAdditionalCLICommands:
     def test_version_command(self, runner):
         """Test version command that shows detailed version info."""
         result = runner.invoke(cli, ["version"])
-        
+
         assert result.exit_code == 0
         assert "Proof Sketcher" in result.output
         assert "Components:" in result.output
@@ -58,26 +58,30 @@ class TestAdditionalCLICommands:
             # Mock cache directory existence and contents
             with patch.object(Path, "exists") as mock_exists:
                 mock_exists.return_value = True
-                
+
                 # Mock rglob to return some mock files
                 with patch("pathlib.Path.rglob") as mock_rglob:
                     # Create mock files
                     mock_gen_file = Mock()
                     mock_gen_file.is_file.return_value = True
-                    mock_gen_file.relative_to.return_value = Path("generator/sketch1.json")
+                    mock_gen_file.relative_to.return_value = Path(
+                        "generator/sketch1.json"
+                    )
                     mock_gen_file.stat.return_value.st_size = 1024
                     mock_gen_file.stat.return_value.st_mtime = time.time()
-                    
+
                     mock_anim_file = Mock()
-                    mock_anim_file.is_file.return_value = True  
-                    mock_anim_file.relative_to.return_value = Path("animations/anim1.mp4")
+                    mock_anim_file.is_file.return_value = True
+                    mock_anim_file.relative_to.return_value = Path(
+                        "animations/anim1.mp4"
+                    )
                     mock_anim_file.stat.return_value.st_size = 2048
                     mock_anim_file.stat.return_value.st_mtime = time.time()
-                    
+
                     mock_rglob.return_value = [mock_gen_file, mock_anim_file]
-                    
+
                     result = runner.invoke(cli, ["cache", "list"])
-                    
+
                     assert result.exit_code == 0
                     assert "Generator" in result.output or "Animation" in result.output
 
@@ -92,12 +96,12 @@ class TestAdditionalCLICommands:
 
             with patch.object(Path, "exists") as mock_exists:
                 mock_exists.return_value = True
-                
+
                 with patch("pathlib.Path.rglob") as mock_rglob:
                     mock_rglob.return_value = []  # No matching files
-                    
+
                     result = runner.invoke(cli, ["cache", "list", "pattern"])
-                    
+
                     assert result.exit_code == 0
                     assert "No cached items found" in result.output
 
@@ -112,9 +116,9 @@ class TestAdditionalCLICommands:
 
             with patch.object(Path, "exists") as mock_exists:
                 mock_exists.return_value = False
-                
+
                 result = runner.invoke(cli, ["cache", "list"])
-                
+
                 assert result.exit_code == 0
                 assert "No cache directory found" in result.output
 
@@ -139,7 +143,7 @@ class TestCLIErrorHandling:
             theorem_mock = Mock()
             theorem_mock.name = "test"
             theorem_mock.statement = "True"
-            
+
             mock_result = Mock()
             mock_result.success = True
             mock_result.theorems = [theorem_mock]
@@ -158,7 +162,9 @@ class TestCLIErrorHandling:
                 with patch("proof_sketcher.cli.HTMLExporter") as mock_exporter:
                     mock_exp_instance = Mock()
                     mock_exporter.return_value = mock_exp_instance
-                    mock_exp_instance.export_multiple.side_effect = Exception("Export failed")
+                    mock_exp_instance.export_multiple.side_effect = Exception(
+                        "Export failed"
+                    )
 
                     result = runner.invoke(cli, ["prove", str(sample_lean_file)])
 
@@ -172,7 +178,7 @@ class TestCLIErrorHandling:
             theorem_mock = Mock()
             theorem_mock.name = "test"
             theorem_mock.statement = "True"
-            
+
             mock_result = Mock()
             mock_result.success = True
             mock_result.theorems = [theorem_mock]
@@ -183,7 +189,9 @@ class TestCLIErrorHandling:
             with patch("proof_sketcher.cli.ClaudeGenerator") as mock_generator:
                 mock_instance = Mock()
                 mock_generator.return_value = mock_instance
-                mock_instance.generate_proof_sketch.side_effect = Exception("Generation failed")
+                mock_instance.generate_proof_sketch.side_effect = Exception(
+                    "Generation failed"
+                )
 
                 result = runner.invoke(cli, ["prove", str(sample_lean_file)])
 
@@ -196,7 +204,7 @@ class TestCLIErrorHandling:
             theorem_mock = Mock()
             theorem_mock.name = "test"
             theorem_mock.statement = "True"
-            
+
             mock_result = Mock()
             mock_result.success = True
             mock_result.theorems = [theorem_mock]
@@ -212,23 +220,29 @@ class TestCLIErrorHandling:
 
                 # Mock some exporters failing
                 with patch("proof_sketcher.cli.HTMLExporter") as mock_html:
-                    mock_html.return_value.export_multiple.return_value = Mock(success=True)
-                    
-                    with patch("proof_sketcher.cli.PDFExporter") as mock_pdf:
-                        mock_pdf.return_value.export_multiple.side_effect = Exception("PDF failed")
+                    mock_html.return_value.export_multiple.return_value = Mock(
+                        success=True
+                    )
 
-                        result = runner.invoke(cli, ["prove", str(sample_lean_file), "--format", "all"])
+                    with patch("proof_sketcher.cli.PDFExporter") as mock_pdf:
+                        mock_pdf.return_value.export_multiple.side_effect = Exception(
+                            "PDF failed"
+                        )
+
+                        result = runner.invoke(
+                            cli, ["prove", str(sample_lean_file), "--format", "all"]
+                        )
 
                         assert result.exit_code == 0
                         assert "Export error (pdf)" in result.output
 
     def test_animation_generation_error(self, runner, sample_lean_file):
-        """Test animation generation error handling.""" 
+        """Test animation generation error handling."""
         with patch("proof_sketcher.cli.LeanParser") as mock_parser:
             theorem_mock = Mock()
             theorem_mock.name = "test"
             theorem_mock.statement = "True"
-            
+
             mock_result = Mock()
             mock_result.success = True
             mock_result.theorems = [theorem_mock]
@@ -247,9 +261,13 @@ class TestCLIErrorHandling:
                 with patch("proof_sketcher.cli.ManimMCPClient") as mock_client:
                     mock_client_instance = AsyncMock()
                     mock_client.return_value = mock_client_instance
-                    mock_client_instance.start_server = AsyncMock(side_effect=Exception("Animation failed"))
+                    mock_client_instance.start_server = AsyncMock(
+                        side_effect=Exception("Animation failed")
+                    )
 
-                    result = runner.invoke(cli, ["prove", str(sample_lean_file), "--animate"])
+                    result = runner.invoke(
+                        cli, ["prove", str(sample_lean_file), "--animate"]
+                    )
 
                     assert result.exit_code == 0
                     # Should continue processing even if animation fails
@@ -279,7 +297,7 @@ class TestCLIErrorHandling:
 
             with patch.object(Path, "exists") as mock_exists:
                 mock_exists.return_value = True
-                
+
                 # Mock user declining confirmation
                 with patch("click.confirm") as mock_confirm:
                     mock_confirm.return_value = False
@@ -301,11 +319,12 @@ class TestCLIConfiguration:
 
         with patch("logging.basicConfig") as mock_basic_config:
             setup_logging(mock_config)
-            
+
             # Should have been called with DEBUG level
             mock_basic_config.assert_called_once()
             args, kwargs = mock_basic_config.call_args
             import logging
+
             assert kwargs["level"] == logging.DEBUG
 
     def test_setup_logging_custom_level(self):
@@ -316,10 +335,11 @@ class TestCLIConfiguration:
 
         with patch("logging.basicConfig") as mock_basic_config:
             setup_logging(mock_config)
-            
+
             mock_basic_config.assert_called_once()
             args, kwargs = mock_basic_config.call_args
             import logging
+
             assert kwargs["level"] == logging.WARNING
 
     def test_setup_logging_invalid_level(self):
@@ -330,19 +350,22 @@ class TestCLIConfiguration:
 
         with patch("logging.basicConfig") as mock_basic_config:
             setup_logging(mock_config)
-            
+
             mock_basic_config.assert_called_once()
             args, kwargs = mock_basic_config.call_args
             import logging
+
             assert kwargs["level"] == logging.INFO  # Default fallback
 
     def test_cli_with_custom_config_file(self):
         """Test CLI with custom configuration file."""
         runner = CliRunner()
-        
+
         with tempfile.NamedTemporaryFile(suffix=".yaml") as config_file:
             # Mock config loading from custom file
-            with patch("proof_sketcher.config.config.ProofSketcherConfig.load") as mock_load:
+            with patch(
+                "proof_sketcher.config.config.ProofSketcherConfig.load"
+            ) as mock_load:
                 mock_config = Mock()
                 mock_config.debug = False
                 mock_config.log_level = "INFO"
@@ -350,8 +373,10 @@ class TestCLIConfiguration:
 
                 with patch("proof_sketcher.cli.setup_logging"):
                     # Use version command which should trigger config loading
-                    result = runner.invoke(cli, ["--config", config_file.name, "version"])
-                    
+                    result = runner.invoke(
+                        cli, ["--config", config_file.name, "version"]
+                    )
+
                     # Config loading should have been called with the custom path
                     mock_load.assert_called_once_with(Path(config_file.name))
 
@@ -431,14 +456,16 @@ class TestCLIEdgeCases:
             theorem_mock = Mock()
             theorem_mock.name = "exists"
             theorem_mock.statement = "True"
-            
+
             mock_result = Mock()
             mock_result.success = True
             mock_result.theorems = [theorem_mock]
             mock_result.errors = []
             mock_parser.return_value.parse_file.return_value = mock_result
 
-            result = runner.invoke(cli, ["prove", str(lean_file), "--theorem", "nonexistent"])
+            result = runner.invoke(
+                cli, ["prove", str(lean_file), "--theorem", "nonexistent"]
+            )
 
             assert result.exit_code == 0
             assert "None of the specified theorems found" in result.output

@@ -5,20 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="Proof Sketcher">
     <title>{{ theorem_name }} — {{ project_name }}</title>
-    
+
     <!-- Doc-gen4 compatible CSS -->
     <link rel="stylesheet" href="{{ 'css/doc-gen4.css' | asset_url }}">
     <link rel="stylesheet" href="{{ 'css/theorem.css' | asset_url }}">
     <link rel="stylesheet" href="{{ 'css/responsive.css' | asset_url }}">
-    
+
     <!-- Math rendering -->
     <link rel="stylesheet" href="{{ 'css/katex.min.css' | asset_url }}">
-    
+
     <!-- Theme-specific styles -->
     {% if theme == 'dark' %}
     <link rel="stylesheet" href="{{ 'css/dark-theme.css' | theme_asset }}">
     {% endif %}
-    
+
     <!-- Syntax highlighting -->
     {% if syntax_theme != 'none' %}
     <link rel="stylesheet" href="{{ ('css/prism-' + syntax_theme + '.css') | asset_url }}">
@@ -28,7 +28,7 @@
     <meta property="og:title" content="{{ theorem_name }}">
     <meta property="og:description" content="{{ introduction | truncate(150) }}">
     <meta property="og:type" content="article">
-    
+
     {% if animation_assets and animation_assets.poster %}
     <meta property="og:image" content="{{ animation_assets.poster.url }}">
     {% endif %}
@@ -39,23 +39,23 @@
     <nav class="nav">
         <div class="nav-container">
             <a href="{{ index_url }}" class="nav-logo">{{ project_name }}</a>
-            
+
             <div class="nav-menu">
                 {% if prev_theorem %}
                 <a href="{{ prev_theorem.url }}" class="nav-link" title="Previous theorem">
                     ← {{ prev_theorem.name }}
                 </a>
                 {% endif %}
-                
+
                 <a href="{{ index_url }}" class="nav-link">Index</a>
-                
+
                 {% if next_theorem %}
                 <a href="{{ next_theorem.url }}" class="nav-link" title="Next theorem">
                     {{ next_theorem.name }} →
                 </a>
                 {% endif %}
             </div>
-            
+
             <!-- Theme toggle -->
             <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
                 <span class="theme-icon">🌓</span>
@@ -67,25 +67,25 @@
         <!-- Theorem header -->
         <header class="decl-header">
             <h1 class="decl-name">{{ theorem_name }}</h1>
-            
+
             {% if theorem_statement %}
             <div class="decl-type">theorem</div>
             {% endif %}
-            
+
             <!-- Metadata badges -->
             <div class="decl-meta">
                 {% if key_steps %}
                 <span class="meta-badge">{{ key_steps|length }} steps</span>
                 {% endif %}
-                
+
                 {% if difficulty_level %}
                 <span class="meta-badge difficulty-{{ difficulty_level }}">{{ difficulty_level }}</span>
                 {% endif %}
-                
+
                 {% if animation_assets %}
                 <span class="meta-badge animated">🎥 Animated</span>
                 {% endif %}
-                
+
                 {% if mathematical_areas %}
                 {% for area in mathematical_areas %}
                 <span class="meta-badge area">{{ area }}</span>
@@ -110,37 +110,37 @@
             <h2>Proof Animation</h2>
             <div class="animation-container">
                 {% if animation_assets.video %}
-                <video class="proof-video" 
-                       controls 
+                <video class="proof-video"
+                       controls
                        preload="metadata"
                        {% if animation_assets.poster %}poster="{{ animation_assets.poster.url }}"{% endif %}>
-                    
+
                     <!-- Multiple source formats for browser compatibility -->
                     <source src="{{ animation_assets.video.url }}" type="{{ animation_assets.video.type }}">
                     {% if animation_assets.webm %}
                     <source src="{{ animation_assets.webm.url }}" type="{{ animation_assets.webm.type }}">
                     {% endif %}
-                    
+
                     <!-- Fallback for browsers without video support -->
                     {% if animation_assets.gif %}
-                    <img src="{{ animation_assets.gif.url }}" 
+                    <img src="{{ animation_assets.gif.url }}"
                          alt="{{ theorem_name }} proof animation"
                          class="animation-fallback">
                     {% elif animation_assets.poster %}
-                    <img src="{{ animation_assets.poster.url }}" 
+                    <img src="{{ animation_assets.poster.url }}"
                          alt="{{ theorem_name }} proof preview"
                          class="animation-fallback">
                     {% endif %}
-                    
+
                     <p class="video-unsupported">
-                        Your browser doesn't support video playback. 
+                        Your browser doesn't support video playback.
                         <a href="{{ animation_assets.video.url }}">Download the animation</a>
                         {% if animation_assets.gif %}
                         or <a href="{{ animation_assets.gif.url }}">view as GIF</a>
                         {% endif %}.
                     </p>
                 </video>
-                
+
                 <!-- Animation controls -->
                 <div class="animation-controls">
                     <button class="play-pause-btn" onclick="togglePlayPause()">⏯️</button>
@@ -168,7 +168,7 @@
         {% if key_steps %}
         <section class="decl-proof">
             <h2>Proof Steps</h2>
-            
+
             <!-- Progress indicator -->
             <div class="proof-progress">
                 <div class="progress-bar" id="proof-progress">
@@ -176,7 +176,7 @@
                 </div>
                 <span class="progress-text">Step <span id="current-step">0</span> of {{ key_steps|length }}</span>
             </div>
-            
+
             <ol class="step-list">
                 {% for step in key_steps %}
                 <li class="step" id="step-{{ step.step_number }}" data-step="{{ step.step_number }}">
@@ -192,19 +192,19 @@
                         </div>
                         {% endif %}
                     </div>
-                    
+
                     {% if step.mathematical_content %}
                     <div class="step-math expr">
                         {{ step.mathematical_content | render_math(display=true) }}
                     </div>
                     {% endif %}
-                    
+
                     {% if step.justification %}
                     <div class="step-justification prose">
                         {{ step.justification | render_math }}
                     </div>
                     {% endif %}
-                    
+
                     <!-- Dependencies -->
                     {% if step.dependencies %}
                     <div class="step-deps">
@@ -255,7 +255,7 @@
                 Generated by <a href="https://github.com/example/proof-sketcher">Proof Sketcher</a>
                 {% if timestamp %} on {{ timestamp | format_date('%B %d, %Y') }}{% endif %}
             </p>
-            
+
             {% if version %}
             <p class="footer-version">Version {{ version }}</p>
             {% endif %}
@@ -267,7 +267,7 @@
     <script src="{{ 'js/katex-auto-render.min.js' | asset_url }}"></script>
     <script src="{{ 'js/navigation.js' | asset_url }}"></script>
     <script src="{{ 'js/video-player.js' | asset_url }}"></script>
-    
+
     {% if syntax_theme != 'none' %}
     <script src="{{ 'js/prism.js' | asset_url }}"></script>
     {% endif %}
@@ -283,10 +283,10 @@
                     {left: "\\(", right: "\\)", display: false}
                 ]
             });
-            
+
             // Initialize proof step tracking
             initializeProofProgress();
-            
+
             // Initialize video player
             initializeVideoPlayer();
         });
@@ -296,10 +296,10 @@
             const html = document.documentElement;
             const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
+
             html.classList.remove(currentTheme);
             html.classList.add(newTheme);
-            
+
             localStorage.setItem('proof-sketcher-theme', newTheme);
         }
 
@@ -317,21 +317,21 @@
             const steps = document.querySelectorAll('.step');
             const progressFill = document.querySelector('.progress-fill');
             const currentStepSpan = document.getElementById('current-step');
-            
+
             if (!steps.length) return;
-            
+
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         const stepNumber = parseInt(entry.target.dataset.step);
                         const progress = (stepNumber / steps.length) * 100;
-                        
+
                         progressFill.style.width = progress + '%';
                         currentStepSpan.textContent = stepNumber;
                     }
                 });
             }, { threshold: 0.5 });
-            
+
             steps.forEach(step => observer.observe(step));
         }
 
@@ -339,7 +339,7 @@
         function initializeVideoPlayer() {
             const video = document.querySelector('.proof-video');
             if (!video) return;
-            
+
             // Add keyboard controls
             document.addEventListener('keydown', function(e) {
                 if (e.target === document.body) {

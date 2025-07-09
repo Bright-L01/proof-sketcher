@@ -9,7 +9,7 @@ namespace List
 theorem append_nil (l : List α) : l ++ [] = l := by
   induction l with
   | nil => rfl
-  | cons h t ih => 
+  | cons h t ih =>
     simp [List.append, ih]
 
 /-- Nil is the left identity for append -/
@@ -24,7 +24,7 @@ theorem length_cons (a : α) (l : List α) : (a :: l).length = l.length + 1 := b
 theorem length_append (l1 l2 : List α) : (l1 ++ l2).length = l1.length + l2.length := by
   induction l1 with
   | nil => simp [nil_append]
-  | cons h t ih => 
+  | cons h t ih =>
     simp [List.append, length_cons, ih]
     rw [add_succ]
 

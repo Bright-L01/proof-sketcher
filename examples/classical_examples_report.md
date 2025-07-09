@@ -5,7 +5,7 @@
 Successfully tested the Proof Sketcher system with classical mathematics examples from three major areas:
 
 1. **Group Theory** ✓
-2. **Real Analysis** ✓  
+2. **Real Analysis** ✓
 3. **Point Set Topology** ✓
 
 ## Test Results
@@ -22,7 +22,7 @@ Successfully tested the Proof Sketcher system with classical mathematics example
 #### Group Theory (`group_theory.lean`)
 ```lean
 - unique_identity: Identity element uniqueness in groups
-- unique_inverse: Inverse element uniqueness  
+- unique_inverse: Inverse element uniqueness
 - left_cancellation: Cancellation law in groups
 - order_of_identity: Order of identity element
 ```
@@ -50,7 +50,7 @@ Successfully tested the Proof Sketcher system with classical mathematics example
 ```lean
 - add_zero: Additive identity for naturals
 - nat_add_comm: Commutativity of natural addition
-- nat_add_assoc: Associativity of natural addition  
+- nat_add_assoc: Associativity of natural addition
 - real_add_zero: Additive identity for reals
 - real_mul_one: Multiplicative identity for reals
 ```

@@ -5,7 +5,7 @@ from .base import PromptBase
 
 class ELI5Template(PromptBase):
     """Template for ELI5 explanations using analogies and storytelling."""
-    
+
     def get_template_string(self) -> str:
         """Enhanced template for ELI5 explanations."""
         return """
@@ -23,7 +23,7 @@ Here's how a great communicator would explain a mathematical concept:
 
 **Topic: "Why every group has exactly one identity element"**
 > "Imagine you're organizing the world's most exclusive club - let's call it the Math Club. This club has a special rule: there's exactly one member who doesn't change anything when they show up. If Alice comes to a meeting, everything stays the same. If Bob comes with Alice, it's still the same as just Bob being there. Alice is like the 'neutral' member.
-> 
+>
 > Now here's the kicker - our theorem proves that there can only be ONE Alice in any Math Club that follows certain rules. It's impossible to have two neutral members! It's like trying to have two different 'zeros' in arithmetic - the math itself won't let it happen."
 
 ## 🎯 YOUR MISSION

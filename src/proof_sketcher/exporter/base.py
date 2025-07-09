@@ -238,7 +238,7 @@ class BaseExporterImpl:
         extensions = {
             ExportFormat.HTML: "html",
             ExportFormat.MARKDOWN: "md",
-            ExportFormat.PDF: "pdf",
+            ExportFormat.PDF: "pd",
             ExportFormat.JUPYTER: "ipynb",
         }
         return extensions.get(self.format, "txt")

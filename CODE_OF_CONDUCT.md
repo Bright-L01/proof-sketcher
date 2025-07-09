@@ -170,6 +170,6 @@ For answers to common questions about this code of conduct, see the FAQ at https
 
 For questions about this Code of Conduct, please contact:
 
-**Maintainer**: Bright Liu  
-**Email**: brightliu@college.harvard.edu  
+**Maintainer**: Bright Liu
+**Email**: brightliu@college.harvard.edu
 **GitHub**: @Bright-L01

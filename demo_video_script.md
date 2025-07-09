@@ -1,8 +1,8 @@
 # Proof Sketcher Demo Video Script
 
 ## Video Overview
-**Duration**: 8-10 minutes  
-**Target Audience**: Lean 4 developers, mathematicians, educators  
+**Duration**: 8-10 minutes
+**Target Audience**: Lean 4 developers, mathematicians, educators
 **Goal**: Showcase Proof Sketcher's capabilities and workflow
 
 ---
@@ -10,10 +10,10 @@
 ## Scene 1: Hook & Introduction (30 seconds)
 
 ### Visual: Split screen - Complex theorem vs. Beautiful explanation
-**Narrator**: "What if you could transform this..."  
+**Narrator**: "What if you could transform this..."
 *[Show complex Lean 4 theorem with tactic-heavy proof]*
 
-**Narrator**: "...into this?"  
+**Narrator**: "...into this?"
 *[Show elegant natural language explanation with synchronized animation]*
 
 **Title Card**: **Proof Sketcher - Bridging Formal and Intuitive Mathematics**
@@ -80,7 +80,7 @@ A complete toolkit for making formal mathematics accessible.
 # Create a simple theorem file
 echo 'theorem add_zero (n : Nat) : n + 0 = n := by
   induction n with
-  | zero => rfl  
+  | zero => rfl
   | succ n ih => rw [Nat.add_succ, ih]' > add_zero.lean
 
 # Generate explanation
@@ -234,7 +234,7 @@ Mathematics comes alive through visualization.
 **CLI Commands**:
 ```bash
 proof-sketcher prove theorem.lean --format html
-proof-sketcher prove theorem.lean --format markdown  
+proof-sketcher prove theorem.lean --format markdown
 proof-sketcher prove theorem.lean --format pdf
 proof-sketcher prove theorem.lean --format jupyter
 ```
@@ -350,10 +350,10 @@ proof-sketcher batch examples/ --output ./my-docs/
 - 💬 **Community**: Lean Zulip #proof-sketcher
 - 📧 **Contact**: brightliu@college.harvard.edu
 
-**Final Message**: 
+**Final Message**:
 "Transform your formal mathematics into accessible knowledge. Start your journey with Proof Sketcher today."
 
-**End Screen**: 
+**End Screen**:
 - Proof Sketcher logo
 - Key links and QR codes
 - "Star us on GitHub!"
@@ -398,7 +398,7 @@ proof-sketcher batch examples/ --output ./my-docs/
 theorem add_zero (n : Nat) : n + 0 = n := by
   induction n with
   | zero => rfl
-  | succ n ih => 
+  | succ n ih =>
     rw [Nat.add_succ]
     rw [ih]
 ```
@@ -409,7 +409,7 @@ import Mathlib.Algebra.Ring.Basic
 
 variable {R : Type*} [Ring R]
 
-theorem ring_distributive (a b c : R) : 
+theorem ring_distributive (a b c : R) :
   a * (b + c) = a * b + a * c := by
   rw [mul_add]
 ```
@@ -418,10 +418,10 @@ theorem ring_distributive (a b c : R) :
 ```lean
 import Mathlib.Topology.Continuous
 
-theorem continuous_composition {α β γ : Type*} 
+theorem continuous_composition {α β γ : Type*}
   [TopologicalSpace α] [TopologicalSpace β] [TopologicalSpace γ]
-  {f : α → β} {g : β → γ} 
-  (hf : Continuous f) (hg : Continuous g) : 
+  {f : α → β} {g : β → γ}
+  (hf : Continuous f) (hg : Continuous g) :
   Continuous (g ∘ f) := by
   exact Continuous.comp hg hf
 ```

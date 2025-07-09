@@ -18,7 +18,7 @@ namespace Advanced.Topology
 variable {X Y Z : Type*} [TopologicalSpace X] [TopologicalSpace Y] [TopologicalSpace Z]
 
 -- Definition and basic properties of open sets
-theorem open_union_open (U V : Set X) (hU : IsOpen U) (hV : IsOpen V) : 
+theorem open_union_open (U V : Set X) (hU : IsOpen U) (hV : IsOpen V) :
   IsOpen (U ∪ V) := by
   exact IsOpen.union hU hV
 
@@ -39,13 +39,13 @@ theorem continuous_iff_nhds (f : X → Y) :
   exact continuous_iff_continuousAt
 
 -- Composition of continuous functions
-theorem continuous_comp (f : X → Y) (g : Y → Z) 
-  (hf : Continuous f) (hg : Continuous g) : 
+theorem continuous_comp (f : X → Y) (g : Y → Z)
+  (hf : Continuous f) (hg : Continuous g) :
   Continuous (g ∘ f) := by
   exact Continuous.comp hg hf
 
 -- Homeomorphism properties
-theorem homeomorph_continuous (e : X ≃ₜ Y) : 
+theorem homeomorph_continuous (e : X ≃ₜ Y) :
   Continuous e ∧ Continuous e.symm := by
   exact ⟨e.continuous_toFun, e.continuous_invFun⟩
 
@@ -79,7 +79,7 @@ theorem tendsto_iff_dist_tendsto_zero (f : ℕ → α) (x : α) :
   exact Metric.tendsto_atTop
 
 -- Uniqueness of limits
-theorem tendsto_nhds_unique {f : Filter β} [NeBot f] {a b : α} 
+theorem tendsto_nhds_unique {f : Filter β} [NeBot f] {a b : α}
   (ha : Tendsto (fun x => a) f (𝓝 b)) : a = b := by
   sorry -- Requires more setup
 
@@ -89,8 +89,8 @@ variable {K : Set X}
 
 -- Finite intersection property characterization
 theorem compact_iff_finite_intersection_property :
-  IsCompact K ↔ ∀ F : Set (Set X), (∀ s ∈ F, IsClosed s) → 
-    (∀ G ⊆ F, G.Finite → (⋂₀ G) ∩ K ≠ ∅) → 
+  IsCompact K ↔ ∀ F : Set (Set X), (∀ s ∈ F, IsClosed s) →
+    (∀ G ⊆ F, G.Finite → (⋂₀ G) ∩ K ≠ ∅) →
     (⋂₀ F) ∩ K ≠ ∅ := by
   sorry -- Complex proof involving filters
 
@@ -137,7 +137,7 @@ theorem quotient_map_mk : QuotientMap (Quotient.mk : X → Quotient (Setoid.r)) 
 variable [T3Space X] [CompactSpace X]
 
 theorem urysohn_lemma (A B : Set X) (hA : IsClosed A) (hB : IsClosed B) (hAB : Disjoint A B) :
-  ∃ f : X → ℝ, Continuous f ∧ (∀ x ∈ A, f x = 0) ∧ (∀ x ∈ B, f x = 1) ∧ 
+  ∃ f : X → ℝ, Continuous f ∧ (∀ x ∈ A, f x = 0) ∧ (∀ x ∈ B, f x = 1) ∧
     ∀ x, f x ∈ Set.Icc 0 1 := by
   sorry -- Advanced separation theorem
 
@@ -149,7 +149,7 @@ theorem tychonoff_theorem {ι : Type*} {X : ι → Type*} [∀ i, TopologicalSpa
 -- Stone-Weierstrass Theorem (statement for continuous functions)
 variable [CompactSpace X] [T2Space X]
 
-theorem stone_weierstrass (A : Set (C(X, ℝ))) 
+theorem stone_weierstrass (A : Set (C(X, ℝ)))
   (h_alg : ∀ f g : C(X, ℝ), f ∈ A → g ∈ A → f + g ∈ A ∧ f * g ∈ A)
   (h_sep : ∀ x y : X, x ≠ y → ∃ f ∈ A, f x ≠ f y)
   (h_const : (fun _ => 1 : C(X, ℝ)) ∈ A) :

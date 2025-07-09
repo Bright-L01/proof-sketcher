@@ -23,7 +23,7 @@ designed to test Proof Sketcher's capabilities with real-world mathematical cont
 ## Contents
 - Algebra: Groups, Rings, Fields
 - Analysis: Real numbers, Derivatives
-- Topology: Basic topological concepts  
+- Topology: Basic topological concepts
 - Set Theory: Functions and cardinality
 - Number Theory: Primes and divisibility
 - Logic: Proof techniques
@@ -46,15 +46,15 @@ section GroupTheory
 variable {G : Type*} [Group G]
 
 /-- The identity element is unique in any group. -/
-theorem group_identity_unique (e₁ e₂ : G) (h₁ : ∀ g : G, e₁ * g = g) (h₂ : ∀ g : G, g * e₂ = g) : 
+theorem group_identity_unique (e₁ e₂ : G) (h₁ : ∀ g : G, e₁ * g = g) (h₂ : ∀ g : G, g * e₂ = g) :
     e₁ = e₂ := by
-  calc e₁ 
+  calc e₁
       = e₁ * e₂  := by rw [h₂ e₁]
     _ = e₂       := by rw [h₁ e₂]
 
 /-- Every element in a group has a unique inverse. -/
 theorem group_inverse_unique (g h₁ h₂ : G) (inv₁ : g * h₁ = 1) (inv₂ : h₂ * g = 1) : h₁ = h₂ := by
-  calc h₁ 
+  calc h₁
       = 1 * h₁      := by rw [one_mul]
     _ = (h₂ * g) * h₁  := by rw [← inv₂]
     _ = h₂ * (g * h₁)  := by rw [mul_assoc]
@@ -62,14 +62,14 @@ theorem group_inverse_unique (g h₁ h₂ : G) (inv₁ : g * h₁ = 1) (inv₂ :
     _ = h₂          := by rw [mul_one]
 
 /-- The order of the product of commuting elements divides the lcm of their orders. -/
-theorem order_mul_of_commute {g h : G} (comm : g * h = h * g) : 
+theorem order_mul_of_commute {g h : G} (comm : g * h = h * g) :
     orderOf (g * h) ∣ Nat.lcm (orderOf g) (orderOf h) := by
   sorry -- Real proof would require more advanced order theory
 
 end GroupTheory
 
 -- ========================================
--- ALGEBRA: Ring Theory  
+-- ALGEBRA: Ring Theory
 -- ========================================
 
 section RingTheory
@@ -77,13 +77,13 @@ section RingTheory
 variable {R : Type*} [Ring R]
 
 /-- The zero element is unique in any ring. -/
-theorem ring_zero_unique (z₁ z₂ : R) (h₁ : ∀ r : R, z₁ + r = r) (h₂ : ∀ r : R, r + z₂ = r) : 
+theorem ring_zero_unique (z₁ z₂ : R) (h₁ : ∀ r : R, z₁ + r = r) (h₂ : ∀ r : R, r + z₂ = r) :
     z₁ = z₂ := by
-  calc z₁ 
+  calc z₁
       = z₁ + z₂  := by rw [h₂]
     _ = z₂       := by rw [h₁]
 
-/-- In any ring, 0 * a = 0 for all elements a. -/  
+/-- In any ring, 0 * a = 0 for all elements a. -/
 theorem zero_mul (a : R) : (0 : R) * a = 0 := by
   have h : (0 : R) * a + (0 : R) * a = (0 + 0) * a := by rw [← add_mul]
   rw [zero_add] at h
@@ -106,7 +106,7 @@ section RealAnalysis
 open Real
 
 /-- The intermediate value theorem for continuous functions. -/
-theorem intermediate_value_theorem {f : ℝ → ℝ} {a b y : ℝ} (hab : a ≤ b) 
+theorem intermediate_value_theorem {f : ℝ → ℝ} {a b y : ℝ} (hab : a ≤ b)
     (hf : ContinuousOn f (Set.Icc a b)) (hy : f a ≤ y ∧ y ≤ f b) :
     ∃ c ∈ Set.Icc a b, f c = y := by
   sorry -- Real proof requires topology and completeness
@@ -124,7 +124,7 @@ theorem ftc_part_one {f : ℝ → ℝ} {a b : ℝ} (hf : ContinuousOn f (Set.Icc
 
 /-- Cauchy sequence criterion for convergence in ℝ. -/
 theorem cauchy_criterion_real (s : ℕ → ℝ) :
-    (∃ L, Filter.Tendsto s Filter.atTop (𝓝 L)) ↔ 
+    (∃ L, Filter.Tendsto s Filter.atTop (𝓝 L)) ↔
     (∀ ε > 0, ∃ N, ∀ m n ≥ N, |s m - s n| < ε) := by
   sorry -- Real proof requires completeness of reals
 
@@ -152,8 +152,8 @@ theorem closed_iff_contains_limit_points (S : Set X) :
     · exact subset_closure
 
 /-- Compactness is preserved under continuous maps. -/
-theorem continuous_image_of_compact {Y : Type*} [TopologicalSpace Y] 
-    {f : X → Y} {K : Set X} (hf : Continuous f) (hK : IsCompact K) : 
+theorem continuous_image_of_compact {Y : Type*} [TopologicalSpace Y]
+    {f : X → Y} {K : Set X} (hf : Continuous f) (hK : IsCompact K) :
     IsCompact (f '' K) := by
   sorry -- Real proof requires filter characterization
 
@@ -183,16 +183,16 @@ theorem cantor_theorem : ¬ ∃ f : α → Set α, Function.Surjective f := by
   · exact h (hy ▸ h)
   · exact h (hy ▸ h)
 
-/-- Schröder-Bernstein theorem: if there are injections both ways, 
+/-- Schröder-Bernstein theorem: if there are injections both ways,
     then there is a bijection. -/
-theorem schroeder_bernstein {f : α → β} {g : β → α} 
+theorem schroeder_bernstein {f : α → β} {g : β → α}
     (hf : Function.Injective f) (hg : Function.Injective g) :
     ∃ h : α → β, Function.Bijective h := by
   sorry -- Real proof requires sophisticated construction
 
 /-- Composition of injective functions is injective. -/
-theorem injective_comp {γ : Type*} {f : α → β} {g : β → γ} 
-    (hf : Function.Injective f) (hg : Function.Injective g) : 
+theorem injective_comp {γ : Type*} {f : α → β} {g : β → γ}
+    (hf : Function.Injective f) (hg : Function.Injective g) :
     Function.Injective (g ∘ f) := by
   intros x₁ x₂ h
   exact hf (hg h)
@@ -252,12 +252,12 @@ theorem prime_factorization_unique (n : ℕ) (hn : n > 1) :
   sorry -- Real proof requires well-founded induction
 
 /-- Bézout's identity: gcd can be written as a linear combination. -/
-theorem bezout_identity (a b : ℕ) : 
+theorem bezout_identity (a b : ℕ) :
     ∃ x y : ℤ, (gcd a b : ℤ) = x * a + y * b := by
   sorry -- Real proof requires Euclidean algorithm
 
 /-- Wilson's theorem: (p-1)! ≡ -1 (mod p) for prime p. -/
-theorem wilson_theorem (p : ℕ) (hp : Prime p) : 
+theorem wilson_theorem (p : ℕ) (hp : Prime p) :
     (p - 1)! ≡ -1 [MOD p] := by
   sorry -- Real proof requires modular arithmetic
 
@@ -291,7 +291,7 @@ def BinTree.mirror {α : Type*} : BinTree α → BinTree α
   | .node x l r => .node x (mirror r) (mirror l)
 
 /-- Mirroring twice gives the original tree. -/
-theorem BinTree.mirror_mirror {α : Type*} (t : BinTree α) : 
+theorem BinTree.mirror_mirror {α : Type*} (t : BinTree α) :
     t.mirror.mirror = t := by
   induction t with
   | leaf => rfl
@@ -374,7 +374,7 @@ theorem fibonacci_growth (n : ℕ) : fib n ≤ 2 ^ n := by
       | zero => simp [fib]
       | succ k =>
         rw [fib_add_two]
-        calc fib k + fib (k + 1) 
+        calc fib k + fib (k + 1)
             ≤ 2 ^ k + 2 ^ (k + 1)       := by exact add_le_add (ih k (by simp)) (ih (k + 1) (by simp))
           _ = 2 ^ k + 2 * 2 ^ k         := by rw [pow_succ]
           _ = 3 * 2 ^ k                 := by ring

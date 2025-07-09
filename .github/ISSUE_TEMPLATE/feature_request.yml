@@ -8,8 +8,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to suggest a feature! 
-        
+        Thanks for taking the time to suggest a feature!
+
         Please search existing issues and the roadmap before creating a new request.
 
   - type: checkboxes

@@ -34,17 +34,17 @@ jobs:
     name: Quality Metrics Report
     runs-on: ubuntu-latest
     continue-on-error: true  # Never fail the pipeline
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Full history for metrics
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-    
+
     - name: Cache pip packages
       uses: actions/cache@v4
       with:
@@ -52,13 +52,13 @@ jobs:
         key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r requirements-dev.txt
-    
+
     - name: Generate Quality Metrics Report
       run: |
         echo "# Quality Metrics Report - $(date +'%Y-%m-%d %H:%M:%S')" > quality_report.md
@@ -67,39 +67,39 @@ jobs:
         echo "" >> quality_report.md
         echo "| Metric | Current | Target | Status |" >> quality_report.md
         echo "|--------|---------|--------|--------|" >> quality_report.md
-        
+
         # Test Coverage
         coverage run -m pytest tests/unit tests/integration -v --tb=short || true
         COVERAGE=$(coverage report --format=total || echo "11")
         echo "| Test Coverage | ${COVERAGE}% | 70% | $([ ${COVERAGE%.*} -ge 70 ] && echo '✅' || echo '❌') |" >> quality_report.md
-        
+
         # Security Vulnerabilities
         bandit -r src -f json -o bandit_report.json || true
         VULNS=$(python -c "import json; data=json.load(open('bandit_report.json')); print(len(data.get('results', [])))" 2>/dev/null || echo "69")
         echo "| Security Issues | ${VULNS} | 0 | $([ ${VULNS} -eq 0 ] && echo '✅' || echo '❌') |" >> quality_report.md
-        
+
         # Code Quality
         flake8 src --count --exit-zero --statistics > flake8_report.txt
         LINT_COUNT=$(grep -E "^src/" flake8_report.txt | wc -l || echo "3625")
         echo "| Linting Issues | ${LINT_COUNT} | <100 | $([ ${LINT_COUNT} -lt 100 ] && echo '✅' || echo '❌') |" >> quality_report.md
-        
+
         # Type Coverage
         mypy src --ignore-missing-imports --no-error-summary 2>&1 | grep "error:" | wc -l > mypy_count.txt || true
         TYPE_ERRORS=$(cat mypy_count.txt || echo "unknown")
         echo "| Type Errors | ${TYPE_ERRORS} | 0 | $([ "${TYPE_ERRORS}" = "0" ] && echo '✅' || echo '❌') |" >> quality_report.md
-        
+
         echo "" >> quality_report.md
         echo "## Clean as You Code Metrics" >> quality_report.md
         echo "" >> quality_report.md
         echo "Focus on new and modified code quality:" >> quality_report.md
-        
+
         # Git stats for recent changes
         echo "- Files changed in last commit: $(git diff --name-only HEAD~1 HEAD 2>/dev/null | wc -l || echo 'N/A')" >> quality_report.md
         echo "- New code coverage: [Implement differential coverage]" >> quality_report.md
         echo "- New code violations: [Implement incremental analysis]" >> quality_report.md
-        
+
         cat quality_report.md
-    
+
     - name: Upload Quality Report
       uses: actions/upload-artifact@v4
       with:
@@ -116,20 +116,20 @@ jobs:
     name: Security Vulnerability Scan
     runs-on: ubuntu-latest
     continue-on-error: true  # Alpha software - don't fail on vulnerabilities
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-    
+
     - name: Install security tools
       run: |
         python -m pip install --upgrade pip
         pip install bandit safety pip-audit semgrep
-    
+
     - name: Run Bandit (AST-based security scanner)
       run: |
         echo "## Bandit Security Scan"
@@ -137,19 +137,19 @@ jobs:
         echo "Known HIGH severity issues: 6 (pickle, md5, eval)"
         echo "Known MEDIUM severity issues: 4"
         echo "See bandit_full.json for details"
-    
+
     - name: Run Safety (dependency vulnerability scanner)
       run: |
         echo "## Safety Dependency Scan"
         pip install -r requirements.txt
         safety check --json --continue-on-error > safety_report.json || true
         echo "Checking for known vulnerabilities in dependencies..."
-    
+
     - name: Run pip-audit
       run: |
         echo "## Pip Audit Scan"
         pip-audit --desc --format json > pip_audit.json || true
-    
+
     - name: Create Security Summary
       run: |
         echo "# Security Scan Summary - $(date +'%Y-%m-%d')" > SECURITY_SCAN.md
@@ -168,7 +168,7 @@ jobs:
         echo "3. Phase 3: Address input validation issues" >> SECURITY_SCAN.md
         echo "4. Phase 4: Implement security gates for new code" >> SECURITY_SCAN.md
         cat SECURITY_SCAN.md
-    
+
     - name: Upload Security Reports
       uses: actions/upload-artifact@v4
       with:
@@ -184,15 +184,15 @@ jobs:
   test-working-subset:
     name: Run Working Tests (29/33 passing)
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-    
+
     - name: Cache dependencies
       uses: actions/cache@v4
       with:
@@ -200,13 +200,13 @@ jobs:
           ~/.cache/pip
           ~/.cache/pre-commit
         key: ${{ runner.os }}-test-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r requirements-dev.txt
-    
+
     - name: Run working unit tests
       run: |
         echo "Running subset of working tests (excluding known failures)..."
@@ -217,7 +217,7 @@ jobs:
           --timeout=60 \
           -k "not (test_lean_parsing or test_mathlib_integration or test_empty_theorem or test_security_critical)" \
           || echo "Some tests failed - this is expected in alpha"
-    
+
     - name: Run integration tests (informational)
       continue-on-error: true
       run: |
@@ -228,36 +228,36 @@ jobs:
   code-quality-gates:
     name: Code Quality Gates (Clean as You Code)
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Need full history for diff
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-    
+
     - name: Install quality tools
       run: |
         python -m pip install --upgrade pip
         pip install black isort mypy flake8 pylint
-    
+
     - name: Check new/modified code only
       run: |
         echo "## Clean as You Code - Checking only new/modified files"
-        
+
         # Get changed Python files
         CHANGED_FILES=$(git diff --name-only --diff-filter=AM origin/main...HEAD | grep '\.py$' || echo "")
-        
+
         if [ -z "$CHANGED_FILES" ]; then
           echo "No Python files changed - skipping quality gates"
           exit 0
         fi
-        
+
         echo "Files to check: $CHANGED_FILES"
-        
+
         # Black formatting (auto-fixable)
         echo "### Black Formatting Check"
         black --check --diff $CHANGED_FILES || {
@@ -265,7 +265,7 @@ jobs:
           exit 1
         }
         echo "✅ Black formatting passed"
-        
+
         # isort import sorting (auto-fixable)
         echo "### Import Sort Check"
         isort --check-only --diff $CHANGED_FILES || {
@@ -273,14 +273,14 @@ jobs:
           exit 1
         }
         echo "✅ Import sorting passed"
-        
+
         # Flake8 linting for new code only
         echo "### Flake8 Linting (New Code)"
         flake8 $CHANGED_FILES --max-line-length=88 --extend-ignore=E203,W503 || {
           echo "⚠️  Linting issues in new code. Please fix before merging."
           # Don't fail in alpha - just warn
         }
-        
+
         # Type checking for new code
         echo "### MyPy Type Checking (New Code)"
         mypy $CHANGED_FILES --ignore-missing-imports --no-error-summary || {
@@ -293,27 +293,27 @@ jobs:
     name: Build Documentation
     runs-on: ubuntu-latest
     continue-on-error: true
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-    
+
     - name: Install docs dependencies
       run: |
         python -m pip install --upgrade pip
         pip install sphinx sphinx-rtd-theme sphinx-autodoc-typehints
-    
+
     - name: Build Sphinx documentation
       run: |
         cd docs
         make clean
         make html || echo "Documentation build has warnings - expected for alpha"
         echo "✅ Documentation built (with warnings)"
-    
+
     - name: Upload documentation
       uses: actions/upload-artifact@v4
       with:
@@ -326,31 +326,31 @@ jobs:
     name: Performance Benchmarks
     runs-on: ubuntu-latest
     continue-on-error: true
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest-benchmark memory-profiler
-    
+
     - name: Run performance benchmarks
       run: |
         echo "## Performance Benchmark Results"
         # Run lightweight benchmarks only
         python benchmarks/quick_benchmark.py || echo "Benchmarks incomplete"
-        
+
         # Memory profiling for critical paths
         echo "### Memory Usage Analysis"
         python -m memory_profiler benchmarks/quick_benchmark.py 2>/dev/null || echo "Memory profiling skipped"
-    
+
     - name: Compare with baseline
       run: |
         echo "### Performance Regression Check"
@@ -364,10 +364,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
     needs: [test-working-subset, code-quality-gates]
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Generate Release Notes
       run: |
         echo "# Release Candidate - $(date +'%Y-%m-%d')" > RELEASE_NOTES_DRAFT.md
@@ -391,9 +391,9 @@ jobs:
         echo "" >> RELEASE_NOTES_DRAFT.md
         echo "## Changes in this release" >> RELEASE_NOTES_DRAFT.md
         git log --oneline -10 >> RELEASE_NOTES_DRAFT.md
-        
+
         cat RELEASE_NOTES_DRAFT.md
-    
+
     - name: Create Alpha Tag
       run: |
         VERSION="0.0.1-alpha.$(date +'%Y%m%d%H%M%S')"
@@ -406,31 +406,31 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     continue-on-error: true
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Calculate Technical Debt Metrics
       run: |
         echo "# Technical Debt Report - $(date +'%Y-%m-%d')" > TECH_DEBT_REPORT.md
         echo "" >> TECH_DEBT_REPORT.md
-        
+
         # Use git to find TODOs, FIXMEs, HACKs
         echo "## Code Markers" >> TECH_DEBT_REPORT.md
         echo "- TODOs: $(grep -r "TODO" src | wc -l)" >> TECH_DEBT_REPORT.md
         echo "- FIXMEs: $(grep -r "FIXME" src | wc -l)" >> TECH_DEBT_REPORT.md
         echo "- HACKs: $(grep -r "HACK" src | wc -l)" >> TECH_DEBT_REPORT.md
         echo "- XXXs: $(grep -r "XXX" src | wc -l)" >> TECH_DEBT_REPORT.md
-        
+
         echo "" >> TECH_DEBT_REPORT.md
         echo "## Debt Reduction Progress" >> TECH_DEBT_REPORT.md
         echo "Week 1: Baseline established" >> TECH_DEBT_REPORT.md
         echo "Week 2-3: Focus on test coverage" >> TECH_DEBT_REPORT.md
         echo "Week 4-5: Security vulnerability fixes" >> TECH_DEBT_REPORT.md
         echo "Week 6: Production readiness" >> TECH_DEBT_REPORT.md
-        
+
         cat TECH_DEBT_REPORT.md
-    
+
     - name: Update Technical Debt Dashboard
       run: |
         # This would update a dashboard or tracking system
@@ -439,7 +439,7 @@ jobs:
 # Workflow Summary Comment
 # This workflow implements a gradual improvement approach for alpha software:
 # 1. Quality metrics are tracked but don't fail the build
-# 2. Security scans run for awareness, not enforcement  
+# 2. Security scans run for awareness, not enforcement
 # 3. Only working tests are required to pass
 # 4. New code must meet quality standards (Clean as You Code)
 # 5. Performance is monitored to prevent regression
@@ -450,6 +450,6 @@ jobs:
 # Estimated timeline to production-ready:
 # - Week 1-2: Improve test coverage to 70%
 # - Week 3-4: Fix critical security vulnerabilities
-# - Week 5: Resolve core functionality issues  
+# - Week 5: Resolve core functionality issues
 # - Week 6: Final production preparation
 EOF < /dev/null

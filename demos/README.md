@@ -124,7 +124,7 @@ Comprehensive performance testing suite with detailed metrics:
 
 ### Measured Metrics:
 - **⏱️ Processing Speed**: Parse, generation, export times
-- **🧠 Memory Usage**: Peak and average memory consumption  
+- **🧠 Memory Usage**: Peak and average memory consumption
 - **📊 Throughput**: Theorems processed per second
 - **🔄 Cache Effectiveness**: Hit rates and performance improvement
 - **📈 Scaling Factors**: Performance characteristics vs file size

@@ -80,10 +80,12 @@ class AnimationConfig(BaseModel):
     chapter_markers: bool = Field(
         True, description="Add chapter markers for long videos"
     )
-    
+
     # Resource limits for production
     max_memory_mb: int = Field(1024, ge=128, description="Maximum memory usage in MB")
-    max_processing_time: int = Field(300, ge=60, description="Maximum processing time in seconds")
+    max_processing_time: int = Field(
+        300, ge=60, description="Maximum processing time in seconds"
+    )
 
     @field_validator("background_color", "text_color", "accent_color")
     @classmethod
@@ -100,41 +102,47 @@ class AnimationConfig(BaseModel):
     @classmethod
     def preview(cls) -> "AnimationConfig":
         """Create config optimized for previews."""
-        return cls.model_validate({
-            "quality": AnimationQuality.LOW,
-            "fps": 15,
-            "width": 640,
-            "height": 360,
-            "base_duration": 15.0,
-            "step_duration": 8.0,
-            "max_duration": 120.0,
-        })
+        return cls.model_validate(
+            {
+                "quality": AnimationQuality.LOW,
+                "fps": 15,
+                "width": 640,
+                "height": 360,
+                "base_duration": 15.0,
+                "step_duration": 8.0,
+                "max_duration": 120.0,
+            }
+        )
 
     @classmethod
     def publication(cls) -> "AnimationConfig":
         """Create config optimized for publication."""
-        return cls.model_validate({
-            "quality": AnimationQuality.HIGH,
-            "fps": 60,
-            "width": 1920,
-            "height": 1080,
-            "base_duration": 45.0,
-            "step_duration": 20.0,
-            "max_duration": 900.0,
-        })
+        return cls.model_validate(
+            {
+                "quality": AnimationQuality.HIGH,
+                "fps": 60,
+                "width": 1920,
+                "height": 1080,
+                "base_duration": 45.0,
+                "step_duration": 20.0,
+                "max_duration": 900.0,
+            }
+        )
 
     @classmethod
     def accessible(cls) -> "AnimationConfig":
         """Create config optimized for accessibility."""
-        return cls.model_validate({
-            "style": AnimationStyle.ACCESSIBLE,
-            "background_color": "#000000",
-            "text_color": "#FFFFFF",
-            "accent_color": "#FFFF00",
-            "font_size": 48,
-            "transition_time": 3.0,
-            "pause_time": 4.0,
-        })
+        return cls.model_validate(
+            {
+                "style": AnimationStyle.ACCESSIBLE,
+                "background_color": "#000000",
+                "text_color": "#FFFFFF",
+                "accent_color": "#FFFF00",
+                "font_size": 48,
+                "transition_time": 3.0,
+                "pause_time": 4.0,
+            }
+        )
 
 
 class FormulaComponent(BaseModel):
@@ -221,7 +229,8 @@ class AnimationRequest(BaseModel):
     # Content
     segments: List[AnimationSegment] = Field(..., description="Animation segments")
     config: AnimationConfig = Field(
-        default_factory=lambda: AnimationConfig.model_validate({}), description="Animation configuration"
+        default_factory=lambda: AnimationConfig.model_validate({}),
+        description="Animation configuration",
     )
 
     # Metadata
@@ -246,7 +255,11 @@ class AnimationRequest(BaseModel):
         content = f"{self.theorem_name}:{len(self.segments)}:{self.estimated_duration}"
 
         # Include key config elements
-        config_content = f"{self.config.quality.value}:{self.config.style.value}:{self.config.width}x{self.config.height}"
+        config_content = f"{
+            self.config.quality.value}:{
+            self.config.style.value}:{
+            self.config.width}x{
+                self.config.height}"
         content += f":{config_content}"
 
         # Include scene content hash
@@ -256,7 +269,9 @@ class AnimationRequest(BaseModel):
                 scene_content += f"{scene.initial_formula}→{scene.final_formula}"
 
         if scene_content:
-            scene_hash = hashlib.md5(scene_content.encode(), usedforsecurity=False).hexdigest()[:8]
+            scene_hash = hashlib.md5(
+                scene_content.encode(), usedforsecurity=False
+            ).hexdigest()[:8]
             content += f":{scene_hash}"
 
         return hashlib.sha256(content.encode()).hexdigest()
@@ -295,7 +310,7 @@ class AnimationResponse(BaseModel):
     duration: float = Field(0.0, description="Animation duration in seconds")
     frame_count: int = Field(0, description="Number of frames in animation")
     size_bytes: int = Field(0, description="File size in bytes")
-    
+
     # Extended metadata
     actual_duration: Optional[float] = Field(None, description="Actual video duration")
     file_size_mb: Optional[float] = Field(None, description="Video file size in MB")
@@ -312,9 +327,11 @@ class AnimationResponse(BaseModel):
     cached: bool = Field(
         False, description="Whether the result was retrieved from cache"
     )
-    
+
     # Additional metadata
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict, description="Additional metadata"
+    )
 
     # Additional outputs
     chapter_markers: List[Tuple[float, str]] = Field(
@@ -426,23 +443,27 @@ class ManimConfig(BaseModel):
     @classmethod
     def development(cls) -> "ManimConfig":
         """Create config for development."""
-        return cls.model_validate({
-            "server_timeout": 60.0,
-            "max_concurrent_renders": 1,
-            "render_timeout": 120.0,
-            "keep_temp_files": True,
-        })
+        return cls.model_validate(
+            {
+                "server_timeout": 60.0,
+                "max_concurrent_renders": 1,
+                "render_timeout": 120.0,
+                "keep_temp_files": True,
+            }
+        )
 
     @classmethod
     def production(cls) -> "ManimConfig":
         """Create config for production."""
-        return cls.model_validate({
-            "server_timeout": 600.0,
-            "max_concurrent_renders": 4,
-            "render_timeout": 1200.0,
-            "memory_limit_mb": 4096,
-            "health_check_interval": 60.0,
-        })
+        return cls.model_validate(
+            {
+                "server_timeout": 600.0,
+                "max_concurrent_renders": 4,
+                "render_timeout": 1200.0,
+                "memory_limit_mb": 4096,
+                "health_check_interval": 60.0,
+            }
+        )
 
     class Config:
         """Pydantic configuration."""

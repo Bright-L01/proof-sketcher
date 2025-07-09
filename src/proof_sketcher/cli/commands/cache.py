@@ -16,26 +16,26 @@ console = Console()
 @click.group()
 def cache() -> None:
     """Manage theorem and animation cache for improved performance.
-    
+
     Proof Sketcher caches generated explanations and animations to avoid
     regenerating identical content. Use these commands to monitor and
     manage the cache system.
-    
+
     \b
     Cache Benefits:
       • Faster repeated explanations
       • Reduced API usage and costs
       • Offline access to previously generated content
       • Consistent results across runs
-    
+
     \b
     Quick Commands:
       # Check cache usage
       python -m proof_sketcher cache status
-      
+
       # Clear all cached data
       python -m proof_sketcher cache clear
-      
+
       # List cached theorems
       python -m proof_sketcher cache list
     """
@@ -44,34 +44,31 @@ def cache() -> None:
 
 @cache.command()
 @click.option(
-    "--force", 
-    "-f", 
-    is_flag=True, 
-    help="Skip confirmation prompt and clear immediately"
+    "--force", "-f", is_flag=True, help="Skip confirmation prompt and clear immediately"
 )
 @click.pass_context
 def clear(ctx: click.Context, force: bool) -> None:
     """Clear all cached explanations and animations.
-    
+
     Removes all cached theorem explanations, animations, and related data.
     This will free up disk space but means previously generated content
     will need to be regenerated on next use.
-    
+
     \b
     Examples:
       # Clear with confirmation prompt
       python -m proof_sketcher cache clear
-      
+
       # Clear without confirmation (use with caution)
       python -m proof_sketcher cache clear --force
-    
+
     \b
     What Gets Cleared:
       • Generated theorem explanations
       • Cached animations and videos
       • Temporary files and metadata
       • All cached response data
-    
+
     Use 'cache status' before clearing to see what will be removed.
     """
     config: ProofSketcherConfig = ctx.obj["config"]
@@ -113,11 +110,11 @@ def clear(ctx: click.Context, force: bool) -> None:
 @click.pass_context
 def status(ctx: click.Context) -> None:
     """Display comprehensive cache status and storage statistics.
-    
+
     Shows detailed information about cached content including:
     storage usage, number of cached items, cache health, and
     recommendations for cache management.
-    
+
     \b
     Information Displayed:
       • Cache directory location and size
@@ -125,7 +122,7 @@ def status(ctx: click.Context) -> None:
       • Animation cache statistics
       • Total storage usage
       • Cache configuration settings
-    
+
     Use this command to monitor cache growth and decide when to clear.
     """
     config: ProofSketcherConfig = ctx.obj["config"]
@@ -168,7 +165,9 @@ def status(ctx: click.Context) -> None:
 
         size_mb = gen_stats.get("size_mb", 0)
         total_entries = gen_stats.get("total_entries", 0)
-        if isinstance(size_mb, (int, float)) and isinstance(total_entries, (int, float)):
+        if isinstance(size_mb, (int, float)) and isinstance(
+            total_entries, (int, float)
+        ):
             total_size_mb = float(size_mb) + animation_size_mb
             total_entries_count = int(total_entries) + animation_count
             console.print("\n[bold]Total:[/bold]")

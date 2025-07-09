@@ -75,7 +75,9 @@ class ProjectScanner:
             file_theorems[str(rel_path)] = theorems
 
         # Determine processing order
-        process_order = self._compute_processing_order(dep_graph, lean_files, project_dir)
+        process_order = self._compute_processing_order(
+            dep_graph, lean_files, project_dir
+        )
 
         # Compute statistics
         statistics = self._compute_statistics(
@@ -228,7 +230,11 @@ class ProjectScanner:
         return process_order
 
     def _compute_statistics(
-        self, lean_files: List[Path], file_theorems: Dict, dep_graph: nx.DiGraph, project_dir: Path
+        self,
+        lean_files: List[Path],
+        file_theorems: Dict,
+        dep_graph: nx.DiGraph,
+        project_dir: Path,
     ) -> Dict:
         """Compute project statistics.
 
@@ -248,7 +254,7 @@ class ProjectScanner:
             try:
                 content = lean_file.read_text(encoding="utf-8")
                 total_lines += len(content.splitlines())
-            except:
+            except Exception:
                 pass
 
         # Analyze graph structure
@@ -261,13 +267,17 @@ class ProjectScanner:
         out_degrees = dict(dep_graph.out_degree())
 
         most_imported = sorted(in_degrees.items(), key=lambda x: x[1], reverse=True)[:5]
-        most_importing = sorted(out_degrees.items(), key=lambda x: x[1], reverse=True)[:5]
+        most_importing = sorted(out_degrees.items(), key=lambda x: x[1], reverse=True)[
+            :5
+        ]
 
         return {
             "total_files": len(lean_files),
             "total_theorems": total_theorems,
             "total_lines": total_lines,
-            "avg_theorems_per_file": total_theorems / len(lean_files) if lean_files else 0,
+            "avg_theorems_per_file": (
+                total_theorems / len(lean_files) if lean_files else 0
+            ),
             "dependency_graph": {
                 "nodes": num_nodes,
                 "edges": num_edges,
@@ -294,16 +304,24 @@ class ProjectScanner:
             return {}
 
         lines = content.splitlines()
-        
+
         # Count different elements
-        theorems = len(re.findall(r"^\s*(?:theorem|lemma|proposition|corollary)\s+", content, re.MULTILINE))
-        definitions = len(re.findall(r"^\s*(?:def|definition)\s+", content, re.MULTILINE))
+        theorems = len(
+            re.findall(
+                r"^\s*(?:theorem|lemma|proposition|corollary)\s+", content, re.MULTILINE
+            )
+        )
+        definitions = len(
+            re.findall(r"^\s*(?:def|definition)\s+", content, re.MULTILINE)
+        )
         instances = len(re.findall(r"^\s*instance\s+", content, re.MULTILINE))
-        structures = len(re.findall(r"^\s*(?:structure|class|inductive)\s+", content, re.MULTILINE))
-        
+        structures = len(
+            re.findall(r"^\s*(?:structure|class|inductive)\s+", content, re.MULTILINE)
+        )
+
         # Estimate proof complexity
         tactics = len(re.findall(r"\b(?:by|begin|calc|have|show|suffices)\b", content))
-        
+
         return {
             "lines_of_code": len(lines),
             "theorems": theorems,
@@ -314,7 +332,9 @@ class ProjectScanner:
             "complexity_score": theorems * 3 + definitions * 2 + instances + structures,
         }
 
-    def find_theorem_dependencies(self, project_data: Dict, theorem_name: str) -> Set[str]:
+    def find_theorem_dependencies(
+        self, project_data: Dict, theorem_name: str
+    ) -> Set[str]:
         """Find all theorems that a given theorem depends on.
 
         Args:
@@ -325,28 +345,28 @@ class ProjectScanner:
             Set of theorem names that the given theorem depends on
         """
         dependencies = set()
-        
+
         # Find which file contains the theorem
         containing_file = None
         for file_path, theorems in project_data["file_theorems"].items():
             if theorem_name in theorems:
                 containing_file = file_path
                 break
-        
+
         if not containing_file:
             return dependencies
-        
+
         # Get all files this file imports (transitively)
         dep_graph = project_data["dependency_graph"]
         imported_files = nx.ancestors(dep_graph, containing_file)
         imported_files.add(containing_file)  # Include the file itself
-        
+
         # Collect all theorems from imported files
         for file_path in imported_files:
             if file_path in project_data["file_theorems"]:
                 dependencies.update(project_data["file_theorems"][file_path])
-        
+
         # Remove the theorem itself
         dependencies.discard(theorem_name)
-        
+
         return dependencies

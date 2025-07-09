@@ -21,7 +21,7 @@ Overview
 Proof Sketcher bridges the gap between formal mathematical proofs and human understanding by:
 
 * **Natural Language Generation**: Converts Lean 4 proofs into clear, accessible explanations
-* **Mathematical Animations**: Creates synchronized Manim visualizations of proof steps  
+* **Mathematical Animations**: Creates synchronized Manim visualizations of proof steps
 * **Multi-Format Export**: Produces HTML, Markdown, PDF, and Jupyter notebooks
 * **Seamless Integration**: Works with mathlib4, doc-gen4, and existing Lean projects
 * **Claude Code Integration**: Uses Claude Code CLI for free AI-powered explanations
@@ -179,7 +179,7 @@ Proof Sketcher excels at explaining group theory concepts:
 * **Cancellation Laws**: Left and right cancellation in groups
 * **Subgroup Criteria**: Conditions for subset to form a subgroup
 
-Real Analysis  
+Real Analysis
 -------------
 
 Mathematical analysis theorems are clearly explained:
@@ -216,7 +216,7 @@ Create ``.proof-sketcher.yaml`` in your project:
      max_tokens: 4000
      verbosity: detailed
 
-   # Animation settings  
+   # Animation settings
    animator:
      quality: high
      fps: 60

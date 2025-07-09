@@ -26,7 +26,7 @@ structure NatTrans (F G : C ⥤ D) :=
 (naturality : ∀ {X Y : C} (f : X ⟶ Y), F.map f ≫ app Y = app X ≫ G.map f)
 
 /-- Adjunction between functors -/
-theorem adjunction_unit_counit {F : C ⥤ D} {G : D ⥤ C} 
+theorem adjunction_unit_counit {F : C ⥤ D} {G : D ⥤ C}
     (adj : F ⊣ G) :
     ∀ X : C, adj.unit.app X ≫ G.map (F.map (adj.counit.app (F.obj X))) = 𝟙 X := by
   intro X

@@ -95,35 +95,35 @@ The system is organized into several modules:
 
 **Core** (`proof_sketcher.core`)
    Foundational utilities, exceptions, and interfaces.
-   
+
    - Status: ⚠️ Partially functional
    - Test Coverage: 11%
    - Issues: 69 security vulnerabilities
 
 **Parser** (`proof_sketcher.parser`)
    Lean 4 file parsing and theorem extraction.
-   
+
    - Status: ⚠️ Limited functionality
    - Issues: Often produces empty statements
    - Fallback: Basic text parsing when Lean extractor fails
 
 **Generator** (`proof_sketcher.generator`)
    Natural language explanation generation.
-   
+
    - Status: ⚠️ Offline mode only
    - AI Integration: ❌ Not functional
    - Output: Generic templates only
 
 **Exporter** (`proof_sketcher.exporter`)
    Multi-format output generation.
-   
+
    - Status: ✅ Basic functionality works
    - Formats: HTML, Markdown, Jupyter
    - Quality: Template-based output
 
 **Animator** (`proof_sketcher.animator`)
    Mathematical animation generation.
-   
+
    - Status: ❌ Not functional
    - Issues: Manim integration broken
    - Fallback: None available
@@ -143,24 +143,24 @@ Basic Usage Example
 .. code-block:: python
 
    # ⚠️ This example shows the intended API, but many features don't work yet
-   
+
    from proof_sketcher.parser import LeanParser
    from proof_sketcher.generator import OfflineGenerator  # Only working generator
    from proof_sketcher.exporter import HTMLExporter
-   
+
    # Parse Lean file (may produce empty results)
    parser = LeanParser()
    result = parser.parse_file("theorem.lean")
-   
+
    if result.success and result.theorems:
        # Generate explanations (offline mode only)
        generator = OfflineGenerator()
        sketch = generator.generate_proof_sketch(result.theorems[0])
-       
+
        # Export to HTML (this part works)
        exporter = HTMLExporter()
        export_result = exporter.export_single(sketch)
-       
+
        if export_result.success:
            print(f"Generated: {export_result.output_files}")
    else:
@@ -172,7 +172,7 @@ Contributing
 We welcome contributions! Priority areas:
 
 1. **Security Fixes** - Address 69 vulnerabilities
-2. **Core Parsing** - Fix empty theorem statement issue  
+2. **Core Parsing** - Fix empty theorem statement issue
 3. **Test Coverage** - Expand from 11% to 70%+
 4. **Code Quality** - Fix 3,625 linting violations
 

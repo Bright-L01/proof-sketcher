@@ -21,11 +21,11 @@ from .models import ExportFormat, TemplateType
 
 class TemplateManager:
     """Enhanced template manager with caching, themes, and validation.
-    
+
     Features:
     - Intelligent template caching with file modification tracking
     - Theme support for light/dark modes
-    - Asset path resolution with CDN fallbacks  
+    - Asset path resolution with CDN fallbacks
     - Template validation and dependency analysis
     - Custom filter and global registration
     """
@@ -38,21 +38,23 @@ class TemplateManager:
         """
         self.template_dir = template_dir or self._get_default_template_dir()
         self.logger = logging.getLogger(__name__)
-        
+
         # Environment and template caching
         self._environments: Dict[ExportFormat, Environment] = {}
-        self._template_cache: Dict[str, Tuple[Template, float]] = {}  # (template, mtime)
+        self._template_cache: Dict[str, Tuple[Template, float]] = (
+            {}
+        )  # (template, mtime)
         self._template_dependencies: Dict[str, Set[str]] = {}
-        
+
         # Theme and asset management
         self._current_theme = "light"
         self._theme_assets: Dict[str, Dict[str, str]] = {}
         self._asset_cache: Dict[str, str] = {}
-        
+
         # Validation and debugging
         self._validation_cache: Dict[str, bool] = {}
-        self._debug_mode = os.getenv('TEMPLATE_DEBUG', 'false').lower() == 'true'
-        
+        self._debug_mode = os.getenv("TEMPLATE_DEBUG", "false").lower() == "true"
+
         # Initialize themes
         self._load_themes()
 
@@ -84,14 +86,16 @@ class TemplateManager:
         if cache_key in self._template_cache:
             cached_template, cached_mtime = self._template_cache[cache_key]
             template_path = self.template_dir / format.value / template_name
-            
+
             if template_path.exists():
                 current_mtime = template_path.stat().st_mtime
                 if current_mtime <= cached_mtime:
                     self.logger.debug(f"Using cached template: {cache_key}")
                     return cached_template
                 else:
-                    self.logger.debug(f"Template modified, invalidating cache: {cache_key}")
+                    self.logger.debug(
+                        f"Template modified, invalidating cache: {cache_key}"
+                    )
                     del self._template_cache[cache_key]
 
         # Get environment for format
@@ -100,19 +104,19 @@ class TemplateManager:
         # Load and cache template
         try:
             template = env.get_template(template_name)
-            
+
             # Cache with modification time
             template_path = self.template_dir / format.value / template_name
             if template_path.exists():
                 mtime = template_path.stat().st_mtime
                 self._template_cache[cache_key] = (template, mtime)
-                
+
                 # Analyze template dependencies
                 self._analyze_template_dependencies(cache_key, template)
-            
+
             self.logger.debug(f"Loaded and cached template: {cache_key}")
             return template
-            
+
         except TemplateNotFound:
             self.logger.error(
                 f"Template not found: {template_name} for format {format.value}"
@@ -383,80 +387,86 @@ class TemplateManager:
 
     def set_theme(self, theme: str) -> None:
         """Set current theme.
-        
+
         Args:
             theme: Theme name ('light', 'dark', etc.)
         """
         if theme != self._current_theme:
             self._current_theme = theme
             self.logger.info(f"Changed theme to: {theme}")
-            
+
             # Invalidate asset cache to reload theme-specific assets
             self._asset_cache.clear()
 
     def get_theme(self) -> str:
         """Get current theme.
-        
+
         Returns:
             Current theme name
         """
         return self._current_theme
 
-    def validate_template(self, format: ExportFormat, template_type: TemplateType) -> bool:
+    def validate_template(
+        self, format: ExportFormat, template_type: TemplateType
+    ) -> bool:
         """Validate template syntax and dependencies.
-        
+
         Args:
             format: Export format
             template_type: Template type
-            
+
         Returns:
             True if template is valid
         """
         try:
             template = self.get_template(format, template_type)
-            
+
             # Check template syntax by parsing
             source = template.source
             env = self._get_environment(format)
             parsed = env.parse(source)
-            
+
             # Check for required variables
             variables = meta.find_undeclared_variables(parsed)
             required_vars = self._get_required_variables(template_type)
-            
+
             missing_vars = required_vars - variables
             if missing_vars:
-                self.logger.warning(f"Template missing required variables: {missing_vars}")
+                self.logger.warning(
+                    f"Template missing required variables: {missing_vars}"
+                )
                 return False
-                
+
             cache_key = f"{format.value}/{template_type.value}"
             self._validation_cache[cache_key] = True
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Template validation failed: {e}")
             return False
 
-    def get_asset_url(self, format: ExportFormat, asset_path: str, use_cdn: bool = False) -> str:
+    def get_asset_url(
+        self, format: ExportFormat, asset_path: str, use_cdn: bool = False
+    ) -> str:
         """Get URL for static asset with CDN fallback.
-        
+
         Args:
             format: Export format
             asset_path: Relative asset path
             use_cdn: Whether to use CDN URLs
-            
+
         Returns:
             Asset URL
         """
         cache_key = f"{format.value}/{asset_path}/{self._current_theme}"
-        
+
         if cache_key in self._asset_cache:
             return self._asset_cache[cache_key]
-        
+
         # Check for theme-specific asset
         theme_path = f"themes/{self._current_theme}/{asset_path}"
         theme_asset = self.template_dir / format.value / "assets" / theme_path
-        
+
         if theme_asset.exists():
             url = f"assets/{theme_path}"
         else:
@@ -469,11 +479,11 @@ class TemplateManager:
             else:
                 self.logger.warning(f"Asset not found: {asset_path}")
                 url = asset_path
-        
+
         # Add cache-busting hash
         if not use_cdn:
             url = self._add_cache_buster(url, format)
-        
+
         self._asset_cache[cache_key] = url
         return url
 
@@ -486,7 +496,7 @@ class TemplateManager:
 
     def get_cache_stats(self) -> Dict[str, int]:
         """Get cache statistics.
-        
+
         Returns:
             Dictionary with cache statistics
         """
@@ -494,7 +504,7 @@ class TemplateManager:
             "templates_cached": len(self._template_cache),
             "assets_cached": len(self._asset_cache),
             "validations_cached": len(self._validation_cache),
-            "environments_loaded": len(self._environments)
+            "environments_loaded": len(self._environments),
         }
 
     def _load_themes(self) -> None:
@@ -505,18 +515,22 @@ class TemplateManager:
                 if theme_dir.is_dir():
                     theme_name = theme_dir.name
                     self._theme_assets[theme_name] = {}
-                    
+
                     # Load theme assets
                     for asset_file in theme_dir.rglob("*"):
                         if asset_file.is_file():
                             rel_path = asset_file.relative_to(theme_dir)
-                            self._theme_assets[theme_name][str(rel_path)] = str(asset_file)
-            
+                            self._theme_assets[theme_name][str(rel_path)] = str(
+                                asset_file
+                            )
+
             self.logger.debug(f"Loaded themes: {list(self._theme_assets.keys())}")
 
-    def _analyze_template_dependencies(self, cache_key: str, template: Template) -> None:
+    def _analyze_template_dependencies(
+        self, cache_key: str, template: Template
+    ) -> None:
         """Analyze template dependencies.
-        
+
         Args:
             cache_key: Template cache key
             template: Template instance
@@ -525,61 +539,66 @@ class TemplateManager:
             # Parse template to find dependencies
             env = template.environment
             parsed = env.parse(template.source)
-            
+
             # Find included/extended templates
             dependencies = set()
             for node in parsed.find_all((meta.Include, meta.Extends)):
-                if hasattr(node, 'template'):
+                if hasattr(node, "template"):
                     dependencies.add(node.template.value)
-            
+
             self._template_dependencies[cache_key] = dependencies
-            
+
         except Exception as e:
             self.logger.debug(f"Failed to analyze dependencies for {cache_key}: {e}")
 
     def _get_required_variables(self, template_type: TemplateType) -> Set[str]:
         """Get required variables for template type.
-        
+
         Args:
             template_type: Template type
-            
+
         Returns:
             Set of required variable names
         """
         required_vars = {
-            TemplateType.INDEX: {'project_name', 'theorems', 'timestamp'},
-            TemplateType.THEOREM: {'theorem_name', 'introduction', 'key_steps', 'conclusion'},
+            TemplateType.INDEX: {"project_name", "theorems", "timestamp"},
+            TemplateType.THEOREM: {
+                "theorem_name",
+                "introduction",
+                "key_steps",
+                "conclusion",
+            },
         }
-        
+
         return required_vars.get(template_type, set())
 
     def _get_cdn_url(self, asset_path: str) -> str:
         """Get CDN URL for asset.
-        
+
         Args:
             asset_path: Asset path
-            
+
         Returns:
             CDN URL
         """
         # Common CDN mappings
         cdn_mappings = {
-            'css/katex.min.css': 'https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css',
-            'js/katex.min.js': 'https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js',
-            'js/katex-auto-render.min.js': 'https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js',
-            'css/prism.css': 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css',
-            'js/prism.js': 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js'
+            "css/katex.min.css": "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css",
+            "js/katex.min.js": "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js",
+            "js/katex-auto-render.min.js": "https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js",
+            "css/prism.css": "https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css",
+            "js/prism.js": "https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js",
         }
-        
+
         return cdn_mappings.get(asset_path, f"https://cdn.example.com/{asset_path}")
 
     def _add_cache_buster(self, url: str, format: ExportFormat) -> str:
         """Add cache-busting parameter to URL.
-        
+
         Args:
             url: Asset URL
             format: Export format
-            
+
         Returns:
             URL with cache buster
         """
@@ -588,11 +607,11 @@ class TemplateManager:
             if asset_file.exists():
                 # Use file modification time as cache buster
                 mtime = int(asset_file.stat().st_mtime)
-                separator = '&' if '?' in url else '?'
+                separator = "&" if "?" in url else "?"
                 return f"{url}{separator}v={mtime}"
         except (OSError, ValueError):
             pass
-            
+
         return url
 
     def _get_custom_filters(self, format: ExportFormat) -> Dict[str, Any]:
@@ -625,7 +644,7 @@ class TemplateManager:
         elif format == ExportFormat.MARKDOWN:
             filters.update(
                 {
-                    "indent": self._indent_text, 
+                    "indent": self._indent_text,
                     "code_block": self._format_code_block_md,
                     "collapsible": self._format_collapsible_md,
                     "github_badge": self._format_github_badge,
@@ -647,23 +666,25 @@ class TemplateManager:
     def _minify_css(css: str) -> str:
         """Minify CSS content."""
         import re
+
         # Remove comments
-        css = re.sub(r'/\*.*?\*/', '', css, flags=re.DOTALL)
+        css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
         # Remove extra whitespace
-        css = re.sub(r'\s+', ' ', css)
-        css = re.sub(r'\s*([{}:;,>+~])\s*', r'\1', css)
+        css = re.sub(r"\s+", " ", css)
+        css = re.sub(r"\s*([{}:;,>+~])\s*", r"\1", css)
         return css.strip()
 
     @staticmethod
     def _minify_js(js: str) -> str:
         """Minify JavaScript content."""
         import re
+
         # Remove single-line comments
-        js = re.sub(r'//.*$', '', js, flags=re.MULTILINE)
+        js = re.sub(r"//.*$", "", js, flags=re.MULTILINE)
         # Remove multi-line comments
-        js = re.sub(r'/\*.*?\*/', '', js, flags=re.DOTALL)
+        js = re.sub(r"/\*.*?\*/", "", js, flags=re.DOTALL)
         # Remove extra whitespace
-        js = re.sub(r'\s+', ' ', js)
+        js = re.sub(r"\s+", " ", js)
         return js.strip()
 
     @staticmethod

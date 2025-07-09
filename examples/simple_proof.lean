@@ -16,7 +16,7 @@ theorem eq_trans_example (a b c : Nat) (h1 : a = b) (h2 : b = c) : a = c := by
 theorem zero_add (n : Nat) : 0 + n = n := by
   induction n with
   | zero => rfl
-  | succ n ih => 
+  | succ n ih =>
     rw [Nat.add_succ]
     rw [ih]
 

@@ -21,7 +21,7 @@ theorem length_append (l₁ l₂ : List α) : length (l₁ ++ l₂) = length l�
   | cons x xs ih => simp [ih, Nat.add_succ]
 
 /-- Map fusion: mapping f then g is the same as mapping their composition -/
-theorem map_map (f : α → β) (g : β → γ) (l : List α) : 
+theorem map_map (f : α → β) (g : β → γ) (l : List α) :
     map g (map f l) = map (g ∘ f) l := by
   induction l with
   | nil => rfl

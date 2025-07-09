@@ -5,11 +5,11 @@ from typing import List, Optional
 from jinja2 import Template
 
 from ..models import GenerationConfig, GenerationType
-from .proof_sketch import ProofSketchTemplate
 from .eli5 import ELI5Template
-from .tactic_explanation import TacticExplanationTemplate
-from .step_by_step import StepByStepTemplate
 from .mathematical_context import MathematicalContextTemplate
+from .proof_sketch import ProofSketchTemplate
+from .step_by_step import StepByStepTemplate
+from .tactic_explanation import TacticExplanationTemplate
 
 
 class PromptTemplates:

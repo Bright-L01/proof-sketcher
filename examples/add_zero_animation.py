@@ -37,36 +37,36 @@ def create_add_zero_proof_sketch() -> ProofSketch:
             description="Base case: We need to show that 0 + 0 = 0",
             mathematical_content="0 + 0 = 0",
             tactics=["rfl"],
-            intuition="This follows immediately from reflexivity of equality, since 0 + 0 is definitionally equal to 0."
+            intuition="This follows immediately from reflexivity of equality, since 0 + 0 is definitionally equal to 0.",
         ),
         ProofStep(
             step_number=2,
             description="Inductive step: Assume n + 0 = n (inductive hypothesis)",
             mathematical_content="n + 0 = n → (n + 1) + 0 = n + 1",
             tactics=["simp", "Nat.add_succ"],
-            intuition="We assume the theorem holds for n and need to prove it for n + 1."
+            intuition="We assume the theorem holds for n and need to prove it for n + 1.",
         ),
         ProofStep(
             step_number=3,
             description="Transform the left side using the definition of addition",
             mathematical_content="(n + 1) + 0 = (n + 0) + 1",
             tactics=["Nat.add_succ"],
-            intuition="By the definition of addition for successor, (n + 1) + m = (n + m) + 1."
+            intuition="By the definition of addition for successor, (n + 1) + m = (n + m) + 1.",
         ),
         ProofStep(
             step_number=4,
             description="Apply the inductive hypothesis",
             mathematical_content="(n + 0) + 1 = n + 1",
             tactics=["simp", "ih"],
-            intuition="Since we know n + 0 = n by the inductive hypothesis, we can substitute."
+            intuition="Since we know n + 0 = n by the inductive hypothesis, we can substitute.",
         ),
         ProofStep(
             step_number=5,
             description="Conclude the proof",
             mathematical_content="n + 1 = n + 1",
             tactics=["rfl"],
-            intuition="We have shown (n + 1) + 0 = n + 1, completing the inductive step."
-        )
+            intuition="We have shown (n + 1) + 0 = n + 1, completing the inductive step.",
+        ),
     ]
 
     # Create the proof sketch
@@ -86,7 +86,11 @@ def create_add_zero_proof_sketch() -> ProofSketch:
         ),
         difficulty_level="beginner",
         mathematical_areas=["arithmetic", "induction", "natural_numbers"],
-        prerequisites=["natural_numbers", "mathematical_induction", "definitional_equality"]
+        prerequisites=[
+            "natural_numbers",
+            "mathematical_induction",
+            "definitional_equality",
+        ],
     )
 
     return proof_sketch
@@ -105,24 +109,24 @@ async def animate_add_zero_example():
     # Configure animation settings
     animation_config = AnimationConfig(
         quality=AnimationConfig.medium.quality,  # 720p for good quality
-        style=AnimationConfig.modern.style,      # Clean, modern look
-        base_duration=45.0,                      # Longer base duration for educational content
-        step_duration=20.0,                      # Generous time per step
-        max_duration=300.0,                      # 5 minutes max
+        style=AnimationConfig.modern.style,  # Clean, modern look
+        base_duration=45.0,  # Longer base duration for educational content
+        step_duration=20.0,  # Generous time per step
+        max_duration=300.0,  # 5 minutes max
         show_step_numbers=True,
         highlight_changes=True,
         chapter_markers=True,
-        font_size=42,                            # Large, readable text
-        pause_time=3.0                           # Longer pauses for comprehension
+        font_size=42,  # Large, readable text
+        pause_time=3.0,  # Longer pauses for comprehension
     )
 
     # Configure Manim server
     manim_config = ManimConfig(
-        server_timeout=300.0,                    # 5 minutes for complex animations
-        render_timeout=120.0,                    # 2 minutes per scene
+        server_timeout=300.0,  # 5 minutes for complex animations
+        render_timeout=120.0,  # 2 minutes per scene
         auto_start=True,
         auto_restart=True,
-        keep_temp_files=True                     # Keep for debugging
+        keep_temp_files=True,  # Keep for debugging
     )
 
     # Create animator
@@ -133,14 +137,18 @@ async def animate_add_zero_example():
     anim_info = animator.get_animation_info(proof_sketch)
 
     logger.info("Animation will have:")
-    logger.info(f"  - Estimated duration: {anim_info['estimated_duration']:.1f} seconds")
+    logger.info(
+        f"  - Estimated duration: {anim_info['estimated_duration']:.1f} seconds"
+    )
     logger.info(f"  - Total scenes: {anim_info['total_scenes']}")
     logger.info(f"  - Segments: {anim_info['segments']}")
     logger.info(f"  - Needs segmentation: {anim_info['needs_segmentation']}")
 
     for i, segment_info in enumerate(anim_info["segment_info"]):
-        logger.info(f"  - Segment {i+1}: {segment_info['title']} "
-                   f"({segment_info['scenes']} scenes, {segment_info['duration']:.1f}s)")
+        logger.info(
+            f"  - Segment {i+1}: {segment_info['title']} "
+            f"({segment_info['scenes']} scenes, {segment_info['duration']:.1f}s)"
+        )
 
     # Validate setup
     logger.info("Validating animation setup...")
@@ -197,10 +205,7 @@ async def create_preview_only():
 
     logger.info("Creating preview image for add_zero theorem...")
 
-    theorem = TheoremInfo(
-        name="add_zero",
-        statement="∀ n : Nat, n + 0 = n"
-    )
+    theorem = TheoremInfo(name="add_zero", statement="∀ n : Nat, n + 0 = n")
 
     animator = ManimAnimator()
 

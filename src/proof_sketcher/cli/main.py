@@ -10,6 +10,7 @@ from rich.logging import RichHandler
 
 from .. import __version__
 from ..config.config import ProofSketcherConfig, set_config
+from ..core.alpha_warning import print_cli_warning, should_show_warning
 
 # Commands
 from .commands.batch import batch
@@ -41,10 +42,10 @@ def setup_logging(config: ProofSketcherConfig) -> None:
 @click.group()
 @click.version_option(version=__version__, prog_name="Proof Sketcher")
 @click.option(
-    "--verbose", 
-    "-v", 
-    is_flag=True, 
-    help="Enable verbose logging for detailed debugging information"
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Enable verbose logging for detailed debugging information",
 )
 @click.option(
     "--config",
@@ -55,30 +56,34 @@ def setup_logging(config: ProofSketcherConfig) -> None:
 @click.pass_context
 def cli(ctx: click.Context, verbose: bool, config: Optional[Path]) -> None:
     """Proof Sketcher: Transform Lean 4 theorems into natural language explanations.
-    
+
     Transform formal mathematical proofs into accessible explanations with beautiful
     visualizations. Supports multiple output formats and classical mathematics.
-    
+
     \b
     Quick Examples:
       # List theorems in a file
       python -m proof_sketcher list-theorems examples/group_theory.lean
-      
+
       # Generate explanation for a specific theorem
       python -m proof_sketcher prove file.lean --theorem add_comm --format markdown
-      
+
       # Generate all formats with animations
       python -m proof_sketcher prove file.lean --format all --animate
-    
+
     \b
     Getting Started:
       1. Install Claude CLI: curl -fsSL https://claude.ai/install.sh | sh
       2. Try examples: python -m proof_sketcher list-theorems examples/classical/simple_examples.lean
       3. Read docs: See docs/QUICKSTART_GUIDE.md
-    
+
     For more help: https://github.com/Bright-L01/proof-sketcher/docs
     """
     ctx.ensure_object(dict)
+
+    # Show alpha warning
+    if should_show_warning():
+        print_cli_warning()
 
     # Load configuration
     proof_config = ProofSketcherConfig.load(config)

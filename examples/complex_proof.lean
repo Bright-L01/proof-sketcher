@@ -17,20 +17,20 @@ theorem pigeonhole_list (l : List Nat) (h : l.length > l.toFinset.card * 2) :
   -- Proof by contradiction
   by_contra h_not
   push_neg at h_not
-  
+
   -- Count occurrences of each element
   have count_bound : ∀ x ∈ l.toFinset, (l.filter (· = x)).length ≤ 2 := by
     intro x hx
     exact h_not x
-  
+
   -- Sum of all counts equals list length
   have sum_eq : l.length = (l.toFinset.sum fun x => (l.filter (· = x)).length) := by
     sorry -- Complex counting argument
-    
+
   -- But sum is bounded by card * 2
   have sum_le : (l.toFinset.sum fun x => (l.filter (· = x)).length) ≤ l.toFinset.card * 2 := by
     sorry -- Finite sum argument
-    
+
   -- Contradiction
   linarith
 

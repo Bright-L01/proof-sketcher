@@ -7,25 +7,29 @@ I'm excited to share **Proof Sketcher**, a new tool that automatically converts 
 ## 🎯 What is Proof Sketcher?
 
 Proof Sketcher bridges the gap between formal proofs and human understanding by automatically generating:
+
 - 📝 Clear, accessible explanations from Lean 4 proofs
-- 🎬 Mathematical animations via Manim integration  
+- 🎬 Mathematical animations via Manim integration
 - 📚 Multi-format documentation (HTML, Markdown, PDF, Jupyter)
 - ⚡ Batch processing for entire mathematical libraries
 
 ## ✨ Key Features
 
 **Enhanced Lean 4 Support**:
+
 - Parses theorems, definitions, inductive types, structures, classes
 - Supports mathlib4 dependencies and Lake projects
 - Handles complex mathematical notation and Unicode
 
 **Intelligent Generation**:
+
 - Creates intuitive explanations from formal proof structure
 - Provides mathematical context and significance
 - Offers multiple difficulty levels (ELI5 to expert)
 - Works offline (no API dependencies required)
 
 **Production Ready**:
+
 - 95%+ test coverage with comprehensive error handling
 - Processes ~1.1 theorems/second with linear scaling
 - Memory efficient with smart caching
@@ -34,18 +38,21 @@ Proof Sketcher bridges the gap between formal proofs and human understanding by 
 ## 🎓 Perfect for the Lean Community
 
 **Educators**: Transform course materials into accessible explanations
+
 ```bash
 # Generate student-friendly documentation
 proof-sketcher prove group_theory.lean --format html --animate
 ```
 
 **Researchers**: Auto-document your mathematical libraries
+
 ```bash
 # Process entire projects with batch mode
 proof-sketcher batch ./my_lean_project/ --recursive --formats all
 ```
 
 **Library Maintainers**: Keep documentation in sync with proofs
+
 ```bash
 # Regenerate docs when proofs change
 proof-sketcher prove mathlib_subset.lean --output docs/
@@ -62,8 +69,9 @@ proof-sketcher prove mathlib_subset.lean --output docs/
 ## 🎬 See it in Action
 
 **Example**: Group theory identity uniqueness theorem
+
 ```lean
-theorem unique_identity (G : Type*) [Group G] : 
+theorem unique_identity (G : Type*) [Group G] :
   ∃! e : G, ∀ a : G, e * a = a ∧ a * e = a := by
   -- proof here
 ```
@@ -76,6 +84,7 @@ theorem unique_identity (G : Type*) [Group G] :
 ## 🚀 Getting Started
 
 **Installation**:
+
 ```bash
 # Install from GitHub (PyPI coming soon)
 pip install git+https://github.com/Bright-L01/proof-sketcher.git
@@ -85,6 +94,7 @@ python -m proof_sketcher --version
 ```
 
 **Quick Start**:
+
 ```bash
 # List theorems in a file
 python -m proof_sketcher list-theorems examples/group_theory.lean
@@ -111,12 +121,14 @@ View the complete [Example Gallery](https://github.com/Bright-L01/proof-sketcher
 
 This is an **open-source** project designed **by and for** the Lean community!
 
-**GitHub**: https://github.com/Bright-L01/proof-sketcher
+**GitHub**: <https://github.com/Bright-L01/proof-sketcher>
+
 - 📋 Issues for bug reports and feature requests
 - 💬 Discussions for questions and ideas
 - 🔄 Pull requests welcome!
 
 **What I'd love feedback on**:
+
 1. **Mathematical accuracy** of generated explanations
 2. **Integration** with existing Lean workflows
 3. **Missing features** for your use cases
@@ -125,12 +137,14 @@ This is an **open-source** project designed **by and for** the Lean community!
 ## 🔮 Roadmap
 
 **Near-term** (next 2-3 months):
+
 - PyPI package release for easy installation
 - VSCode extension for integrated workflow
 - Enhanced animation capabilities
 - Community example repository
 
 **Long-term**:
+
 - Real-time preview as you write proofs
 - Custom explanation templates
 - Integration with doc-gen4
@@ -139,6 +153,7 @@ This is an **open-source** project designed **by and for** the Lean community!
 ## 🙏 Acknowledgments
 
 Built with love for the Lean community, leveraging:
+
 - **Lean 4** for formal mathematics
 - **Claude Code CLI** for natural language generation
 - **Manim** for mathematical animations
@@ -152,5 +167,5 @@ Special thanks to the Lean community for making formal mathematics accessible an
 
 Looking forward to your feedback and contributions! 🎓✨
 
-*Posted by: Bright Liu (brightliu@college.harvard.edu)*
-*Project: https://github.com/Bright-L01/proof-sketcher*
+*Posted by: Bright Liu (<brightliu@college.harvard.edu>)*
+*Project: <https://github.com/Bright-L01/proof-sketcher>*

@@ -141,21 +141,21 @@ def test_parse_generate_export_offline(self, sample_lean_file, output_dir):
     parse_result = parser.parse_file(sample_lean_file)
     assert parse_result.success
     assert len(parse_result.theorems) == 1
-    
+
     theorem = parse_result.theorems[0]
     assert theorem.statement != ""  # NOT EMPTY!
     assert "a + b = b + a" in theorem.statement
-    
+
     # 2. Generate explanation
     generator = OfflineGenerator()
     sketch = generator.generate_proof_sketch(theorem)
     assert sketch.theorem_statement == theorem.statement
-    
+
     # 3. Export to markdown
     exporter = MarkdownExporter(options)
     result = exporter.export_single(sketch, context)
     assert result.success
-    
+
     # 4. Verify output content
     content = output_file.read_text()
     assert "```lean\n\n```" not in content  # No empty blocks

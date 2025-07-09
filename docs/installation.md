@@ -27,6 +27,7 @@ proof-sketcher config show
 ### 1. Install Python
 
 #### macOS
+
 ```bash
 # Using Homebrew
 brew install python@3.12
@@ -37,13 +38,16 @@ pyenv global 3.12.0
 ```
 
 #### Ubuntu/Debian
+
 ```bash
 sudo apt update
 sudo apt install python3.12 python3.12-pip python3.12-venv
 ```
 
 #### Windows
+
 Download Python 3.12 from [python.org](https://python.org) or use winget:
+
 ```powershell
 winget install Python.Python.3.12
 ```
@@ -51,12 +55,14 @@ winget install Python.Python.3.12
 ### 2. Install Lean 4
 
 #### Using elan (Recommended)
+
 ```bash
 curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh
 source ~/.elan/env
 ```
 
 #### Verify Lean Installation
+
 ```bash
 lean --version
 lake --version
@@ -65,11 +71,13 @@ lake --version
 ### 3. Install Proof Sketcher
 
 #### Option A: From PyPI (Stable)
+
 ```bash
 pip install proof-sketcher
 ```
 
 #### Option B: From Source (Latest)
+
 ```bash
 git clone https://github.com/YOUR_USERNAME/proof-sketcher.git
 cd proof-sketcher
@@ -77,6 +85,7 @@ pip install -e ".[dev]"
 ```
 
 #### Option C: Using pipx (Isolated)
+
 ```bash
 pipx install proof-sketcher
 ```
@@ -84,6 +93,7 @@ pipx install proof-sketcher
 ### 4. Optional Dependencies
 
 #### For Animation Support
+
 ```bash
 # Install Manim dependencies
 pip install manim
@@ -96,6 +106,7 @@ brew install ffmpeg
 ```
 
 #### For Development
+
 ```bash
 pip install proof-sketcher[dev]
 ```
@@ -103,6 +114,7 @@ pip install proof-sketcher[dev]
 ## Virtual Environment Setup
 
 ### Using venv
+
 ```bash
 python -m venv proof-sketcher-env
 source proof-sketcher-env/bin/activate  # Linux/macOS
@@ -113,6 +125,7 @@ pip install proof-sketcher
 ```
 
 ### Using conda
+
 ```bash
 conda create -n proof-sketcher python=3.12
 conda activate proof-sketcher
@@ -122,6 +135,7 @@ pip install proof-sketcher
 ## Configuration
 
 ### First-time Setup
+
 ```bash
 # Create configuration file
 proof-sketcher config init
@@ -134,6 +148,7 @@ proof-sketcher config validate
 ```
 
 ### Configuration Locations
+
 - **Global**: `~/.proof-sketcher/config.yaml`
 - **Project**: `./.proof-sketcher.yaml`
 - **Environment**: `PROOF_SKETCHER_*` variables
@@ -143,6 +158,7 @@ proof-sketcher config validate
 ### Common Issues
 
 #### "command not found: proof-sketcher"
+
 ```bash
 # Check if pip installed to user directory
 pip show proof-sketcher
@@ -152,6 +168,7 @@ export PATH="$HOME/.local/bin:$PATH"
 ```
 
 #### "Lean executable not found"
+
 ```bash
 # Check Lean installation
 which lean
@@ -162,6 +179,7 @@ curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh 
 ```
 
 #### Permission errors on macOS/Linux
+
 ```bash
 # Use --user flag
 pip install --user proof-sketcher
@@ -171,6 +189,7 @@ sudo chown -R $(whoami) /usr/local/lib/python3.12/site-packages
 ```
 
 #### Import errors
+
 ```bash
 # Check Python version
 python --version
@@ -196,6 +215,7 @@ pip install proof-sketcher
 ## Docker Installation
 
 ### Using Docker
+
 ```dockerfile
 FROM python:3.12-slim
 
@@ -210,6 +230,7 @@ WORKDIR /workspace
 ```
 
 Build and run:
+
 ```bash
 docker build -t proof-sketcher .
 docker run -v $(pwd):/workspace proof-sketcher proof-sketcher --help
@@ -218,6 +239,7 @@ docker run -v $(pwd):/workspace proof-sketcher proof-sketcher --help
 ## Next Steps
 
 After installation:
+
 1. Follow the [Quick Start Guide](../QUICKSTART_GUIDE.md)
 2. Try the [examples](examples.md)
 3. Read the [User Guide](USER_GUIDE.md)

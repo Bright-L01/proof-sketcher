@@ -35,25 +35,28 @@ Proof Sketcher follows a modular, plugin-based architecture designed for extensi
 **Responsibility**: Extract structured information from Lean 4 files
 
 **Key Components**:
+
 - `LeanParser`: Main parsing engine
 - `EnhancedParser`: Extended language support (inductive types, structures, classes)
 - `TheoremInfo`: Structured representation of theorems
 - `ParseResult`: Comprehensive parsing results with error handling
 
 **Architecture**:
+
 ```python
 # Core parsing interface
 class LeanParser:
     def parse_file(self, file_path: Path) -> ParseResult:
         """Parse a Lean file and extract theorem information."""
         pass
-    
+
     def parse_theorem(self, theorem_text: str) -> Optional[TheoremInfo]:
         """Parse a single theorem from text."""
         pass
 ```
 
 **Key Features**:
+
 - Robust error handling with detailed error messages
 - Support for complex Lean 4 constructs
 - Dependency tracking and import resolution
@@ -64,26 +67,29 @@ class LeanParser:
 **Responsibility**: Transform parsed theorems into natural language explanations
 
 **Key Components**:
+
 - `AIGenerator`: Claude-powered explanation generation
 - `OfflineGenerator`: AST-based explanations without AI
 - `PromptTemplates`: Modular prompt system
 - `CacheManager`: Intelligent response caching
 
 **Architecture**:
+
 ```python
 # Generation pipeline
 class AIGenerator:
     def generate_proof_sketch(self, theorem: TheoremInfo) -> ProofSketch:
         """Generate comprehensive explanation for a theorem."""
         pass
-    
-    def generate_with_context(self, theorem: TheoremInfo, 
+
+    def generate_with_context(self, theorem: TheoremInfo,
                             context: MathematicalContext) -> ProofSketch:
         """Generate explanation with mathematical context."""
         pass
 ```
 
 **Generation Types**:
+
 - **Proof Sketch**: Comprehensive mathematical explanation
 - **ELI5**: Intuitive, analogy-rich explanations
 - **Tactic Explanation**: Lean 4 tactic breakdowns
@@ -95,25 +101,28 @@ class AIGenerator:
 **Responsibility**: Create mathematical visualizations and animations
 
 **Key Components**:
+
 - `ManimMCPClient`: Integration with Manim MCP server
 - `SceneBuilder`: Animation scene construction
 - `FormulaExtractor`: Mathematical formula parsing
 - `MockMCPServer`: Testing and fallback animations
 
 **Architecture**:
+
 ```python
 # Animation pipeline
 class ManimMCPClient:
     async def render_animation(self, request: AnimationRequest) -> AnimationResponse:
         """Render mathematical animation from proof steps."""
         pass
-    
+
     def create_fallback_animation(self, theorem: str) -> Path:
         """Generate static visualization when Manim unavailable."""
         pass
 ```
 
 **Features**:
+
 - Circuit breaker pattern for reliability
 - Exponential backoff retry logic
 - Fallback to static images
@@ -124,27 +133,30 @@ class ManimMCPClient:
 **Responsibility**: Generate multiple output formats from explanations
 
 **Key Components**:
+
 - `HTMLExporter`: Interactive web documentation
 - `MarkdownExporter`: GitHub-compatible documentation
 - `PDFExporter`: Print-ready academic format
 - `JupyterExporter`: Interactive notebooks
 
 **Architecture**:
+
 ```python
 # Export pipeline
 class HTMLExporter:
-    def export_multiple(self, sketches: List[ProofSketch], 
+    def export_multiple(self, sketches: List[ProofSketch],
                        context: ExportContext) -> ExportResult:
         """Export multiple theorem explanations to HTML."""
         pass
-    
-    def export_with_animations(self, sketch: ProofSketch, 
+
+    def export_with_animations(self, sketch: ProofSketch,
                              animations: Dict[str, Path]) -> ExportResult:
         """Export with embedded animations."""
         pass
 ```
 
 **Output Features**:
+
 - Responsive design with doc-gen4 compatibility
 - Embedded animations with fallback support
 - Cross-references and navigation
@@ -160,21 +172,25 @@ class HTMLExporter:
    - Dependency resolution
 
 2. **Parsing Phase**
+
    ```
    Lean File → LeanParser → TheoremInfo[] → ParseResult
    ```
 
 3. **Generation Phase**
+
    ```
    TheoremInfo → PromptTemplate → AIGenerator → ProofSketch
    ```
 
 4. **Animation Phase** (Optional)
+
    ```
    ProofSketch → SceneBuilder → ManimMCP → Animation
    ```
 
 5. **Export Phase**
+
    ```
    ProofSketch + Animation → Exporter → Output Files
    ```
@@ -186,6 +202,7 @@ Directory → FileDiscovery → BatchJob[] → ParallelExecution → BatchResult
 ```
 
 **Features**:
+
 - Parallel execution with configurable workers
 - Memory monitoring and resource limits
 - Error isolation and recovery
@@ -219,6 +236,7 @@ ProofSketcherError
 ```
 
 **Features**:
+
 - Detailed error context with recovery suggestions
 - Error code classification for programmatic handling
 - Graceful degradation strategies
@@ -227,12 +245,14 @@ ProofSketcherError
 ### Resource Management (`src/proof_sketcher/core/resources.py`)
 
 **Components**:
+
 - `TempFileManager`: Automatic cleanup of temporary files
 - `ProcessManager`: Subprocess lifecycle management
 - `ResourceMonitor`: Memory and disk usage monitoring
 - `ResourceLimits`: Configurable resource constraints
 
 **Features**:
+
 - Automatic resource cleanup on exit
 - Memory usage monitoring with configurable limits
 - Process timeout handling
@@ -241,12 +261,14 @@ ProofSketcherError
 ### Security Framework
 
 **Components**:
+
 - Static security analysis with Bandit
 - Dependency vulnerability scanning with Safety
 - Input validation and sanitization
 - Secure file handling
 
 **Practices**:
+
 - No hardcoded secrets or credentials
 - Comprehensive input validation
 - Secure temporary file handling
@@ -255,6 +277,7 @@ ProofSketcherError
 ### Configuration Management (`src/proof_sketcher/config/`)
 
 **Architecture**:
+
 ```python
 # Hierarchical configuration
 ProofSketcherConfig
@@ -266,6 +289,7 @@ ProofSketcherConfig
 ```
 
 **Sources** (in priority order):
+
 1. Command-line arguments
 2. Environment variables
 3. Configuration files (YAML)
@@ -287,11 +311,11 @@ class ProofSketcherPlugin:
     def register_parsers(self) -> List[ParserExtension]:
         """Register custom parser extensions."""
         pass
-    
+
     def register_generators(self) -> List[GeneratorExtension]:
         """Register custom explanation generators."""
         pass
-    
+
     def register_exporters(self) -> List[ExporterExtension]:
         """Register custom export formats."""
         pass

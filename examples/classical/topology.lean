@@ -10,7 +10,7 @@ theorem open_sets_form_topology (X : Type*) [TopologicalSpace X] :
   (∀ s t : Set X, IsOpen s → IsOpen t → IsOpen (s ∩ t)) := by
   constructor
   · exact isOpen_empty
-  constructor  
+  constructor
   · exact isOpen_univ
   constructor
   · intros I s hs
@@ -19,7 +19,7 @@ theorem open_sets_form_topology (X : Type*) [TopologicalSpace X] :
     exact IsOpen.inter hs ht
 
 -- Example 2: Hausdorff property
-theorem hausdorff_separation {X : Type*} [TopologicalSpace X] [T2Space X] 
+theorem hausdorff_separation {X : Type*} [TopologicalSpace X] [T2Space X]
   (x y : X) (h : x ≠ y) :
   ∃ (U V : Set X), IsOpen U ∧ IsOpen V ∧ x ∈ U ∧ y ∈ V ∧ Disjoint U V := by
   obtain ⟨U, V, hU, hV, hxU, hyV, hUV⟩ := t2_separation h

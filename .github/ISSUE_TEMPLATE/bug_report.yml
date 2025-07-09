@@ -8,8 +8,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this bug report! 
-        
+        Thanks for taking the time to fill out this bug report!
+
         Please search existing issues before creating a new one.
 
   - type: checkboxes
