@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/exporter/pdf.py
+# hypothesis_version: 6.135.20
+
+['.cls', '.sty', '.tex', 'author', 'document.tex.jinja2', 'latex', 'mathematical_content', 'pdf', 'pdf_engine', 'pdflatex', 'project_name', 'theorems', 'timestamp', 'utf-8', 'version']

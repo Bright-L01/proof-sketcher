@@ -181,9 +181,10 @@ class TemplateManager:
             template_path = self.template_dir / format.value
 
             # Create environment with custom settings
+            # SECURITY: Always enable autoescape to prevent XSS vulnerabilities
             env = Environment(
                 loader=FileSystemLoader(template_path),
-                autoescape=format == ExportFormat.HTML,
+                autoescape=True,  # Always enabled for security
                 trim_blocks=True,
                 lstrip_blocks=True,
             )

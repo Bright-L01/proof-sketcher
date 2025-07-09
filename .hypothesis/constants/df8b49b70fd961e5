@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/parser/lean_parser.py
+# hypothesis_version: 6.135.20
+
+[1000, ' : ', '(', ')', '--', '--file', '--theorem', '--version', '.lean', ':', ':=', 'Error', 'ExtractTheorem.lean', 'Lake build timed out', 'attempts', 'build', 'construct_counts', 'context_detections', 'dependencies', 'docString', 'enhanced', 'env', 'error', 'errors', 'file_path', 'import ', 'isAxiom', 'lake_build_error', 'lake_error', 'lake_setup_error', 'lake_timeout', 'lakefile.lean', 'lean_timeout', 'lemma', 'lineNumber', 'name', 'parse_failed', 'parser_instance', 'parsing_method', 'public', 'statement', 'strategy_usage', 'tactics', 'theorem', 'theorem_count_basic', 'timeout', 'total_constructs', 'type', 'unknown', 'utf-8', 'value', 'warning', '{', '}']

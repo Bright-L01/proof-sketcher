@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/parser/lean_extractor.py
+# hypothesis_version: 6.135.20
+
+[300, '--', '--all', '--file', '--theorem', '--version', '../../..', '.lake', '.lean', 'ExtractTheorem', 'ExtractTheorem.lean', 'Extractor timed out', 'Not available', 'Not found', 'Unknown', 'Unknown error', 'bin', 'build', 'dependencies', 'docString', 'extract', 'extractor_available', 'extractor_path', 'isAxiom', 'lake', 'lakefile.lean', 'lean', 'lean_extractor', 'lean_version', 'lineNumber', 'name', 'not found', 'statement', 'tactics', 'test', 'type', 'value', 'w']

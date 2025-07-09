@@ -1,0 +1,32 @@
+{
+  "forall_nat": {
+    "original": "∀ x ∈ ℕ, x + 0 = x",
+    "latex": "\\forall x \\in \\mathbb{N}, x + 0 = x",
+    "html": "&forall; x &isin; &#8469;, x + 0 = x"
+  },
+  "exists_function": {
+    "original": "∃ f : ℝ → ℝ, continuous f",
+    "latex": "\\exists f :\\mathbb{R} \\to \\mathbb{R}, continuous f",
+    "html": "&exist; f : &#8477; &rarr; &#8477;, continuous f"
+  },
+  "set_theory": {
+    "original": "A ∪ B ⊆ C ↔ A ⊆ C ∧ B ⊆ C",
+    "latex": "A \\cup B \\subseteq C \\iff A \\subseteq C \\land B \\subseteq C",
+    "html": "A &cup; B &sube; C &harr; A &sube; C &and; B &sube; C"
+  },
+  "integral_sum": {
+    "original": "∫₀¹ f(x) dx = ∑_{n=0}^∞ aₙ",
+    "latex": "\\in t₀¹ f(x) dx = \\sum _{n=0}^ \\in fty aₙ",
+    "html": "&int;₀¹ f(x) dx = &sum;_{n=0}^&infin; aₙ"
+  },
+  "vector_calculus": {
+    "original": "∇ × F = 0",
+    "latex": "\\nabla  \\times F = 0",
+    "html": "&nabla; &times; F = 0"
+  },
+  "limit": {
+    "original": "lim_{n→∞} (1 + 1/n)ⁿ = e",
+    "latex": "lim_{n \\to  \\in fty} (1 + 1/n)ⁿ = e",
+    "html": "lim_{n&rarr;&infin;} (1 + 1/n)ⁿ = e"
+  }
+}

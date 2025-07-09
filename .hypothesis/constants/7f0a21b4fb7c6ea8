@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/animator/fallback.py
+# hypothesis_version: 6.135.20
+
+[0.5, 3.0, 100, 150, 200, 250, 720, 800, 1280, '$', '-f', '-i', '-pix_fmt', '-safe', '-vf', '-y', '.mp4', '.png', '0', 'Conclusion', 'PNG', 'Proof Visualization', 'RGB', '\\', 'animation.mp4', 'basic', 'black', 'center', 'cm', 'concat', 'darkblue', 'darkgreen', 'duration', 'error', 'ffmpeg', 'ffmpeg_unavailable', 'fps=30', 'frame_count', 'generator', 'gray', 'image', 'images.txt', 'mathtext.fontset', 'metadata', 'none', 'off', 'proof_animation_', 'quality', 'reason', 'size_bytes', 'slide_00_title.png', 'slide_01_intro.png', 'slide_count', 'static', 'text.usetex', 'thumbnail_path', 'tight', 'type', 'video_path', 'w', 'white', 'yuv420p', '□']

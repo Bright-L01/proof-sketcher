@@ -319,6 +319,40 @@ class MemoryError(ResourceError):
         return f"{base_msg}\n\nSuggestions:\n" + "\n".join(f"- {s}" for s in suggestions)
 
 
+class SecurityError(ProofSketcherError):
+    """
+    Exception raised for security-related errors.
+    
+    This exception is raised when security validation fails or
+    when potentially dangerous operations are attempted.
+    Used throughout the security modules to prevent injection attacks,
+    path traversal, and other security vulnerabilities.
+    """
+    
+    def __init__(
+        self,
+        message: str,
+        security_context: Optional[Dict[str, Any]] = None,
+        details: Optional[Dict[str, Any]] = None,
+        error_code: Optional[str] = None
+    ):
+        """Initialize security error.
+        
+        Args:
+            message: Error message
+            security_context: Security-related context information
+            details: Additional error context
+            error_code: Optional error code
+        """
+        super().__init__(message, details, error_code)
+        self.security_context = security_context or {}
+    
+    def get_safe_message(self) -> str:
+        """Get error message without potentially sensitive details."""
+        # Return generic security error message without exposing internal details
+        return "Security validation failed. Please check your input and try again."
+
+
 class NetworkError(ResourceError):
     """Raised when network operations fail."""
 

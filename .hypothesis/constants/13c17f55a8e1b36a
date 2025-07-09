@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/generator/cache.py
+# hypothesis_version: 6.135.20
+
+[0.8, 100, 1024, '*', '*.json', '*.pkl', '.last_cleanup', '.proof_sketcher', 'by_type', 'cache', 'cache_dir', 'cached_at', 'eli5_explanation', 'generation_type', 'json', 'json_entries', 'max_size_mb', 'metadata.json', 'pickle', 'pickle_entries', 'proof_sketch', 'r', 'rb', 'request', 'size_mb', 'step_by_step', 'tactic_explanation', 'theorem_name', 'total_entries', 'ttl_hours', 'unknown', 'w', 'wb']
