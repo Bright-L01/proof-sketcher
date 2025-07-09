@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/parser/models.py
+# hypothesis_version: 6.135.20
+
+['Error message', 'Extracted theorems', 'File metadata', 'File size in bytes', 'Import statements', 'Lean namespace', 'List of dependencies', 'ParseError', 'Parsing errors', 'Parsing warnings', 'The theorem name', 'Total lines in file', 'Type of error', 'column', 'error', 'line_number', 'parse_error', 'public', 'severity']

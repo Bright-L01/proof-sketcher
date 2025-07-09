@@ -4,11 +4,13 @@ import gzip
 import hashlib
 import json
 import logging
-import pickle
 import threading
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
+
+# SECURITY: Replace pickle with safe serialization
+from ..utils.safe_serialization import SafeSerializer
 
 # Validation imports removed - implement inline validation
 
@@ -114,18 +116,15 @@ class CacheManager:
                 return None
             
             # Load cached data
-            cache_file = self.cache_dir / category / f"{key}.pkl"
+            # SECURITY: Use .json extension instead of .pkl
+            cache_file = self.cache_dir / category / f"{key}.json"
             if self.compress:
-                cache_file = cache_file.with_suffix('.pkl.gz')
+                cache_file = cache_file.with_suffix('.json.gz')
             
             try:
                 if cache_file.exists():
-                    if self.compress:
-                        with gzip.open(cache_file, 'rb') as f:
-                            data = pickle.load(f)
-                    else:
-                        with open(cache_file, 'rb') as f:
-                            data = pickle.load(f)
+                    # SECURITY: Use safe JSON deserialization instead of pickle
+                    data = SafeSerializer.load(cache_file, compress=self.compress)
                     
                     # Update access time
                     entry['last_accessed'] = datetime.now().isoformat()
@@ -172,17 +171,13 @@ class CacheManager:
                 cache_dir = self.cache_dir / category
                 cache_dir.mkdir(exist_ok=True)
                 
-                cache_file = cache_dir / f"{key}.pkl"
+                # SECURITY: Use .json extension instead of .pkl
+                cache_file = cache_dir / f"{key}.json"
                 if self.compress:
-                    cache_file = cache_file.with_suffix('.pkl.gz')
+                    cache_file = cache_file.with_suffix('.json.gz')
                 
-                # Save data
-                if self.compress:
-                    with gzip.open(cache_file, 'wb') as f:
-                        pickle.dump(value, f, protocol=pickle.HIGHEST_PROTOCOL)
-                else:
-                    with open(cache_file, 'wb') as f:
-                        pickle.dump(value, f, protocol=pickle.HIGHEST_PROTOCOL)
+                # SECURITY: Use safe JSON serialization instead of pickle
+                SafeSerializer.dump(value, cache_file, compress=self.compress)
                 
                 # Update index
                 self.index[key] = {

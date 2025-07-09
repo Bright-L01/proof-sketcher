@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/exporter/models.py
+# hypothesis_version: 6.135.20
+
+[0.0, '._-', 'Base font size', 'Code syntax theme', 'Create index file', 'Embed media vs. link', 'Embed videos in HTML', 'Generation timestamp', 'HTML theme', 'Include cell outputs', 'Include source code', 'Jupyter kernel', 'LaTeX document class', 'LaTeX engine', 'Markdown flavor', 'Math rendering style', 'Output directory', 'Path to thumbnail', 'Source Lean file', 'Theorem name', 'Theorem statement', 'all', 'animation', 'article', 'description', 'doc-gen4', 'github', 'html', 'include_timestamps', 'index', 'jupyter', 'katex', 'layout', 'markdown', 'mathematical_content', 'monokai', 'output', 'pdf', 'pdflatex', 'prerequisites', 'proof_step', 'python3', 'reasoning', 'theorem', '{theorem_name}']

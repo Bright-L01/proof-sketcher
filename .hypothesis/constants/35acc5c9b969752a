@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/core/utils.py
+# hypothesis_version: 6.135.20
+
+[1.0, 2.0, 60.0, 255, 3600, ' .', '+00:00', '.', '...', 'NFKD', 'RETRY_FAILED', 'T', 'Z', '[<>:"/\\\\|?*]', '_', 'ascii', 'delay', 'ignore', 'max_retries', 'model_dump', 'sha256', 'unnamed', 'utf-8', '|']

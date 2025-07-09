@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/animator/manim_mcp.py
+# hypothesis_version: 6.135.20
+
+[0.0, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0, 300.0, 200, 1000, 1024, '--host', '--keep-temp', '--max-renders', '--output-dir', '--port', '--temp-dir', '--version', '-m', 'Manim server stopped', 'ManimMCPClient', 'Mock conclusion', 'Mock introduction', 'Stopping MCP server', 'Unknown error', 'animations', 'duration', 'error', 'fade_in_time', 'fade_out_time', 'final_formula', 'healthy', 'highlighted_parts', 'initial_formula', 'manim', 'manim_mcp_server', 'medium', 'modern', 'narration_text', 'output_path', 'preview_path', 'python', 'quality', 'request_id', 'scene_id', 'scenes', 'segment_paths', 'segment_title', 'status', 'style', 'success', 'theorem_name', 'timestamp', 'transformation_type', 'unknown', 'video_path']

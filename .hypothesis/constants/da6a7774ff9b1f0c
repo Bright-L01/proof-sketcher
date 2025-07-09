@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/core/exceptions.py
+# hypothesis_version: 6.135.20
+
+[1024, 'FILE_NOT_FOUND', 'RecoveryStrategy', 'available_space_mb', 'cache', 'category', 'connection', 'details', 'error_counts', 'fallback', 'parse', 'recovery_counts', 'required_space_mb', 'retry', 'total_errors', 'total_recoveries', 'value']

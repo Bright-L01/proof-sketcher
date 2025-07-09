@@ -17,11 +17,11 @@ from unittest.mock import Mock, patch, MagicMock
 import psutil
 import pytest
 
-from src.proof_sketcher.core.resources import (
+from proof_sketcher.core.resources import (
     ResourceLimits, ResourceUsage, TempFileManager, ProcessManager,
     ResourceMonitor, resource_context, check_disk_space, check_memory_usage
 )
-from src.proof_sketcher.core.exceptions import (
+from proof_sketcher.core.exceptions import (
     ResourceError, DiskSpaceError, MemoryError
 )
 

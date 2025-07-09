@@ -10,8 +10,8 @@ import pytest
 from click.testing import CliRunner
 
 from proof_sketcher.cli import cli
-from proof_sketcher.core.config import Config
-from proof_sketcher.parser.models import TheoremData
+from proof_sketcher.config.config import Config
+from proof_sketcher.parser.models import TheoremInfo
 
 
 @pytest.fixture
@@ -257,11 +257,11 @@ class TestErrorRecovery:
         
         with patch.object(client, '_generate', side_effect=slow_generate):
             with pytest.raises(asyncio.TimeoutError):
-                await client.generate_proof_sketch(TheoremData(
+                await client.generate_proof_sketch(TheoremInfo(
                     name="test",
-                    type="Prop",
-                    value="",
-                    doc_string=None,
+                    statement="Prop",
+                    proof="",
+                    docstring=None,
                     tactics=[],
                     dependencies=[]
                 ))

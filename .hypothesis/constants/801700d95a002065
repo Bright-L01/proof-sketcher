@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/animator/scene_builder.py
+# hypothesis_version: 6.135.20
+
+[0.0, 0.2, 0.3, 0.4, 0.5, 1.0, 1.5, 2.0, 3.0, 100, ' \\quad \\square', ' \\to ', '+', '0', '1', '=', 'Base Case', 'Case Analysis', 'Conclusion', 'Inductive Step', 'Introduction', 'Proof Overview', 'Q.E.D.', 'Theorem Statement', 'assume', 'base case', 'by_cases', 'case', 'cases', 'contradiction', 'hence', 'inductive', 'inductive step', 'left', 'right', 'rw', 'simp', 'split', 'suppose', 'therefore', 'thus']

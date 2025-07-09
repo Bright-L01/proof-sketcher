@@ -1,3 +1,6 @@
+# Dependabot configuration for Proof Sketcher
+# Automated dependency updates with alpha software considerations
+
 version: 2
 updates:
   # Python dependencies
@@ -6,39 +9,118 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "03:00"
-    open-pull-requests-limit: 10
+      time: "04:00"
+    # Alpha software - conservative update strategy
+    versioning-strategy: increase-if-necessary
+    # Group updates to reduce PR noise
     groups:
-      python-dev:
+      development-dependencies:
         patterns:
           - "pytest*"
           - "black"
-          - "ruff"
-          - "mypy"
-          - "pre-commit"
-      python-security:
-        patterns:
+          - "flake8*"
+          - "mypy*"
+          - "isort"
           - "bandit"
-          - "safety"
-          - "semgrep"
-    labels:
-      - "dependencies"
-      - "python"
+          - "coverage*"
+        update-types:
+          - "minor"
+          - "patch"
+      documentation:
+        patterns:
+          - "sphinx*"
+          - "myst-parser"
+        update-types:
+          - "minor"
+          - "patch"
+    # Open PRs for security updates immediately
+    open-pull-requests-limit: 10
+    # PR settings
     commit-message:
       prefix: "chore"
+      prefix-development: "chore"
       include: "scope"
-
+    labels:
+      - "dependencies"
+      - "alpha-software"
+    # Ignore specific updates that might break alpha code
+    ignore:
+      # Example: Don't update to click 9.x until tested
+      # - dependency-name: "click"
+      #   versions: ["9.x"]
+    # Security updates configuration
+    allow:
+      - dependency-type: "all"
+    # Add reviewers
+    reviewers:
+      - "brightliu"
+    
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "03:00"
-    labels:
-      - "dependencies"
-      - "github-actions"
     commit-message:
       prefix: "ci"
       include: "scope"
+    labels:
+      - "ci/cd"
+      - "dependencies"
+    open-pull-requests-limit: 5
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    labels:
+      - "docker"
+      - "dependencies"
+    # Conservative for base images
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major"]
+
+  # npm dependencies (if any frontend assets)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "frontend"
+    # Very conservative for alpha
+    versioning-strategy: increase-if-necessary
+    allow:
+      - dependency-type: "production"
+        update-type: "security"
+
+# Security advisories
+# Dependabot will automatically create PRs for security vulnerabilities
+# Given our 69 known vulnerabilities, expect many security PRs initially
+
+# Notes for Alpha Software:
+# 1. Weekly updates to stay current with security fixes
+# 2. Conservative versioning to avoid breaking changes
+# 3. Grouped updates to reduce PR management overhead
+# 4. Security updates are prioritized
+# 5. Manual testing required before merging any update
+# 6. Consider creating a staging branch for testing updates
+
+# Update Strategy for Alpha:
+# Week 1-2: Focus on security updates only
+# Week 3-4: Update development dependencies
+# Week 5-6: Update core dependencies after thorough testing
+
+# Manual override:
+# To trigger dependency updates manually:
+# gh workflow run dependabot.yml
 EOF < /dev/null
