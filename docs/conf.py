@@ -9,51 +9,51 @@ import sys
 from pathlib import Path
 
 # Add source path
-sys.path.insert(0, os.path.abspath('../src'))
+sys.path.insert(0, os.path.abspath("../src"))
 
 # Project information
-project = 'Proof Sketcher'
-copyright = '2025, Proof Sketcher Contributors'
-author = 'Proof Sketcher Contributors'
-version = '0.1.0-alpha'
-release = '0.1.0-alpha'
+project = "Proof Sketcher"
+copyright = "2025, Proof Sketcher Contributors"
+author = "Proof Sketcher Contributors"
+version = "0.1.0-alpha"
+release = "0.1.0-alpha"
 
 # Extensions
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.todo',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.todo",
 ]
 
 # Source file suffixes
 source_suffix = {
-    '.rst': None,
+    ".rst": None,
 }
 
 # Root document
-master_doc = 'index'
+master_doc = "index"
 
 # Language
-language = 'en'
+language = "en"
 
 # Exclude patterns
 exclude_patterns = [
-    '_build',
-    'Thumbs.db',
-    '.DS_Store',
-    '__pycache__',
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "__pycache__",
 ]
 
 # HTML theme
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 html_theme_options = {
-    'navigation_depth': 4,
-    'collapse_navigation': False,
-    'sticky_navigation': True,
-    'includehidden': True,
-    'titles_only': False,
+    "navigation_depth": 4,
+    "collapse_navigation": False,
+    "sticky_navigation": True,
+    "includehidden": True,
+    "titles_only": False,
 }
 
 # HTML options
@@ -64,21 +64,21 @@ html_show_sphinx = True
 html_show_copyright = True
 
 # Static files
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 # Custom CSS
 html_css_files = [
-    'custom.css',
+    "custom.css",
 ]
 
 # AutoDoc options
 autodoc_default_options = {
-    'members': True,
-    'member-order': 'bysource',
-    'special-members': '__init__',
-    'undoc-members': True,
-    'exclude-members': '__weakref__',
-    'show-inheritance': True,
+    "members": True,
+    "member-order": "bysource",
+    "special-members": "__init__",
+    "undoc-members": True,
+    "exclude-members": "__weakref__",
+    "show-inheritance": True,
 }
 
 # Napoleon settings (for Google/NumPy docstrings)
@@ -96,8 +96,8 @@ napoleon_use_rtype = True
 
 # Intersphinx mapping
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'pydantic': ('https://docs.pydantic.dev/latest/', None),
+    "python": ("https://docs.python.org/3", None),
+    "pydantic": ("https://docs.pydantic.dev/latest/", None),
 }
 
 # Todo extension
@@ -107,7 +107,7 @@ todo_include_todos = True
 rst_prolog = """
 .. warning::
    This documentation covers **alpha software** with significant limitations.
-   Many features described may not work as intended. See the 
-   `Production Readiness Assessment <../PRODUCTION_READINESS_ASSESSMENT.md>`_ 
+   Many features described may not work as intended. See the
+   `Production Readiness Assessment <../PRODUCTION_READINESS_ASSESSMENT.md>`_
    for current status.
 """

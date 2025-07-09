@@ -1,5 +1,5 @@
 -- Showcase: Beautiful Algebraic Proofs
--- This file demonstrates elegant algebraic theorems that showcase 
+-- This file demonstrates elegant algebraic theorems that showcase
 -- Proof Sketcher's ability to explain complex mathematical reasoning
 
 import Mathlib.Algebra.Group.Defs
@@ -91,8 +91,8 @@ theorem char_zero_or_prime [Fintype F] : CharZero F ∨ ∃ p : ℕ, Nat.Prime p
 variable (V : Type*) [Field F] [AddCommGroup V] [Module F V]
 
 -- Fundamental: Linear Independence
-theorem linear_independence_criterion (v w : V) (c d : F) 
-  (h : c • v + d • w = 0) (hv : v ≠ 0) (hw : w ≠ 0) 
+theorem linear_independence_criterion (v w : V) (c d : F)
+  (h : c • v + d • w = 0) (hv : v ≠ 0) (hw : w ≠ 0)
   (hind : ∀ a b : F, a • v = b • w → a = 0 ∧ b = 0) :
   c = 0 ∧ d = 0 := by
   sorry -- This requires more advanced linear algebra setup
@@ -117,7 +117,7 @@ theorem first_isomorphism_theorem (H : Type*) [Group H] (f : G →* H) :
 -- Cauchy's Theorem (for abelian groups, simplified)
 variable [CommGroup G] [Fintype G]
 
-theorem cauchy_theorem_abelian (p : ℕ) [Fact (Nat.Prime p)] 
+theorem cauchy_theorem_abelian (p : ℕ) [Fact (Nat.Prime p)]
   (hdiv : p ∣ Fintype.card G) :
   ∃ a : G, orderOf a = p := by
   exact exists_prime_orderOf_dvd_card p hdiv

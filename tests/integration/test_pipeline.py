@@ -96,8 +96,10 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
             name="test_theorem", statement="∀ n : Nat, n + 0 = n", proof="by induction"
         )
 
-        with patch('subprocess.run') as mock_run_gen:
-            mock_run_gen.return_value = Mock(returncode=0)  # Mock successful executable check
+        with patch("subprocess.run") as mock_run_gen:
+            mock_run_gen.return_value = Mock(
+                returncode=0
+            )  # Mock successful executable check
             generator = ClaudeGenerator(default_config=config.generator)
         sketch = generator.generate_proof_sketch(theorem)
 
@@ -192,8 +194,10 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
                     returncode=0,
                 )
 
-                with patch('subprocess.run') as mock_run_gen:
-                    mock_run_gen.return_value = Mock(returncode=0)  # Mock successful executable check
+                with patch("subprocess.run") as mock_run_gen:
+                    mock_run_gen.return_value = Mock(
+                        returncode=0
+                    )  # Mock successful executable check
                     generator = ClaudeGenerator(default_config=config.generator)
                 sketch = generator.generate_proof_sketch(parse_result.theorems[0])
                 assert sketch.introduction == "Test explanation"
@@ -251,8 +255,10 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
                     returncode=0,
                 )
 
-                with patch('subprocess.run') as mock_run_gen:
-                    mock_run_gen.return_value = Mock(returncode=0)  # Mock successful executable check
+                with patch("subprocess.run") as mock_run_gen:
+                    mock_run_gen.return_value = Mock(
+                        returncode=0
+                    )  # Mock successful executable check
                     generator = ClaudeGenerator(default_config=config.generator)
                 sketch = generator.generate_proof_sketch(theorem)
 
@@ -322,10 +328,12 @@ theorem test_theorem (n : Nat) : n + 0 = n := by
 
         theorem = TheoremInfo(name="test", statement="test")
 
-        with patch('subprocess.run') as mock_run:
-            mock_run.return_value = Mock(returncode=0)  # Mock successful executable check
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(
+                returncode=0
+            )  # Mock successful executable check
             generator = ClaudeGenerator(default_config=config.generator)
-        
+
         # Since claude returns non-zero exit code, this should raise an exception
         with pytest.raises(Exception):
             generator.generate_proof_sketch(theorem)

@@ -29,7 +29,7 @@ class GenerationType(str, Enum):
 class ProofStep(BaseModel):
     """A single step in a proof sketch."""
 
-    step_number: int = Field(..., description="Step number in the proof")
+    step_number: int = Field(..., description="Step number in the proo")
     description: str = Field(..., description="Description of what this step does")
     tactics: List[str] = Field(default_factory=list, description="Lean tactics used")
     mathematical_content: str = Field(
@@ -49,7 +49,7 @@ class ProofSketch(BaseModel):
     theorem_name: str = Field(..., description="Name of the theorem")
     theorem_statement: str = Field(..., description="Formal statement of the theorem")
     introduction: str = Field(..., description="Introduction explaining the theorem")
-    key_steps: List[ProofStep] = Field(..., description="Key steps in the proof")
+    key_steps: List[ProofStep] = Field(..., description="Key steps in the proo")
     conclusion: str = Field(..., description="Conclusion tying everything together")
 
     # Metadata
@@ -60,7 +60,7 @@ class ProofSketch(BaseModel):
         default_factory=list, description="Areas of mathematics involved"
     )
     prerequisites: List[str] = Field(
-        default_factory=list, description="Prerequisites to understand this proof"
+        default_factory=list, description="Prerequisites to understand this proo"
     )
 
     @field_validator("difficulty_level")
@@ -142,7 +142,7 @@ class GenerationConfig(BaseModel):
             stream=False,
             system_message=None,
             cache_responses=True,
-            cache_ttl_hours=24
+            cache_ttl_hours=24,
         )
 
     @classmethod
@@ -157,7 +157,7 @@ class GenerationConfig(BaseModel):
             stream=False,
             system_message=None,
             cache_responses=True,
-            cache_ttl_hours=24
+            cache_ttl_hours=24,
         )
 
     @classmethod
@@ -172,7 +172,7 @@ class GenerationConfig(BaseModel):
             stream=False,
             system_message=None,
             cache_responses=True,
-            cache_ttl_hours=24
+            cache_ttl_hours=24,
         )
 
 
@@ -214,7 +214,10 @@ class GenerationRequest(BaseModel):
             content += f":{self.mathematical_context}"
 
         # Include relevant config in cache key
-        config_content = f"{self.config.model.value}:{self.config.temperature}:{self.config.verbosity}"
+        config_content = f"{
+            self.config.model.value}:{
+            self.config.temperature}:{
+            self.config.verbosity}"
         content += f":{config_content}"
 
         return hashlib.sha256(content.encode()).hexdigest()

@@ -16,8 +16,8 @@ import toml
 import yaml
 from pydantic import BaseModel, Field
 
-from ..core.exceptions import ConfigError, ConfigNotFoundError, ConfigValidationError
 from ..animator.models import AnimationConfig, ManimConfig
+from ..core.exceptions import ConfigError, ConfigNotFoundError, ConfigValidationError
 from ..generator.models import GenerationConfig
 from ..parser.config import ParserConfig
 
@@ -273,7 +273,9 @@ class ProofSketcherConfig:
             except ConfigValidationError as e:
                 print(f"Warning: Invalid env override {key}={value}: {e}")
             except Exception as e:
-                print(f"Warning: Failed to apply env override {key}={value}: {type(e).__name__}: {e}")
+                print(
+                    f"Warning: Failed to apply env override {key}={value}: {type(e).__name__}: {e}"
+                )
 
     def _set_value(self, key: str, value: str) -> None:
         """Set a global configuration value."""
@@ -332,8 +334,7 @@ class ProofSketcherConfig:
 
         if errors:
             raise ConfigValidationError(
-                "Configuration validation failed",
-                details={"errors": errors}
+                "Configuration validation failed", details={"errors": errors}
             )
 
     def save(self, path: Path) -> None:

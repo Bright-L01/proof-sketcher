@@ -1,7 +1,7 @@
 -- Group Theory Examples for Proof Sketcher
 
 -- Example 1: Identity element is unique
-theorem unique_identity (G : Type*) [Group G] : 
+theorem unique_identity (G : Type*) [Group G] :
   ∃! e : G, ∀ a : G, e * a = a ∧ a * e = a := by
   use 1
   constructor
@@ -15,7 +15,7 @@ theorem unique_identity (G : Type*) [Group G] :
     rw [h1, h2]
 
 -- Example 2: Inverse is unique
-theorem unique_inverse (G : Type*) [Group G] (a : G) : 
+theorem unique_inverse (G : Type*) [Group G] (a : G) :
   ∃! b : G, a * b = 1 ∧ b * a = 1 := by
   use a⁻¹
   constructor

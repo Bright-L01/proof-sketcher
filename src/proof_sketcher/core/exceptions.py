@@ -235,7 +235,7 @@ class ResourceError(ProofSketcherError):
         context: Optional[Dict[str, Any]] = None,
     ):
         """Initialize resource error.
-        
+
         Args:
             message: Error message
             details: Additional error context
@@ -247,7 +247,7 @@ class ResourceError(ProofSketcherError):
             details.update(context)
         elif context:
             details = context
-            
+
         super().__init__(message, details, error_code)
         self.context = details or {}
 
@@ -264,7 +264,7 @@ class DiskSpaceError(ResourceError):
         error_code: Optional[str] = None,
     ):
         """Initialize disk space error.
-        
+
         Args:
             message: Error message
             required_space: Required space in bytes
@@ -275,12 +275,12 @@ class DiskSpaceError(ResourceError):
         # Add space info to context
         if details is None:
             details = {}
-        
+
         if required_space:
             details["required_space_mb"] = required_space // (1024 * 1024)
         if available_space:
             details["available_space_mb"] = available_space // (1024 * 1024)
-            
+
         super().__init__(message, details, error_code)
         self.required_space = required_space
         self.available_space = available_space
@@ -298,7 +298,7 @@ class MemoryError(ResourceError):
         error_code: Optional[str] = None,
     ):
         """Initialize memory error.
-        
+
         Args:
             message: Error message
             context: Memory usage context
@@ -307,37 +307,39 @@ class MemoryError(ResourceError):
         """
         super().__init__(message, details, error_code)
         self.context = context or {}
-    
+
     def get_full_message(self) -> str:
         """Get full error message with recovery suggestions."""
         base_msg = str(self)
         suggestions = [
             "Close other applications to free memory",
             "Reduce batch size if processing multiple files",
-            "Consider using streaming mode for large files"
+            "Consider using streaming mode for large files",
         ]
-        return f"{base_msg}\n\nSuggestions:\n" + "\n".join(f"- {s}" for s in suggestions)
+        return f"{base_msg}\n\nSuggestions:\n" + "\n".join(
+            f"- {s}" for s in suggestions
+        )
 
 
 class SecurityError(ProofSketcherError):
     """
     Exception raised for security-related errors.
-    
+
     This exception is raised when security validation fails or
     when potentially dangerous operations are attempted.
     Used throughout the security modules to prevent injection attacks,
     path traversal, and other security vulnerabilities.
     """
-    
+
     def __init__(
         self,
         message: str,
         security_context: Optional[Dict[str, Any]] = None,
         details: Optional[Dict[str, Any]] = None,
-        error_code: Optional[str] = None
+        error_code: Optional[str] = None,
     ):
         """Initialize security error.
-        
+
         Args:
             message: Error message
             security_context: Security-related context information
@@ -346,7 +348,7 @@ class SecurityError(ProofSketcherError):
         """
         super().__init__(message, details, error_code)
         self.security_context = security_context or {}
-    
+
     def get_safe_message(self) -> str:
         """Get error message without potentially sensitive details."""
         # Return generic security error message without exposing internal details
@@ -365,7 +367,7 @@ class NetworkError(ResourceError):
         error_code: Optional[str] = None,
     ):
         """Initialize network error.
-        
+
         Args:
             message: Error message
             operation: The network operation that failed
@@ -378,16 +380,16 @@ class NetworkError(ResourceError):
             details.update(context)
         elif context:
             details = context
-            
+
         super().__init__(message, details, error_code)
         self.operation = operation
         self.context = details or {}
-        
+
         # Add recovery strategies for network errors
         self.recovery_strategies = [
-            type('RecoveryStrategy', (), {'value': 'retry'}),
-            type('RecoveryStrategy', (), {'value': 'fallback'}),
-            type('RecoveryStrategy', (), {'value': 'cache'})
+            type("RecoveryStrategy", (), {"value": "retry"}),
+            type("RecoveryStrategy", (), {"value": "fallback"}),
+            type("RecoveryStrategy", (), {"value": "cache"}),
         ]
 
 
@@ -396,7 +398,7 @@ class ErrorHandler:
 
     def __init__(self, auto_recover: bool = True):
         """Initialize error handler.
-        
+
         Args:
             auto_recover: Whether to attempt automatic recovery
         """
@@ -408,69 +410,77 @@ class ErrorHandler:
     def _setup_logger(self) -> Any:
         """Set up logger for error handling."""
         import logging
+
         logger = logging.getLogger(f"{__name__}.ErrorHandler")
         return logger
 
-    def handle(self, error: Exception, context: Optional[Dict[str, Any]] = None) -> Optional[Any]:
+    def handle(
+        self, error: Exception, context: Optional[Dict[str, Any]] = None
+    ) -> Optional[Any]:
         """Handle an error with optional context.
-        
+
         Args:
             error: The exception to handle
             context: Additional context for error handling
-            
+
         Returns:
             None or recovery result if auto_recover is enabled
         """
         error_type = type(error).__name__
         self.error_counts[error_type] = self.error_counts.get(error_type, 0) + 1
-        
+
         if isinstance(error, ProofSketcherError):
             self.logger.error(f"ProofSketcherError: {error}")
-            if hasattr(error, 'details') and error.details:
+            if hasattr(error, "details") and error.details:
                 self.logger.debug(f"Error details: {error.details}")
         else:
             self.logger.error(f"Unexpected error: {error}")
-        
+
         if context:
             self.logger.debug(f"Error context: {context}")
-        
+
         return None
-    
-    def handle_error(self, error: Exception, auto_recover: bool = True, context: Optional[Dict[str, Any]] = None) -> Optional[Any]:
+
+    def handle_error(
+        self,
+        error: Exception,
+        auto_recover: bool = True,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Any]:
         """Handle error with recovery attempts (alias for handle method)."""
         result = self.handle(error, context)
-        
+
         # Track recovery attempts
         if auto_recover and self.auto_recover:
             error_type = type(error).__name__
             recovery_count = self.recovery_counts.get(error_type, 0)
             if recovery_count < 3:  # Max 3 recovery attempts per error type
                 self.recovery_counts[error_type] = recovery_count + 1
-                
+
         return result
-    
+
     def _wrap_error(self, original_error: Exception) -> ProofSketcherError:
         """Wrap a standard exception into a ProofSketcherError."""
         if isinstance(original_error, ConnectionError):
             return NetworkError(str(original_error), operation="connection")
         elif isinstance(original_error, FileNotFoundError):
             return ParserError(
-                str(original_error), 
-                details={"category": "parse"}, 
-                error_code="FILE_NOT_FOUND"
+                str(original_error),
+                details={"category": "parse"},
+                error_code="FILE_NOT_FOUND",
             )
         elif isinstance(original_error, (MemoryError, OSError)):
             return ResourceError(str(original_error))
         else:
             return ProofSketcherError(str(original_error))
-    
+
     def get_error_summary(self) -> Dict[str, Any]:
         """Get summary of error handling statistics."""
         return {
             "total_errors": sum(self.error_counts.values()),
             "total_recoveries": sum(self.recovery_counts.values()),
             "error_counts": self.error_counts.copy(),
-            "recovery_counts": self.recovery_counts.copy()
+            "recovery_counts": self.recovery_counts.copy(),
         }
 
 
@@ -481,24 +491,25 @@ GenerationError = GeneratorError
 def handle_error(
     error: Exception,
     context: Optional[Dict[str, Any]] = None,
-    auto_recover: bool = True
+    auto_recover: bool = True,
 ) -> Optional[Any]:
     """Simple error handler for backward compatibility.
-    
+
     Args:
         error: The exception to handle
         context: Additional context (unused in simple implementation)
         auto_recover: Whether to attempt recovery (unused in simple implementation)
-        
+
     Returns:
         None (simple implementation just logs the error)
     """
     import logging
+
     logger = logging.getLogger(__name__)
-    
+
     if isinstance(error, ProofSketcherError):
         logger.error(f"ProofSketcherError: {error}")
     else:
         logger.error(f"Unexpected error: {error}")
-    
+
     return None

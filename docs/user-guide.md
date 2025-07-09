@@ -16,6 +16,7 @@
 #### 1. Install Python
 
 Check your Python version:
+
 ```bash
 python --version  # Should be 3.10+
 ```
@@ -71,6 +72,7 @@ Each generated page currently contains:
 - **Empty Statements**: ⚠️ Often missing actual theorem content
 
 **What's Missing (Known Issues):**
+
 - Actual theorem statements are often empty
 - AI-generated explanations (offline mode only)
 - Meaningful mathematical content
@@ -122,7 +124,7 @@ generation:
 export:
   formats: ["html", "markdown"]
   output_dir: "output"
-  
+
 # Debugging (recommended)
 debug: true
 verbose_logging: true
@@ -176,7 +178,8 @@ python -m proof_sketcher prove file.lean --format all
 
 **Cause**: Lean parser not extracting content properly
 
-**Workaround**: 
+**Workaround**:
+
 - This is a known critical issue
 - No current fix available
 - Output will be generic templates only
@@ -186,6 +189,7 @@ python -m proof_sketcher prove file.lean --format all
 **Cause**: Lean extractor build system is broken
 
 **Workaround**:
+
 - System automatically falls back to basic parsing
 - Reduced functionality is expected
 
@@ -194,6 +198,7 @@ python -m proof_sketcher prove file.lean --format all
 **Cause**: AI integration not functional
 
 **Solution**:
+
 - Always use `--offline` flag
 - Expect template-based output only
 
@@ -202,6 +207,7 @@ python -m proof_sketcher prove file.lean --format all
 **Cause**: Performance issues in current implementation
 
 **Workaround**:
+
 - Process one file at a time
 - Use `--timeout` to prevent hanging
 - Expect 30+ seconds per theorem
@@ -315,6 +321,6 @@ Only use in development environments for testing and contribution purposes.
 
 ---
 
-**Last Updated**: 2025-07-08  
-**Status**: Alpha Development  
+**Last Updated**: 2025-07-08
+**Status**: Alpha Development
 **Recommended Use**: Development and testing only

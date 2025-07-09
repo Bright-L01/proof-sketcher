@@ -155,6 +155,7 @@ proof-sketcher --debug prove theorem.lean
 ## Contributing Workflow
 
 1. **Create Feature Branch**
+
    ```bash
    git checkout -b feature/your-feature
    ```
@@ -165,6 +166,7 @@ proof-sketcher --debug prove theorem.lean
    - Update documentation
 
 3. **Run Tests**
+
    ```bash
    pytest
    black src/ tests/
@@ -172,12 +174,14 @@ proof-sketcher --debug prove theorem.lean
    ```
 
 4. **Commit Changes**
+
    ```bash
    git add .
    git commit -m "feat: add your feature"
    ```
 
 5. **Push and Create PR**
+
    ```bash
    git push origin feature/your-feature
    # Create PR on GitHub
@@ -193,12 +197,14 @@ proof-sketcher --debug prove theorem.lean
    - Add release notes in `CHANGELOG.md`
 
 3. **Create Tag**
+
    ```bash
    git tag -a v0.2.0 -m "Release version 0.2.0"
    git push origin v0.2.0
    ```
 
 4. **Build and Upload**
+
    ```bash
    python -m build
    twine upload dist/*

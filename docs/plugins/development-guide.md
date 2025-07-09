@@ -20,50 +20,50 @@ Proof Sketcher's plugin architecture allows developers to extend functionality w
 from abc import ABC, abstractmethod
 from typing import List, Optional
 from proof_sketcher.core.interfaces import (
-    ParserExtension, GeneratorExtension, 
+    ParserExtension, GeneratorExtension,
     ExporterExtension, AnimatorExtension
 )
 
 class ProofSketcherPlugin(ABC):
     """Base class for all Proof Sketcher plugins."""
-    
+
     @property
     @abstractmethod
     def name(self) -> str:
         """Plugin name."""
         pass
-    
-    @property 
+
+    @property
     @abstractmethod
     def version(self) -> str:
         """Plugin version."""
         pass
-    
+
     @property
     def description(self) -> str:
         """Plugin description."""
         return ""
-    
+
     def register_parsers(self) -> List[ParserExtension]:
         """Register custom parser extensions."""
         return []
-    
+
     def register_generators(self) -> List[GeneratorExtension]:
         """Register custom explanation generators."""
         return []
-    
+
     def register_exporters(self) -> List[ExporterExtension]:
         """Register custom export formats."""
         return []
-    
+
     def register_animators(self) -> List[AnimatorExtension]:
         """Register custom animation generators."""
         return []
-    
+
     def initialize(self) -> None:
         """Initialize plugin resources."""
         pass
-    
+
     def cleanup(self) -> None:
         """Cleanup plugin resources."""
         pass
@@ -81,49 +81,49 @@ from typing import List, Optional
 
 class CoqParserExtension(ParserExtension):
     """Parser extension for Coq proof assistant."""
-    
+
     @property
     def name(self) -> str:
         return "coq_parser"
-    
+
     @property
     def supported_extensions(self) -> List[str]:
         return [".v"]
-    
+
     def can_parse(self, file_path: Path) -> bool:
         """Check if this parser can handle the file."""
         return file_path.suffix == ".v"
-    
+
     def parse_file(self, file_path: Path) -> ParseResult:
         """Parse a Coq file and extract theorems."""
         theorems = []
         errors = []
-        
+
         try:
             content = file_path.read_text()
             theorems = self._extract_coq_theorems(content)
         except Exception as e:
             errors.append(f"Failed to parse {file_path}: {e}")
-        
+
         return ParseResult(
             file_path=file_path,
             theorems=theorems,
             errors=errors,
             metadata={"parser": "coq", "language": "Coq"}
         )
-    
+
     def _extract_coq_theorems(self, content: str) -> List[TheoremInfo]:
         """Extract theorem information from Coq content."""
         theorems = []
-        
+
         # Basic regex-based extraction (simplified)
         import re
         theorem_pattern = r'Theorem\s+(\w+).*?:(.*?)(?:Proof|:=)'
-        
+
         for match in re.finditer(theorem_pattern, content, re.DOTALL):
             name = match.group(1)
             statement = match.group(2).strip()
-            
+
             theorems.append(TheoremInfo(
                 name=name,
                 statement=statement,
@@ -134,7 +134,7 @@ class CoqParserExtension(ParserExtension):
                 namespace=None,
                 theorem_type="theorem"
             ))
-        
+
         return theorems
 ```
 
@@ -143,27 +143,27 @@ class CoqParserExtension(ParserExtension):
 ```python
 class AdvancedLeanParser(ParserExtension):
     """Enhanced Lean parser with dependency analysis."""
-    
+
     def __init__(self):
         self.dependency_graph = {}
         self.import_resolver = ImportResolver()
-    
+
     def parse_file(self, file_path: Path) -> ParseResult:
         """Parse with comprehensive dependency tracking."""
         result = super().parse_file(file_path)
-        
+
         # Enhance with dependency information
         for theorem in result.theorems:
             theorem.dependencies = self._resolve_dependencies(theorem)
             theorem.complexity_score = self._calculate_complexity(theorem)
-        
+
         return result
-    
+
     def _resolve_dependencies(self, theorem: TheoremInfo) -> List[str]:
         """Resolve theorem dependencies."""
         # Implementation depends on Lean's dependency system
         pass
-    
+
     def _calculate_complexity(self, theorem: TheoremInfo) -> float:
         """Calculate theorem complexity score."""
         # Custom complexity metrics
@@ -180,28 +180,28 @@ from proof_sketcher.generator.models import ProofSketch, GenerationConfig
 
 class LocalLLMGenerator(GeneratorExtension):
     """Generator using local LLM instead of Claude."""
-    
+
     def __init__(self, model_path: str):
         self.model_path = model_path
         self.model = None
-    
+
     @property
     def name(self) -> str:
         return "local_llm"
-    
+
     def initialize(self) -> None:
         """Load the local model."""
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
-        
+
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
         self.model = AutoModelForCausalLM.from_pretrained(self.model_path)
-    
-    def generate_proof_sketch(self, theorem: TheoremInfo, 
+
+    def generate_proof_sketch(self, theorem: TheoremInfo,
                             config: GenerationConfig) -> ProofSketch:
         """Generate explanation using local LLM."""
         prompt = self._create_prompt(theorem, config)
-        
+
         # Generate with local model
         inputs = self.tokenizer(prompt, return_tensors="pt")
         with torch.no_grad():
@@ -211,29 +211,29 @@ class LocalLLMGenerator(GeneratorExtension):
                 temperature=config.temperature,
                 do_sample=True
             )
-        
+
         response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        
+
         # Parse response into ProofSketch
         return self._parse_response(response, theorem)
-    
-    def _create_prompt(self, theorem: TheoremInfo, 
+
+    def _create_prompt(self, theorem: TheoremInfo,
                       config: GenerationConfig) -> str:
         """Create prompt for local LLM."""
         return f"""
         Explain the following mathematical theorem:
-        
+
         Theorem: {theorem.name}
         Statement: {theorem.statement}
-        
+
         Provide a clear, detailed explanation including:
         1. Mathematical significance
         2. Intuitive explanation
         3. Proof strategy
         4. Key steps
         """
-    
-    def _parse_response(self, response: str, 
+
+    def _parse_response(self, response: str,
                        theorem: TheoremInfo) -> ProofSketch:
         """Parse LLM response into structured ProofSketch."""
         # Implementation depends on response format
@@ -245,26 +245,26 @@ class LocalLLMGenerator(GeneratorExtension):
 ```python
 class GroupTheoryGenerator(GeneratorExtension):
     """Specialized generator for group theory theorems."""
-    
+
     @property
     def name(self) -> str:
         return "group_theory"
-    
+
     def supports_theorem(self, theorem: TheoremInfo) -> bool:
         """Check if this generator handles the theorem."""
         # Check for group theory keywords
         group_keywords = ['Group', 'Subgroup', 'Homomorphism', 'Isomorphism']
         return any(keyword in theorem.statement for keyword in group_keywords)
-    
+
     def generate_proof_sketch(self, theorem: TheoremInfo,
                             config: GenerationConfig) -> ProofSketch:
         """Generate group theory focused explanation."""
         # Use domain-specific templates and knowledge
         template = self._get_group_theory_template(theorem)
         context = self._build_group_theory_context(theorem)
-        
+
         return template.render(theorem=theorem, context=context)
-    
+
     def _get_group_theory_template(self, theorem: TheoremInfo):
         """Get specialized template for group theory."""
         if 'unique' in theorem.name.lower():
@@ -273,7 +273,7 @@ class GroupTheoryGenerator(GeneratorExtension):
             return self.homomorphism_template
         else:
             return self.general_group_template
-    
+
     def _build_group_theory_context(self, theorem: TheoremInfo):
         """Build rich context for group theory explanations."""
         return {
@@ -293,29 +293,29 @@ from proof_sketcher.exporter.models import ExportContext, ExportResult
 
 class ObsidianExporter(ExporterExtension):
     """Export theorems in Obsidian-compatible markdown."""
-    
+
     @property
     def name(self) -> str:
         return "obsidian"
-    
+
     @property
     def format_name(self) -> str:
         return "Obsidian Markdown"
-    
+
     @property
     def file_extension(self) -> str:
         return ".md"
-    
-    def export_sketch(self, sketch: ProofSketch, 
+
+    def export_sketch(self, sketch: ProofSketch,
                      context: ExportContext) -> ExportResult:
         """Export sketch in Obsidian format."""
         try:
             content = self._render_obsidian_markdown(sketch, context)
             output_file = context.output_dir / f"{sketch.theorem_name}.md"
-            
+
             output_file.parent.mkdir(parents=True, exist_ok=True)
             output_file.write_text(content)
-            
+
             return ExportResult(
                 success=True,
                 output_files=[output_file],
@@ -327,7 +327,7 @@ class ObsidianExporter(ExporterExtension):
                 output_files=[],
                 errors=[str(e)]
             )
-    
+
     def _render_obsidian_markdown(self, sketch: ProofSketch,
                                 context: ExportContext) -> str:
         """Render in Obsidian-specific markdown format."""
@@ -351,7 +351,7 @@ class ObsidianExporter(ExporterExtension):
 
 ## Proof Steps
 """
-        
+
         for i, step in enumerate(sketch.key_steps, 1):
             content += f"""
 ### Step {i}: {step.goal}
@@ -360,21 +360,21 @@ class ObsidianExporter(ExporterExtension):
 **Intuition**: {step.intuition}
 
 """
-        
+
         # Add backlinks and connections
         content += self._add_obsidian_connections(sketch)
-        
+
         return content
-    
+
     def _add_obsidian_connections(self, sketch: ProofSketch) -> str:
         """Add Obsidian-style connections and backlinks."""
         connections = "\n## Related Concepts\n"
-        
+
         # Extract mathematical concepts for linking
         concepts = sketch.pedagogical_notes.mathematical_areas
         for concept in concepts:
             connections += f"- [[{concept}]]\n"
-        
+
         return connections
 ```
 
@@ -383,36 +383,36 @@ class ObsidianExporter(ExporterExtension):
 ```python
 class InteractiveWebExporter(ExporterExtension):
     """Export with interactive features."""
-    
+
     def __init__(self):
         self.template_env = self._setup_jinja_environment()
-    
+
     def export_sketch(self, sketch: ProofSketch,
                      context: ExportContext) -> ExportResult:
         """Export interactive web page."""
         # Generate main HTML
         html_content = self._render_interactive_html(sketch, context)
-        
+
         # Generate supporting files
         js_content = self._generate_javascript(sketch)
         css_content = self._generate_styles(context)
-        
+
         # Write files
         base_name = sketch.theorem_name
         html_file = context.output_dir / f"{base_name}.html"
         js_file = context.output_dir / f"{base_name}.js"
         css_file = context.output_dir / f"{base_name}.css"
-        
+
         html_file.write_text(html_content)
         js_file.write_text(js_content)
         css_file.write_text(css_content)
-        
+
         return ExportResult(
             success=True,
             output_files=[html_file, js_file, css_file],
             errors=[]
         )
-    
+
     def _generate_javascript(self, sketch: ProofSketch) -> str:
         """Generate interactive JavaScript."""
         return f"""
@@ -422,28 +422,28 @@ class InteractiveWebExporter(ExporterExtension):
                 this.totalSteps = {len(sketch.key_steps)};
                 this.setupEventListeners();
             }}
-            
+
             setupEventListeners() {{
-                document.getElementById('nextStep').addEventListener('click', 
+                document.getElementById('nextStep').addEventListener('click',
                     () => this.nextStep());
-                document.getElementById('prevStep').addEventListener('click', 
+                document.getElementById('prevStep').addEventListener('click',
                     () => this.prevStep());
             }}
-            
+
             nextStep() {{
                 if (this.currentStep < this.totalSteps - 1) {{
                     this.currentStep++;
                     this.updateDisplay();
                 }}
             }}
-            
+
             prevStep() {{
                 if (this.currentStep > 0) {{
                     this.currentStep--;
                     this.updateDisplay();
                 }}
             }}
-            
+
             updateDisplay() {{
                 // Update proof step display
                 const steps = document.querySelectorAll('.proof-step');
@@ -452,7 +452,7 @@ class InteractiveWebExporter(ExporterExtension):
                 }});
             }}
         }}
-        
+
         document.addEventListener('DOMContentLoaded', () => {{
             new ProofExplorer();
         }});
@@ -469,15 +469,15 @@ from proof_sketcher.animator.models import AnimationRequest, AnimationResponse
 
 class MinimalAnimator(AnimatorExtension):
     """Minimalist animation style."""
-    
+
     @property
     def name(self) -> str:
         return "minimal"
-    
+
     @property
     def style_name(self) -> str:
         return "Minimal"
-    
+
     async def render_animation(self, request: AnimationRequest) -> AnimationResponse:
         """Render minimalist animation."""
         try:
@@ -489,10 +489,10 @@ class MinimalAnimator(AnimatorExtension):
                 'font_family': 'Computer Modern',
                 'animation_style': 'fade'
             }
-            
+
             # Generate animation with custom style
             output_path = await self._render_minimal_scene(request, scene_config)
-            
+
             return AnimationResponse(
                 success=True,
                 video_path=output_path,
@@ -508,7 +508,7 @@ class MinimalAnimator(AnimatorExtension):
                 duration=0,
                 file_size=0
             )
-    
+
     async def _render_minimal_scene(self, request: AnimationRequest,
                                   config: dict) -> Path:
         """Render scene with minimal aesthetic."""
@@ -557,25 +557,25 @@ from .exporters.obsidian import ObsidianExporter
 
 class MyPlugin(ProofSketcherPlugin):
     """My custom Proof Sketcher plugin."""
-    
+
     @property
     def name(self) -> str:
         return "my_plugin"
-    
+
     @property
     def version(self) -> str:
         return "1.0.0"
-    
+
     @property
     def description(self) -> str:
         return "Custom extensions for Proof Sketcher"
-    
+
     def register_parsers(self):
         return [CoqParserExtension()]
-    
+
     def register_generators(self):
         return [LocalLLMGenerator("/path/to/model")]
-    
+
     def register_exporters(self):
         return [ObsidianExporter()]
 ```
@@ -627,10 +627,10 @@ class TestCoqParser:
         parser = CoqParserExtension()
         assert parser.can_parse(Path("theorem.v"))
         assert not parser.can_parse(Path("theorem.lean"))
-    
+
     def test_parse_simple_theorem(self, tmp_path):
         parser = CoqParserExtension()
-        
+
         # Create test file
         coq_file = tmp_path / "test.v"
         coq_file.write_text("""
@@ -642,9 +642,9 @@ class TestCoqParser:
           - simpl. rewrite IHn. rewrite plus_n_Sm. reflexivity.
         Qed.
         """)
-        
+
         result = parser.parse_file(coq_file)
-        
+
         assert len(result.theorems) == 1
         assert result.theorems[0].name == "add_comm"
         assert "forall n m : nat" in result.theorems[0].statement
@@ -662,23 +662,23 @@ from my_plugin.plugin import MyPlugin
 class TestPluginIntegration:
     def test_plugin_registration(self):
         plugin = MyPlugin()
-        
+
         parsers = plugin.register_parsers()
         generators = plugin.register_generators()
         exporters = plugin.register_exporters()
-        
+
         assert len(parsers) > 0
         assert len(generators) > 0
         assert len(exporters) > 0
-    
+
     def test_end_to_end_processing(self, tmp_path):
         # Test complete pipeline with plugin
         plugin = MyPlugin()
-        
+
         # Create test Coq file
         coq_file = tmp_path / "test.v"
         coq_file.write_text("Theorem simple : True. Proof. exact I. Qed.")
-        
+
         # Process with plugin
         config = ProofSketcherConfig()
         # ... implementation

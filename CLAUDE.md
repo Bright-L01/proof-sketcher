@@ -5,7 +5,7 @@ Proof Sketcher transforms Lean 4 theorems into natural language explanations wit
 
 ## Architecture
 - **Parser**: Extracts theorem AST from Lean files using subprocess
-- **Generator**: Uses Claude API to create natural language explanations  
+- **Generator**: Uses Claude API to create natural language explanations
 - **Animator**: Creates Manim animations via MCP server
 - **Exporter**: Generates HTML, Markdown, PDF, and Jupyter outputs
 
@@ -25,7 +25,7 @@ Phase 0: Foundation (Days 1-3)
 ## Development Guidelines
 - Use type hints throughout
 - Follow black/ruff formatting
-- Maintain 95%+ test coverage  
+- Maintain 95%+ test coverage
 - Document all public APIs
 - Handle errors gracefully
 

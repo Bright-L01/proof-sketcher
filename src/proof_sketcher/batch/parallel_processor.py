@@ -15,25 +15,26 @@ from ..config.config import ProofSketcherConfig
 
 class ProcessingError(Exception):
     """Error during parallel processing."""
+
     pass
 
 
 def _process_single_theorem_worker(args: Tuple) -> Dict[str, Any]:
     """Worker function for processing a single theorem.
-    
+
     This runs in a separate process to avoid GIL and memory issues.
-    
+
     Args:
         args: Tuple of (file_path, theorem_name, output_dir, options)
-        
+
     Returns:
         Processing result dictionary
     """
     file_path, theorem_name, output_dir, options = args
-    
+
     # Import here to avoid pickling issues
     from pathlib import Path
-    
+
     from ..animator.animation_generator import TheoremAnimator
     from ..animator.static_fallback import StaticVisualizer
     from ..exporter.html import HTMLExporter
@@ -43,21 +44,21 @@ def _process_single_theorem_worker(args: Tuple) -> Dict[str, Any]:
     from ..generator.models import ProofSketch, ProofStep
     from ..generator.offline import OfflineGenerator
     from ..parser.lean_parser import LeanParser
-    
+
     start_time = time.time()
-    
+
     try:
         # Parse theorem
         parser = LeanParser()
         theorem_info = None
-        
+
         # Try to extract specific theorem
         theorems = parser.parse_file(Path(file_path))
         for theorem in theorems:
             if theorem.name == theorem_name:
                 theorem_info = theorem
                 break
-        
+
         if not theorem_info:
             return {
                 "status": "skipped",
@@ -66,20 +67,20 @@ def _process_single_theorem_worker(args: Tuple) -> Dict[str, Any]:
                 "reason": "Theorem not found in file",
                 "time": time.time() - start_time,
             }
-        
+
         # Convert to dict for processing
         theorem_dict = {
             "name": theorem_info.name,
             "statement": theorem_info.statement,
-            "proof": theorem_info.proof,
+            "proo": theorem_info.proof,
             "docstring": theorem_info.docstring,
             "dependencies": [],  # Would need deeper analysis
         }
-        
+
         # Generate explanation
         explanation = None
         generator_used = None
-        
+
         if options.get("use_claude", True):
             try:
                 generator = AIGenerator()
@@ -90,26 +91,28 @@ def _process_single_theorem_worker(args: Tuple) -> Dict[str, Any]:
             except Exception as e:
                 # Fallback to offline
                 pass
-        
+
         if not explanation:
             # Use offline generator
             generator = OfflineGenerator()
             explanation = generator.generate_proof_sketch(theorem_info)
             generator_used = "offline"
-        
+
         # Create visualization
         visualization_path = None
         visualizer_used = None
-        
+
         if options.get("create_visualization", True):
             output_path = Path(output_dir) / "visualizations" / f"{theorem_name}.png"
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Try animation first
             if options.get("try_animation", True):
                 try:
                     animator = TheoremAnimator()
-                    script = animator.generate_animation_script(theorem_dict, explanation.dict())
+                    script = animator.generate_animation_script(
+                        theorem_dict, explanation.dict()
+                    )
                     if script:
                         visualizer_used = "animator"
                         # For batch processing, we just generate the script
@@ -118,7 +121,7 @@ def _process_single_theorem_worker(args: Tuple) -> Dict[str, Any]:
                         visualization_path = str(script_path)
                 except Exception:
                     pass
-            
+
             # Fallback to static visualization
             if not visualization_path:
                 try:
@@ -131,28 +134,30 @@ def _process_single_theorem_worker(args: Tuple) -> Dict[str, Any]:
                         visualizer_used = "static"
                 except Exception:
                     pass
-        
+
         # Export to requested formats
         exported_files = []
         export_formats = options.get("export_formats", ["html"])
-        
+
         export_options = ExportOptions(
             output_dir=Path(output_dir) / "exports",
             create_subdirs=True,
             include_animations=bool(visualization_path),
             include_timestamps=True,
         )
-        
+
         context = ExportContext(
             format=ExportFormat.HTML,
             output_dir=export_options.output_dir,
             sketches=[explanation],
-            animations={theorem_name: Path(visualization_path)} if visualization_path else {},
+            animations=(
+                {theorem_name: Path(visualization_path)} if visualization_path else {}
+            ),
             project_name=options.get("project_name", "Lean Project"),
             author=options.get("author", "Proof Sketcher"),
             version=options.get("version", "1.0.0"),
         )
-        
+
         for format_name in export_formats:
             try:
                 if format_name == "html":
@@ -168,7 +173,7 @@ def _process_single_theorem_worker(args: Tuple) -> Dict[str, Any]:
             except Exception as e:
                 # Log but don't fail the whole theorem
                 pass
-        
+
         return {
             "status": "success",
             "theorem": theorem_name,
@@ -179,7 +184,7 @@ def _process_single_theorem_worker(args: Tuple) -> Dict[str, Any]:
             "exported_files": exported_files,
             "time": time.time() - start_time,
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -235,7 +240,9 @@ class ParallelProcessor:
                 all_theorems.append((file_path, theorem_name))
 
         total_theorems = len(all_theorems)
-        self.logger.info(f"Processing {total_theorems} theorems with {self.max_workers} workers")
+        self.logger.info(
+            f"Processing {total_theorems} theorems with {self.max_workers} workers"
+        )
 
         # Process theorems
         results = await self._process_theorems_batch(
@@ -260,7 +267,9 @@ class ParallelProcessor:
             "statistics": {
                 "total_time": total_time,
                 "average_time": avg_time,
-                "theorems_per_second": len(results) / total_time if total_time > 0 else 0,
+                "theorems_per_second": (
+                    len(results) / total_time if total_time > 0 else 0
+                ),
                 "generator_usage": self._count_generator_usage(successful),
                 "visualizer_usage": self._count_visualizer_usage(successful),
             },
@@ -286,7 +295,7 @@ class ParallelProcessor:
             List of processing results
         """
         results = []
-        
+
         # Prepare arguments for workers
         worker_args = [
             (file_path, theorem_name, str(output_dir), options)
@@ -302,7 +311,10 @@ class ParallelProcessor:
         with executor_class(max_workers=self.max_workers) as executor:
             # Submit all tasks
             future_to_theorem = {
-                executor.submit(_process_single_theorem_worker, args): (args[0], args[1])
+                executor.submit(_process_single_theorem_worker, args): (
+                    args[0],
+                    args[1],
+                )
                 for args in worker_args
             }
 
@@ -310,16 +322,16 @@ class ParallelProcessor:
             with tqdm(total=len(theorems), desc="Processing theorems") as pbar:
                 for future in as_completed(future_to_theorem):
                     file_path, theorem_name = future_to_theorem[future]
-                    
+
                     try:
                         result = future.result(timeout=300)  # 5 minute timeout
                         results.append(result)
-                        
+
                         if progress_callback:
                             await self._run_callback_async(
                                 progress_callback, file_path, theorem_name, result
                             )
-                    
+
                     except Exception as e:
                         # Handle timeout or other errors
                         error_result = {
@@ -331,12 +343,12 @@ class ParallelProcessor:
                             "time": 0,
                         }
                         results.append(error_result)
-                        
+
                         if progress_callback:
                             await self._run_callback_async(
                                 progress_callback, file_path, theorem_name, error_result
                             )
-                    
+
                     pbar.update(1)
 
         return results
@@ -371,16 +383,22 @@ class ParallelProcessor:
             error_type = error.get("error_type", "Unknown")
             if error_type not in error_types:
                 error_types[error_type] = []
-            error_types[error_type].append({
-                "theorem": error["theorem"],
-                "file": error["file"],
-                "message": error.get("error", ""),
-            })
-        
+            error_types[error_type].append(
+                {
+                    "theorem": error["theorem"],
+                    "file": error["file"],
+                    "message": error.get("error", ""),
+                }
+            )
+
         return {
             "total_errors": len(errors),
             "by_type": error_types,
-            "most_common": max(error_types.items(), key=lambda x: len(x[1]))[0] if error_types else None,
+            "most_common": (
+                max(error_types.items(), key=lambda x: len(x[1]))[0]
+                if error_types
+                else None
+            ),
         }
 
     def process_single_file(
@@ -398,18 +416,18 @@ class ParallelProcessor:
         """
         # Use asyncio.run for synchronous interface
         from ..batch.project_scanner import ProjectScanner
-        
+
         scanner = ProjectScanner()
-        
+
         # Create minimal project data for single file
         project_data = {
             "process_order": [str(file_path)],
             "file_theorems": {str(file_path): []},  # Will be populated by scanner
         }
-        
+
         # Extract theorems from file
         theorems = scanner._extract_theorem_names(file_path)
         project_data["file_theorems"][str(file_path)] = theorems
-        
+
         # Process using async method
         return asyncio.run(self.process_project(project_data, output_dir, options))

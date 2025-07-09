@@ -11,7 +11,7 @@ Formal proof assistants like Lean 4 have revolutionized mathematics by enabling 
 Consider this simple theorem about group identity uniqueness:
 
 ```lean
-theorem unique_identity (G : Type*) [Group G] : 
+theorem unique_identity (G : Type*) [Group G] :
   ∃! e : G, ∀ a : G, e * a = a ∧ a * e = a := by
   use 1
   constructor
@@ -28,8 +28,9 @@ theorem unique_identity (G : Type*) [Group G] :
 **What does this proof actually say?** A graduate student in mathematics might struggle to understand the logical flow, while an undergraduate would be completely lost. Yet the underlying mathematical idea—that every group has exactly one identity element—is fundamental and should be accessible.
 
 This creates a **documentation bottleneck**:
+
 - **Educators** spend hours explaining formal proofs to students
-- **Researchers** manually document their mathematical developments  
+- **Researchers** manually document their mathematical developments
 - **Library maintainers** struggle to keep explanations synchronized with evolving proofs
 - **The broader mathematical community** remains excluded from formal mathematics
 
@@ -47,9 +48,10 @@ For the group identity theorem above, Proof Sketcher generates:
 
 > **Uniqueness of Identity Element**
 >
-> This theorem proves that every group has exactly one identity element. An identity element e satisfies e * a = a and a * e = a for all group elements a.
+> This theorem proves that every group has exactly one identity element. An identity element e satisfies e *a = a and a* e = a for all group elements a.
 >
 > **Proof Structure**:
+>
 > 1. **Existence**: We show that 1 (the designated identity) works
 > 2. **Uniqueness**: We prove any other identity e' must equal 1
 >
@@ -62,24 +64,28 @@ For the group identity theorem above, Proof Sketcher generates:
 ### Core Capabilities
 
 **🔍 Enhanced Lean 4 Parsing**
+
 - Supports theorems, definitions, inductive types, structures, classes, instances
 - Handles mathlib4 dependencies and Lake project integration
 - Processes complex mathematical notation and Unicode symbols
 - Graceful fallback for unsupported constructs
 
-**🤖 Intelligent Natural Language Generation**  
+**🤖 Intelligent Natural Language Generation**
+
 - Creates intuitive explanations from formal proof structure
 - Provides mathematical context and historical significance
 - Offers multiple difficulty levels (ELI5, detailed, mathematical)
 - Works entirely offline (no API dependencies)
 
 **📄 Multi-Format Export**
+
 - HTML with responsive design and MathJax integration
 - GitHub-flavored Markdown with proper cross-references
 - LaTeX/PDF for academic publication
 - Jupyter notebooks for interactive exploration
 
 **⚡ Production-Ready Performance**
+
 - Processes ~1.1 theorems/second with linear scaling
 - 95%+ test coverage with comprehensive error handling
 - Memory efficient with intelligent caching
@@ -112,6 +118,7 @@ class LeanParser:
 ```
 
 **Key innovations**:
+
 - **AST-aware parsing** that understands proof structure
 - **Dependency tracking** for mathematical context
 - **Robust error handling** with graceful degradation
@@ -135,6 +142,7 @@ class ProofSketchGenerator:
 ```
 
 **Generation strategies**:
+
 - **Proof pattern recognition** (induction, contradiction, construction)
 - **Mathematical context inference** from dependencies and notation
 - **Multiple explanation styles** adapted to audience needs
@@ -157,6 +165,7 @@ class AnimationGenerator:
 ```
 
 **Animation features**:
+
 - **Manim MCP integration** for high-quality mathematical visualizations
 - **Automatic timing** based on proof complexity (30s + 15s per step)
 - **Fallback rendering** when animation servers are unavailable
@@ -180,6 +189,7 @@ class ExportManager:
 ```
 
 **Export capabilities**:
+
 - **Responsive HTML** with dark/light mode support
 - **GitHub-compatible Markdown** with proper linking
 - **Publication-quality PDF** via LaTeX integration
@@ -203,6 +213,7 @@ Testing on a MacBook Pro M2 with 16GB RAM:
 | Extra Large (500 thm) | 500 | 16.1s | 31.1 | 198MB |
 
 **Key findings**:
+
 - **Linear scaling**: Performance scales linearly with theorem count
 - **Memory efficiency**: Less than 0.4MB per theorem average
 - **Consistent throughput**: 25-35 theorems/second regardless of file size
@@ -211,6 +222,7 @@ Testing on a MacBook Pro M2 with 16GB RAM:
 ### Real-World Performance
 
 **Case Study**: Processing mathlib4's group theory module (127 theorems)
+
 - **Processing time**: 4.2 seconds
 - **Generated outputs**: 508 files (HTML, Markdown, Jupyter)
 - **Memory peak**: 156MB
@@ -230,6 +242,7 @@ Since releasing Proof Sketcher, we've seen encouraging adoption across different
 > "Proof Sketcher transformed our abstract algebra course. Students finally understand *why* group axioms matter, not just *what* they are. The automated explanations provide consistent quality that my manual explanations couldn't match across 80+ theorems."
 
 **Results**:
+
 - **40% improvement** in student comprehension scores
 - **3 weeks** of manual documentation replaced by **20 minutes** of automated processing
 - **100% consistency** across all theorem explanations
@@ -240,6 +253,7 @@ Since releasing Proof Sketcher, we've seen encouraging adoption across different
 > "We process 500+ theorems from our research every quarter. Proof Sketcher reduced documentation time from 3 weeks to 3 hours, freeing us to focus on actual research instead of explaining what we've already proven."
 
 **Results**:
+
 - **95% time savings** in documentation workflow
 - **Zero maintenance** overhead (automatic regeneration)
 - **Multi-format output** supporting both academic papers and student materials
@@ -247,6 +261,7 @@ Since releasing Proof Sketcher, we've seen encouraging adoption across different
 ### Library Documentation
 
 **Mathlib4 Integration Experiment**:
+
 - **Processed**: 1,247 theorems across 15 mathematical domains
 - **Time required**: 2.3 hours for complete processing
 - **Manual equivalent**: Estimated 8-12 weeks of expert time
@@ -262,7 +277,8 @@ Developing Proof Sketcher taught us valuable lessons about building tools for ma
 
 Mathematical explanations must be **precise**. We learned this early when our first prototype generated a beautiful but incorrect explanation of the intermediate value theorem. The mathematics community has zero tolerance for inaccuracy, even in informal explanations.
 
-**Solution**: 
+**Solution**:
+
 - Extensive validation against mathematical literature
 - Conservative approach to uncertain interpretations
 - Clear disclaimers about AI-generated content
@@ -273,6 +289,7 @@ Mathematical explanations must be **precise**. We learned this early when our fi
 Mathematicians work with **large theorem libraries**. A tool that takes hours to process a moderate-size development won't be adopted, regardless of output quality.
 
 **Solution**:
+
 - Prioritized linear scaling from day one
 - Implemented aggressive caching strategies
 - Optimized for batch processing workflows
@@ -283,6 +300,7 @@ Mathematicians work with **large theorem libraries**. A tool that takes hours to
 The tool must **fit existing workflows**. Mathematicians won't adopt software that requires them to completely change how they work.
 
 **Solution**:
+
 - Direct Lean 4 file processing (no special markup required)
 - Lake project integration for modern Lean workflows
 - Multiple output formats for different use cases
@@ -293,6 +311,7 @@ The tool must **fit existing workflows**. Mathematicians won't adopt software th
 Academic environments often have **restricted internet access** or security policies that prevent API usage.
 
 **Solution**:
+
 - Complete offline operation capability
 - Template-based explanations as fallback
 - Local caching for improved performance
@@ -307,11 +326,13 @@ Proof Sketcher represents just the beginning of what's possible when we apply mo
 ### Short-Term Roadmap (3-6 months)
 
 **Enhanced Integration**:
+
 - VSCode extension for real-time proof explanation
 - doc-gen4 integration for seamless mathlib4 workflows
 - GitHub Actions for automated documentation updates
 
 **Improved Generation**:
+
 - Custom explanation templates for different audiences
 - Mathematical diagram generation
 - Interactive proof exploration interfaces
@@ -319,16 +340,19 @@ Proof Sketcher represents just the beginning of what's possible when we apply mo
 ### Long-Term Vision (12-24 months)
 
 **Educational Revolution**:
+
 - Adaptive explanations based on student understanding
 - Interactive proof exploration and manipulation
 - Integration with online learning platforms
 
 **Research Acceleration**:
+
 - Automated theorem discovery and suggestion
 - Cross-reference generation across mathematical libraries
 - Collaborative proof development with real-time documentation
 
 **Community Building**:
+
 - Central repository of explained mathematical theorems
 - Community-contributed explanation templates
 - Peer review system for mathematical explanations
@@ -338,6 +362,7 @@ Proof Sketcher represents just the beginning of what's possible when we apply mo
 Proof Sketcher is part of a larger movement toward **accessible formal mathematics**. As formal proof assistants become more powerful and user-friendly, tools like Proof Sketcher help ensure that the benefits of formal mathematics reach beyond the small community of experts who can read formal proofs directly.
 
 **We envision a future where**:
+
 - Every formally verified theorem comes with a human-readable explanation
 - Students learn mathematics through both informal intuition and formal precision
 - Researchers can communicate their results to broader audiences without sacrificing rigor
@@ -369,18 +394,21 @@ python -m proof_sketcher prove your_theorems.lean --format html
 We're looking for contributions across all skill levels:
 
 **For Mathematicians**:
+
 - Test the tool with your mathematical content
 - Provide feedback on explanation quality and accuracy
 - Suggest new mathematical domains to support
 - Contribute example theorems and expected explanations
 
 **For Developers**:
+
 - Improve parsing for complex Lean 4 constructs
 - Enhance natural language generation quality
 - Add support for new output formats
 - Optimize performance for large mathematical libraries
 
 **For Educators**:
+
 - Share use cases and classroom experiences
 - Suggest pedagogical improvements
 - Contribute educational examples and templates
@@ -388,7 +416,7 @@ We're looking for contributions across all skill levels:
 
 ### Community
 
-- **GitHub**: https://github.com/Bright-L01/proof-sketcher
+- **GitHub**: <https://github.com/Bright-L01/proof-sketcher>
 - **Issues**: Bug reports and feature requests
 - **Discussions**: Questions, ideas, and community feedback
 - **Pull Requests**: Code contributions welcome!
@@ -400,8 +428,9 @@ We're looking for contributions across all skill levels:
 Formal mathematics has incredible power, but only if it's accessible. Proof Sketcher represents our contribution to making formal mathematics **readable**, **understandable**, and **useful** for the broader mathematical community.
 
 **The numbers speak for themselves**:
+
 - **95% time savings** in documentation workflows
-- **Linear performance scaling** for mathematical libraries of any size  
+- **Linear performance scaling** for mathematical libraries of any size
 - **100% consistency** across all generated explanations
 - **Multi-format output** supporting diverse use cases
 
@@ -413,4 +442,4 @@ But beyond the metrics, Proof Sketcher is about **democratizing mathematical kno
 
 *Proof Sketcher is developed by Bright Liu with contributions from the Lean community. It's built with Lean 4, Claude Code CLI, Manim, and love for mathematical education.*
 
-*Try it today: https://github.com/Bright-L01/proof-sketcher*
+*Try it today: <https://github.com/Bright-L01/proof-sketcher>*

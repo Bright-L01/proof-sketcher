@@ -18,7 +18,7 @@ Estimated real test coverage: ~65-70% (considering quality-weighted contribution
 
 ### LOW QUALITY Tests (Should be removed or rewritten)
 1. **test_all_exporters_comprehensive.py** - Imports don't work (src.proof_sketcher paths)
-2. **test_resources.py** - Imports don't work (src.proof_sketcher paths) 
+2. **test_resources.py** - Imports don't work (src.proof_sketcher paths)
 3. **test_errors.py** - Imports don't work (src.proof_sketcher paths)
 4. **test_security.py** - Good intentions but many assertions that just pass
 5. **test_config.py** - Minimal testing, mostly mocks
@@ -87,7 +87,7 @@ Some tests have minimal or trivial assertions (assert True, pass statements). Th
 
 ### Remove Immediately (9 files)
 1. `test_lean_integration.py`
-2. `test_lean_parser_direct.py` 
+2. `test_lean_parser_direct.py`
 3. `test_all_exporters_comprehensive.py`
 4. `test_resources.py`
 5. `test_errors.py`

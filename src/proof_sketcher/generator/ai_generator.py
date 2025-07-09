@@ -6,11 +6,7 @@ import subprocess
 import time
 from typing import Iterator, Optional
 
-from ..core.exceptions import (
-    AIExecutableError,
-    AITimeoutError,
-    GeneratorError,
-)
+from ..core.exceptions import AIExecutableError, AITimeoutError, GeneratorError
 from ..core.interfaces import IGenerator
 from ..parser.models import TheoremInfo
 from ..utils.security import validate_theorem_name
@@ -81,7 +77,7 @@ class AIGenerator(IGenerator):
             validate_theorem_name(theorem.name)
         except Exception as e:
             raise GeneratorError(f"Invalid theorem name: {e}")
-            
+
         config = config or self.default_config
 
         # Create generation request
@@ -424,7 +420,9 @@ class AIGenerator(IGenerator):
                 content="",
                 generation_time_ms=generation_time,
                 success=False,
-                error_message=f"Unexpected error during generation: {type(e).__name__}: {str(e)}",
+                error_message=f"Unexpected error during generation: {
+                    type(e).__name__}: {
+                    str(e)}",
             )
 
     def _call_ai(self, prompt: str, config: GenerationConfig) -> str:
@@ -478,7 +476,8 @@ class AIGenerator(IGenerator):
             ) from e
         except subprocess.SubprocessError as e:
             raise GeneratorError(
-                f"AI command failed: {result.stderr.strip() if result.stderr else 'Unknown error'}",
+                f"AI command failed: {
+                    result.stderr.strip() if result.stderr else 'Unknown error'}",
                 details={"command": cmd, "error": str(e)},
                 error_code="ai_call_failed",
             ) from e
@@ -535,7 +534,12 @@ class AIGenerator(IGenerator):
                 timeout=10,
             )
             return result.returncode == 0
-        except (subprocess.SubprocessError, FileNotFoundError, PermissionError, OSError):
+        except (
+            subprocess.SubprocessError,
+            FileNotFoundError,
+            PermissionError,
+            OSError,
+        ):
             return False
 
     # Backward compatibility alias

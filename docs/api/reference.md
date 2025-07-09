@@ -174,7 +174,7 @@ class TheoremInfo:
     dependencies: List[str]      # Required imports
     line_number: Optional[int]   # Location in file
     namespace: Optional[str]     # Lean namespace
-    
+
     # Enhanced parser fields
     theorem_type: TheoremType    # theorem, lemma, def, etc.
     visibility: Visibility       # public, private, protected
@@ -195,11 +195,11 @@ class ProofSketch:
     key_steps: List[ProofStep]
     mathematical_reflection: MathematicalReflection
     pedagogical_notes: PedagogicalNotes
-    
+
     def to_markdown(self) -> str:
         """Convert to markdown format."""
         pass
-    
+
     def to_html(self) -> str:
         """Convert to HTML format."""
         pass
@@ -216,8 +216,8 @@ class AnimationRequest:
     request_id: str
     segments: List[AnimationSegment]
     config: AnimationConfig
-    
-@dataclass 
+
+@dataclass
 class AnimationResponse:
     success: bool
     video_path: Optional[Path]
@@ -309,6 +309,7 @@ python -m proof_sketcher prove [OPTIONS] LEAN_FILE
 ```
 
 **Options**:
+
 - `--output, -o PATH`: Output directory
 - `--format, -f [html|markdown|pdf|jupyter|all]`: Export format
 - `--theorem, -t TEXT`: Process specific theorems (multiple)
@@ -318,6 +319,7 @@ python -m proof_sketcher prove [OPTIONS] LEAN_FILE
 - `--config, -c PATH`: Configuration file
 
 **Examples**:
+
 ```bash
 # Basic usage
 python -m proof_sketcher prove theorems.lean
@@ -338,6 +340,7 @@ python -m proof_sketcher batch [OPTIONS] INPUT_PATH
 ```
 
 **Options**:
+
 - `--output-dir, -o PATH`: Output directory
 - `--workers, -w INTEGER`: Number of parallel workers
 - `--memory-limit INTEGER`: Memory limit in MB
@@ -348,6 +351,7 @@ python -m proof_sketcher batch [OPTIONS] INPUT_PATH
 - `--report PATH`: Save detailed JSON report
 
 **Examples**:
+
 ```bash
 # High-performance batch processing
 python -m proof_sketcher batch ./project/ \
@@ -372,6 +376,7 @@ python -m proof_sketcher list-theorems [OPTIONS] LEAN_FILE
 ```
 
 **Examples**:
+
 ```bash
 # Basic listing
 python -m proof_sketcher list-theorems theorems.lean
@@ -434,7 +439,7 @@ parser:
   lake_build_on_parse: true
   enhanced_parsing: true
 
-# Generator configuration  
+# Generator configuration
 generator:
   model: "claude-3-5-sonnet-20241022"
   temperature: 0.7
@@ -458,7 +463,7 @@ export:
   pdf_engine: "pdflatex"
   include_source: true
 
-# Cache configuration  
+# Cache configuration
 cache:
   enabled: true
   ttl_hours: 24
@@ -502,7 +507,7 @@ from proof_sketcher.models import ProofSketch, TheoremInfo
 
 class CustomGenerator(GeneratorBase):
     """Custom explanation generator."""
-    
+
     def generate_proof_sketch(self, theorem: TheoremInfo) -> ProofSketch:
         # Custom generation logic
         return ProofSketch(
@@ -510,7 +515,7 @@ class CustomGenerator(GeneratorBase):
             mathematical_significance="Custom analysis...",
             # ... other fields
         )
-    
+
     def supports_theorem(self, theorem: TheoremInfo) -> bool:
         """Check if this generator can handle the theorem."""
         return theorem.theorem_type == TheoremType.LEMMA
@@ -528,22 +533,22 @@ from proof_sketcher.models import ProofSketch, ExportContext, ExportResult
 
 class CustomExporter(ExporterBase):
     """Custom format exporter."""
-    
-    def export_sketch(self, sketch: ProofSketch, 
+
+    def export_sketch(self, sketch: ProofSketch,
                      context: ExportContext) -> ExportResult:
         # Custom export logic
         output_file = context.output_dir / f"{sketch.theorem_name}.custom"
-        
+
         # Generate custom format
         content = self.render_custom_format(sketch)
         output_file.write_text(content)
-        
+
         return ExportResult(
             success=True,
             output_files=[output_file],
             errors=[]
         )
-    
+
     def render_custom_format(self, sketch: ProofSketch) -> str:
         # Custom rendering logic
         return f"# {sketch.theorem_name}\n{sketch.intuitive_explanation}"

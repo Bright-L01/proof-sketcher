@@ -18,7 +18,7 @@ parser:
   lean_timeout: 30
   working_dir: null
   lake_manifest_path: null
-  
+
 # Natural language generation
 generator:
   model: "claude-3-sonnet"
@@ -28,7 +28,7 @@ generator:
   custom_prompts_dir: null
   cache_responses: true
   stream_output: true
-  
+
 # Animation configuration
 animator:
   enabled: true
@@ -40,7 +40,7 @@ animator:
   parallel_rendering: true
   max_duration: 720  # 12 minutes
   min_duration: 30   # 30 seconds
-  
+
 # Manim server settings
 manim:
   server_command: "npx"
@@ -48,36 +48,36 @@ manim:
   server_env: {}
   server_timeout: 300
   output_dir: "animations"
-  
+
 # Export configuration
 export:
   # Output directories
   output_dir: "output"
   templates_dir: "templates"
   assets_dir: "assets"
-  
+
   # HTML export
   html_theme: "doc-gen4"  # Options: doc-gen4, modern, classic
   html_syntax_style: "monokai"
   html_embed_videos: true
   html_video_formats: ["mp4", "webm"]
-  
+
   # Markdown export
   markdown_flavor: "github"  # Options: github, commonmark
   markdown_math_style: "katex"  # Options: katex, mathjax
   markdown_collapsible_proofs: true
-  
+
   # PDF export
   pdf_engine: "pdflatex"  # Options: pdflatex, xelatex, lualatex
   pdf_document_class: "article"
   pdf_font_size: 11
   pdf_paper_size: "a4paper"  # Options: a4paper, letterpaper
-  
+
   # Jupyter export
   jupyter_kernel: "python3"
   jupyter_include_outputs: false
   jupyter_interactive_widgets: true
-  
+
   # General export settings
   parallel_exports: true
   max_workers: 4

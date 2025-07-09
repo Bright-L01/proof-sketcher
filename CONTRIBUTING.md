@@ -7,30 +7,33 @@ Thank you for your interest in contributing to Proof Sketcher! This guide will h
 ### Development Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/Bright-L01/proof-sketcher.git
    cd proof-sketcher
    ```
 
 2. **Set up development environment**
+
    ```bash
    # Create virtual environment
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
-   
+
    # Install in development mode with all dependencies
    pip install -e ".[dev]"
    ```
 
 3. **Verify installation**
+
    ```bash
    # Run tests to ensure everything works
    pytest
-   
+
    # Check code style
    black --check src/ tests/
    ruff check src/ tests/
-   
+
    # Type checking
    mypy src/
    ```
@@ -68,9 +71,11 @@ We welcome feature suggestions! Please:
 
 1. **Fork the repository**
 2. **Create a feature branch** from `main`
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
+
 3. **Make your changes** following our guidelines
 4. **Add tests** for new functionality
 5. **Update documentation** if needed

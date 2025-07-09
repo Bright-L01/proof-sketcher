@@ -58,7 +58,7 @@ theorem reverse_append (l₁ l₂ : List α) : reverse (l₁ ++ l₂) = reverse 
   | cons x xs ih => simp [ih]
 
 /-- The head of a non-empty list remains the same after appending to its tail. -/
-theorem head_cons_append (x : α) (xs ys : List α) : 
+theorem head_cons_append (x : α) (xs ys : List α) :
     head? (x :: xs ++ ys) = some x := by
   rfl
 

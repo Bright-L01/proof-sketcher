@@ -11,13 +11,13 @@ for Mathlib4 content, including:
 import logging
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
-from .html import HTMLExporter
-from .models import ExportContext, ExportFormat, ExportOptions, TemplateType
 from ..generator.models import ProofSketch
 from ..parser.mathlib_notation import MathlibNotationHandler
+from .html import HTMLExporter
+from .models import ExportContext, ExportFormat, ExportOptions, TemplateType
 
 
 class MathlibExporter(HTMLExporter):
@@ -51,12 +51,16 @@ class MathlibExporter(HTMLExporter):
         """
         # Preprocess sketch for Mathlib-specific content
         enhanced_sketch = self._enhance_mathlib_sketch(sketch)
-        
+
         # Create enhanced template context
-        template_context = self._create_mathlib_template_context(enhanced_sketch, context)
-        
+        template_context = self._create_mathlib_template_context(
+            enhanced_sketch, context
+        )
+
         # Export using parent method with enhanced context
-        return self._export_with_enhanced_context(enhanced_sketch, context, template_context)
+        return self._export_with_enhanced_context(
+            enhanced_sketch, context, template_context
+        )
 
     def _enhance_mathlib_sketch(self, sketch: ProofSketch) -> ProofSketch:
         """Enhance sketch with Mathlib-specific processing.
@@ -101,7 +105,9 @@ class MathlibExporter(HTMLExporter):
 
         # Detect and add mathematical areas
         if not enhanced_sketch.mathematical_areas:
-            enhanced_sketch.mathematical_areas = self._detect_mathematical_areas(enhanced_sketch)
+            enhanced_sketch.mathematical_areas = self._detect_mathematical_areas(
+                enhanced_sketch
+            )
 
         return enhanced_sketch
 
@@ -126,7 +132,7 @@ class MathlibExporter(HTMLExporter):
             latex_content = self.notation_handler.convert_to_latex(math_content)
             return f"$${latex_content}$$"
 
-        processed_text = re.sub(r'`([^`]+)`', enhance_inline_math, processed_text)
+        processed_text = re.sub(r"`([^`]+)`", enhance_inline_math, processed_text)
 
         # Add links to Mathlib theorems mentioned in text
         processed_text = self._add_mathlib_links(processed_text)
@@ -149,7 +155,7 @@ class MathlibExporter(HTMLExporter):
         latex_content = self.notation_handler.convert_to_latex(content)
 
         # Ensure proper math delimiters
-        if not latex_content.startswith('$') and not latex_content.startswith('\\['):
+        if not latex_content.startswith("$") and not latex_content.startswith("\\["):
             latex_content = f"$${latex_content}$$"
 
         return latex_content
@@ -164,7 +170,9 @@ class MathlibExporter(HTMLExporter):
             Text with added links to Mathlib documentation
         """
         # Pattern for Mathlib theorem names (namespace.theorem_name)
-        theorem_pattern = re.compile(r'\b([A-Z][a-zA-Z0-9]*(?:\.[A-Z][a-zA-Z0-9]*)*\.[a-z][a-zA-Z0-9_]*)\b')
+        theorem_pattern = re.compile(
+            r"\b([A-Z][a-zA-Z0-9]*(?:\.[A-Z][a-zA-Z0-9]*)*\.[a-z][a-zA-Z0-9_]*)\b"
+        )
 
         def add_link(match):
             theorem_name = match.group(1)
@@ -184,13 +192,15 @@ class MathlibExporter(HTMLExporter):
             List of detected mathematical areas
         """
         # Collect all text content
-        all_text = " ".join([
-            sketch.theorem_name,
-            sketch.introduction or "",
-            sketch.conclusion or "",
-            " ".join(step.description or "" for step in sketch.key_steps),
-            " ".join(step.mathematical_content or "" for step in sketch.key_steps),
-        ])
+        all_text = " ".join(
+            [
+                sketch.theorem_name,
+                sketch.introduction or "",
+                sketch.conclusion or "",
+                " ".join(step.description or "" for step in sketch.key_steps),
+                " ".join(step.mathematical_content or "" for step in sketch.key_steps),
+            ]
+        )
 
         # Use notation handler to detect areas
         detected_areas = self.notation_handler.detect_mathematical_areas(all_text)
@@ -216,21 +226,21 @@ class MathlibExporter(HTMLExporter):
 
         # Common Mathlib namespace patterns
         area_patterns = {
-            'topology': ['Topology', 'topological'],
-            'algebra': ['Algebra', 'Ring', 'Group', 'Field'],
-            'analysis': ['Analysis', 'Calculus', 'Deriv', 'Continuous'],
-            'geometry': ['Geometry', 'Euclidean', 'Metric'],
-            'category': ['CategoryTheory', 'Functor', 'Monad'],
-            'logic': ['Logic', 'Set', 'Prop'],
-            'number_theory': ['NumberTheory', 'Prime', 'Nat', 'Int'],
-            'linear_algebra': ['LinearAlgebra', 'Module', 'Vector'],
-            'measure_theory': ['MeasureTheory', 'Measure', 'Integral'],
-            'probability': ['Probability', 'Random', 'Distribution'],
+            "topology": ["Topology", "topological"],
+            "algebra": ["Algebra", "Ring", "Group", "Field"],
+            "analysis": ["Analysis", "Calculus", "Deriv", "Continuous"],
+            "geometry": ["Geometry", "Euclidean", "Metric"],
+            "category": ["CategoryTheory", "Functor", "Monad"],
+            "logic": ["Logic", "Set", "Prop"],
+            "number_theory": ["NumberTheory", "Prime", "Nat", "Int"],
+            "linear_algebra": ["LinearAlgebra", "Module", "Vector"],
+            "measure_theory": ["MeasureTheory", "Measure", "Integral"],
+            "probability": ["Probability", "Random", "Distribution"],
         }
 
         for area, keywords in area_patterns.items():
             if any(keyword.lower() in name_lower for keyword in keywords):
-                areas.append(area.replace('_', ' ').title())
+                areas.append(area.replace("_", " ").title())
 
         return areas
 
@@ -254,31 +264,28 @@ class MathlibExporter(HTMLExporter):
             # Notation support
             "notation_table": self._generate_notation_table(sketch),
             "mathematical_areas": sketch.mathematical_areas or [],
-            
             # Mathlib integration
             "is_mathlib": True,
             "mathlib_base_url": self.mathlib_base_url,
             "mathlib_search_url": f"{self.mathlib_base_url}find/",
-            
             # Enhanced theorem information
             "theorem_complexity": self._assess_complexity(sketch),
             "prerequisites_with_links": self._enhance_prerequisites(sketch),
-            
             # Mathematical formatting
             "math_renderer": "katex",  # KaTeX for better math rendering
             "katex_config": self._get_katex_config(),
-            
             # Enhanced navigation
             "related_theorems": self._find_related_theorems(sketch, context),
-            
             # Mathematical areas for styling
-            "primary_area": sketch.mathematical_areas[0] if sketch.mathematical_areas else "General",
+            "primary_area": (
+                sketch.mathematical_areas[0] if sketch.mathematical_areas else "General"
+            ),
             "area_color_scheme": self._get_area_color_scheme(sketch.mathematical_areas),
         }
 
         # Merge with base context
         base_context.update(mathlib_context)
-        
+
         return base_context
 
     def _generate_notation_table(self, sketch: ProofSketch) -> List[Dict[str, str]]:
@@ -291,11 +298,13 @@ class MathlibExporter(HTMLExporter):
             List of notation entries
         """
         # Collect all mathematical content
-        all_content = " ".join([
-            sketch.introduction or "",
-            " ".join(step.mathematical_content or "" for step in sketch.key_steps),
-            sketch.conclusion or "",
-        ])
+        all_content = " ".join(
+            [
+                sketch.introduction or "",
+                " ".join(step.mathematical_content or "" for step in sketch.key_steps),
+                sketch.conclusion or "",
+            ]
+        )
 
         return self.notation_handler.get_notation_table(all_content)
 
@@ -311,14 +320,18 @@ class MathlibExporter(HTMLExporter):
         # Count various complexity indicators
         proof_steps = len(sketch.key_steps)
         prerequisites = len(sketch.prerequisites) if sketch.prerequisites else 0
-        mathematical_areas = len(sketch.mathematical_areas) if sketch.mathematical_areas else 0
-        
+        mathematical_areas = (
+            len(sketch.mathematical_areas) if sketch.mathematical_areas else 0
+        )
+
         # Analyze text complexity
         intro_length = len(sketch.introduction.split()) if sketch.introduction else 0
-        
+
         # Simple complexity scoring
-        complexity_score = proof_steps * 2 + prerequisites + mathematical_areas + intro_length // 20
-        
+        complexity_score = (
+            proof_steps * 2 + prerequisites + mathematical_areas + intro_length // 20
+        )
+
         if complexity_score < 5:
             level = "Beginner"
         elif complexity_score < 15:
@@ -350,11 +363,13 @@ class MathlibExporter(HTMLExporter):
 
         enhanced_prereqs = []
         for prereq in sketch.prerequisites:
-            enhanced_prereqs.append({
-                "name": prereq,
-                "link": f"{self.mathlib_base_url}find/?pattern={quote(prereq)}#doc",
-                "description": self._get_prerequisite_description(prereq),
-            })
+            enhanced_prereqs.append(
+                {
+                    "name": prereq,
+                    "link": f"{self.mathlib_base_url}find/?pattern={quote(prereq)}#doc",
+                    "description": self._get_prerequisite_description(prereq),
+                }
+            )
 
         return enhanced_prereqs
 
@@ -370,7 +385,7 @@ class MathlibExporter(HTMLExporter):
         # Simple pattern-based descriptions
         descriptions = {
             "add_comm": "Addition is commutative",
-            "mul_comm": "Multiplication is commutative", 
+            "mul_comm": "Multiplication is commutative",
             "add_assoc": "Addition is associative",
             "mul_assoc": "Multiplication is associative",
             "zero_add": "Zero is the left identity for addition",
@@ -422,18 +437,23 @@ class MathlibExporter(HTMLExporter):
             List of related theorem entries
         """
         related = []
-        
+
         # Simple relatedness based on shared mathematical areas
         if sketch.mathematical_areas:
             for other_sketch in context.sketches:
                 if other_sketch.theorem_name != sketch.theorem_name:
-                    if (other_sketch.mathematical_areas and 
-                        set(sketch.mathematical_areas) & set(other_sketch.mathematical_areas)):
-                        related.append({
-                            "name": other_sketch.theorem_name,
-                            "url": context.theorem_links.get(other_sketch.theorem_name, "#"),
-                            "areas": other_sketch.mathematical_areas,
-                        })
+                    if other_sketch.mathematical_areas and set(
+                        sketch.mathematical_areas
+                    ) & set(other_sketch.mathematical_areas):
+                        related.append(
+                            {
+                                "name": other_sketch.theorem_name,
+                                "url": context.theorem_links.get(
+                                    other_sketch.theorem_name, "#"
+                                ),
+                                "areas": other_sketch.mathematical_areas,
+                            }
+                        )
 
         return related[:5]  # Limit to 5 related theorems
 
@@ -448,9 +468,9 @@ class MathlibExporter(HTMLExporter):
         """
         # Default color scheme
         default_colors = {
-            "primary": "#2563eb",    # Blue
+            "primary": "#2563eb",  # Blue
             "secondary": "#e5e7eb",  # Gray
-            "accent": "#10b981",     # Green
+            "accent": "#10b981",  # Green
         }
 
         if not areas:
@@ -458,13 +478,41 @@ class MathlibExporter(HTMLExporter):
 
         # Area-specific color schemes
         area_colors = {
-            "Topology": {"primary": "#8b5cf6", "secondary": "#ede9fe", "accent": "#a78bfa"},
-            "Algebra": {"primary": "#ef4444", "secondary": "#fee2e2", "accent": "#f87171"},
-            "Analysis": {"primary": "#059669", "secondary": "#d1fae5", "accent": "#34d399"},
-            "Geometry": {"primary": "#dc2626", "secondary": "#fef2f2", "accent": "#f87171"},
-            "Category Theory": {"primary": "#7c3aed", "secondary": "#f3e8ff", "accent": "#a78bfa"},
-            "Number Theory": {"primary": "#d97706", "secondary": "#fef3c7", "accent": "#fbbf24"},
-            "Logic": {"primary": "#374151", "secondary": "#f9fafb", "accent": "#6b7280"},
+            "Topology": {
+                "primary": "#8b5cf6",
+                "secondary": "#ede9fe",
+                "accent": "#a78bfa",
+            },
+            "Algebra": {
+                "primary": "#ef4444",
+                "secondary": "#fee2e2",
+                "accent": "#f87171",
+            },
+            "Analysis": {
+                "primary": "#059669",
+                "secondary": "#d1fae5",
+                "accent": "#34d399",
+            },
+            "Geometry": {
+                "primary": "#dc2626",
+                "secondary": "#fef2f2",
+                "accent": "#f87171",
+            },
+            "Category Theory": {
+                "primary": "#7c3aed",
+                "secondary": "#f3e8ff",
+                "accent": "#a78bfa",
+            },
+            "Number Theory": {
+                "primary": "#d97706",
+                "secondary": "#fef3c7",
+                "accent": "#fbbf24",
+            },
+            "Logic": {
+                "primary": "#374151",
+                "secondary": "#f9fafb",
+                "accent": "#6b7280",
+            },
         }
 
         # Use color scheme for the first area
@@ -472,13 +520,16 @@ class MathlibExporter(HTMLExporter):
         return area_colors.get(primary_area, default_colors)
 
     def _export_with_enhanced_context(
-        self, sketch: ProofSketch, context: ExportContext, template_context: Dict[str, Any]
+        self,
+        sketch: ProofSketch,
+        context: ExportContext,
+        template_context: Dict[str, Any],
     ) -> List[Path]:
         """Export with enhanced mathlib template context.
 
         Args:
             sketch: Enhanced proof sketch
-            context: Export context  
+            context: Export context
             template_context: Enhanced template context
 
         Returns:
@@ -492,16 +543,14 @@ class MathlibExporter(HTMLExporter):
         # Render with enhanced template
         try:
             html_content = self.template_manager.render_template(
-                ExportFormat.HTML, 
+                ExportFormat.HTML,
                 TemplateType.THEOREM,  # Use standard theorem template
-                template_context
+                template_context,
             )
         except Exception:
             # Fallback to regular theorem template
             html_content = self.template_manager.render_template(
-                ExportFormat.HTML, 
-                TemplateType.THEOREM,
-                template_context
+                ExportFormat.HTML, TemplateType.THEOREM, template_context
             )
 
         # Write output file
@@ -513,7 +562,9 @@ class MathlibExporter(HTMLExporter):
             asset_files = self._copy_mathlib_assets()
             created_files.extend(asset_files)
 
-        self.logger.info(f"Exported Mathlib theorem {sketch.theorem_name} to {output_file}")
+        self.logger.info(
+            f"Exported Mathlib theorem {sketch.theorem_name} to {output_file}"
+        )
 
         return created_files
 
@@ -536,11 +587,13 @@ class MathlibExporter(HTMLExporter):
         ]
 
         for asset_rel_path in mathlib_assets:
-            src_path = self.template_manager.template_dir / "html" / "assets" / asset_rel_path
+            src_path = (
+                self.template_manager.template_dir / "html" / "assets" / asset_rel_path
+            )
             if src_path.exists():
                 dst_path = self.options.output_dir / asset_rel_path
                 dst_path.parent.mkdir(parents=True, exist_ok=True)
-                
+
                 try:
                     dst_path.write_bytes(src_path.read_bytes())
                     copied_files.append(dst_path)

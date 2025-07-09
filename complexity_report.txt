@@ -1,0 +1,268 @@
+src/proof_sketcher/core/batch_processor.py
+    M 359:4 BatchProcessor._process_single_file - C
+    M 487:4 BatchProcessor._calculate_stats - C
+    M 158:4 BatchProcessor.discover_lean_files - B
+    M 435:4 BatchProcessor._export_sketches - B
+    C 117:0 BatchProcessor - B
+    M 300:4 BatchProcessor._process_files_parallel - B
+src/proof_sketcher/core/monitoring.py
+    M 510:4 HealthMonitor.get_health_status - C
+    M 385:4 HealthMonitor.check_alert_rules - B
+    M 644:4 HealthMonitor._export_prometheus_metrics - B
+src/proof_sketcher/core/optimization.py
+    M 411:4 APIBatcher._process_function_group - B
+    M 489:4 ParallelExporter.export_parallel - B
+src/proof_sketcher/core/utils.py
+    F 45:0 _serialize_for_cache - B
+src/proof_sketcher/core/exceptions.py
+    C 227:0 ResourceError - B
+    C 356:0 NetworkError - B
+src/proof_sketcher/core/resources.py
+    M 499:4 ResourceMonitor._check_warnings - B
+    M 404:4 ResourceMonitor.check_limits - B
+    M 469:4 ResourceMonitor._monitor_loop - B
+    M 201:4 TempFileManager._cleanup_oldest_files - B
+src/proof_sketcher/core/performance.py
+    M 85:4 PerformanceProfiler.profile - B
+    M 449:4 BatchOptimizer.process_batches - B
+    C 427:0 BatchOptimizer - B
+src/proof_sketcher/core/context_optimizer.py
+    M 127:4 MathematicalContextDetector.detect_context - C
+    M 434:4 ContextOptimizer._generate_recommendations - C
+    M 501:4 ContextOptimizer._load_performance_data - C
+    C 95:0 MathematicalContextDetector - C
+    M 249:4 ContextOptimizer.update_performance - B
+    M 299:4 ContextOptimizer.get_optimization_stats - B
+    M 394:4 ContextOptimizer._analyze_recent_trend - B
+    C 167:0 ContextOptimizer - B
+    M 216:4 ContextOptimizer.select_strategy - B
+src/proof_sketcher/config/config.py
+    M 289:4 ProofSketcherConfig._set_component_value - C
+    M 211:4 ProofSketcherConfig._apply_config_dict - C
+    M 241:4 ProofSketcherConfig._apply_env_overrides - B
+    C 88:0 ProofSketcherConfig - B
+    M 117:4 ProofSketcherConfig.load - B
+    M 311:4 ProofSketcherConfig._validate - B
+    M 177:4 ProofSketcherConfig._load_from_pyproject - B
+    M 160:4 ProofSketcherConfig._load_from_yaml - B
+    M 194:4 ProofSketcherConfig._load_from_toml - B
+    M 389:4 ProofSketcherConfig.to_dict - B
+src/proof_sketcher/security/validators.py
+    M 73:4 SecurityValidator.validate_path - C
+    M 197:4 SecurityValidator.validate_url - B
+    C 17:0 SecurityValidator - B
+    M 157:4 SecurityValidator.validate_identifier - B
+src/proof_sketcher/security/secure_config.py
+    M 52:4 SecureConfig.validate_url - B
+    M 250:4 InputValidator.validate_file_path - B
+src/proof_sketcher/security/sanitizers.py
+    M 119:4 InputSanitizer.sanitize_filename - B
+    M 200:4 InputSanitizer.sanitize_json_input - B
+    C 12:0 InputSanitizer - B
+    M 86:4 InputSanitizer.sanitize_text - B
+    M 166:4 InputSanitizer.sanitize_theorem_name - B
+    M 278:4 InputSanitizer.sanitize_command_args - B
+    M 43:4 InputSanitizer.sanitize_html - B
+src/proof_sketcher/utils/security.py
+    F 237:0 validate_url - B
+src/proof_sketcher/utils/safe_serialization.py
+    M 55:4 SafeSerializer._convert_to_safe - C
+    M 94:4 SafeSerializer._convert_from_safe - C
+    C 20:0 SafeSerializer - B
+    M 31:4 SafeSerializer._validate_safe_data - B
+src/proof_sketcher/utils/debt_tracker.py
+    M 135:4 TechnicalDebtTracker.update_item - C
+    M 275:4 TechnicalDebtTracker.generate_report - B
+src/proof_sketcher/animator/formula_extractor.py
+    M 583:4 FormulaExtractor.extract_formulas - B
+    M 198:4 LeanToLatexConverter._convert_function_applications - B
+    M 499:4 FormulaExtractor.extract_from_proof_step - B
+src/proof_sketcher/animator/static_fallback.py
+    M 221:4 StaticVisualizer._draw_proof_steps - B
+src/proof_sketcher/animator/manim_server.py
+    M 130:4 ManimMCPServer._create_animation_impl - C
+    C 29:0 ManimMCPServer - B
+    M 309:4 ManimMCPServer.cleanup - B
+src/proof_sketcher/animator/models.py
+    M 344:4 AnimationResponse.get_playback_info - B
+src/proof_sketcher/animator/manim_mcp.py
+    M 398:4 ManimMCPClient.render_animation - C
+    M 84:4 ManimMCPClient.start_server - C
+    M 230:4 ManimMCPClient.disconnect - B
+    M 191:4 ManimMCPClient.connect - B
+    M 657:4 ManimMCPClient._health_check_loop - B
+    M 304:4 ManimMCPClient.stop_server - B
+    M 541:4 ManimMCPClient.health_check - B
+src/proof_sketcher/animator/scene_builder.py
+    M 358:4 ProofAnimationBuilder._group_proof_steps - B
+    M 418:4 ProofAnimationBuilder._get_segment_title - B
+    M 537:4 ProofAnimationBuilder._split_segment - B
+    M 246:4 ProofAnimationBuilder._create_step_scenes - B
+src/proof_sketcher/animator/mock_mcp.py
+    F 222:0 create_mock_animation_response - B
+    M 57:4 MockMCPServer.handle_request - B
+src/proof_sketcher/animator/animator.py
+    M 778:4 ProductionAnimator.cleanup_resources - B
+    M 219:4 ProductionAnimator.validate_setup - B
+    M 479:4 ProductionAnimator._validate_animation_request - B
+    M 722:4 ProductionAnimator.generate_preview_frames - B
+    M 840:4 CachedManimAnimator.animate_proof - B
+    M 256:4 ProductionAnimator.animate_batch - B
+    M 372:4 ProductionAnimator.validate_setup - B
+    M 547:4 ProductionAnimator._create_latex_preview - B
+src/proof_sketcher/animator/fallback.py
+    M 160:4 StaticAnimationGenerator.create_step_slide - C
+    M 370:4 StaticAnimationGenerator.generate_static_animation - C
+    M 249:4 StaticAnimationGenerator.create_conclusion_slide - B
+    C 18:0 StaticAnimationGenerator - B
+    M 499:4 FallbackAnimator.animate - B
+    M 310:4 StaticAnimationGenerator.images_to_video - B
+    C 485:0 FallbackAnimator - B
+src/proof_sketcher/animator/animation_generator.py
+    M 183:4 TheoremAnimator._generate_proof_animation - C
+    M 313:4 TheoremAnimator._escape_latex - B
+    C 16:0 TheoremAnimator - B
+    M 288:4 TheoremAnimator._safe_class_name - B
+src/proof_sketcher/cli/commands/optimize.py
+    F 28:0 stats - C
+    F 124:0 analyze - C
+src/proof_sketcher/cli/commands/batch_new.py
+    F 84:0 batch - D
+src/proof_sketcher/cli/commands/batch.py
+    F 66:0 batch - C
+src/proof_sketcher/cli/commands/cache.py
+    F 182:0 list - C
+    F 114:0 status - B
+    F 53:0 clear - B
+src/proof_sketcher/cli/commands/prove.py
+    F 269:0 _export_results - B
+    F 62:0 prove - B
+    F 215:0 _generate_explanations - B
+    F 187:0 _filter_theorems - B
+    F 324:0 _generate_animation - B
+src/proof_sketcher/cli/commands/performance.py
+    F 64:0 _display_status_table - C
+    F 273:0 _display_metrics_table - B
+    F 35:0 status - B
+    F 239:0 metrics - B
+    F 340:0 reset - B
+src/proof_sketcher/cli/commands/info.py
+    F 18:0 list_theorems - B
+src/proof_sketcher/parser/config.py
+    M 56:4 ParserConfig.validate - B
+src/proof_sketcher/parser/lean_parser.py
+    M 698:4 LeanParser._parse_with_strategy - E
+    M 551:4 LeanParser._extract_statement - C
+    M 606:4 LeanParser._extract_proof - C
+    M 141:4 LeanParser.parse_theorem - C
+    M 409:4 LeanParser._extract_single_theorem_with_lean - B
+    M 56:4 LeanParser.parse_file - B
+    M 267:4 LeanParser._setup_lake_project - B
+    M 350:4 LeanParser._extract_all_theorems_with_lean - B
+    M 210:4 LeanParser.validate_lean_setup - B
+    C 25:0 LeanParser - B
+src/proof_sketcher/parser/mathlib_notation_optimized.py
+    M 403:4 OptimizedMathlibNotationHandler.benchmark_performance - B
+    M 163:4 OptimizedMathlibNotationHandler._convert_to_latex_impl - B
+    M 306:4 OptimizedMathlibNotationHandler.detect_mathematical_areas_optimized - B
+src/proof_sketcher/parser/lean_extractor.py
+    M 163:4 LeanExtractor.extract_theorem - C
+    M 98:4 LeanExtractor.extract_file - C
+    M 60:4 LeanExtractor._try_build_extractor - B
+    C 26:0 LeanExtractor - B
+src/proof_sketcher/parser/enhanced_parser.py
+    M 579:4 EnhancedLeanParser._extract_theorem_content - C
+    M 206:4 EnhancedLeanParser.parse_content_enhanced - C
+    M 665:4 EnhancedLeanParser._extract_structure_content - C
+    M 279:4 EnhancedLeanParser._parse_construct - B
+    M 639:4 EnhancedLeanParser._extract_inductive_content - B
+    M 557:4 EnhancedLeanParser._extract_attributes - B
+src/proof_sketcher/generator/cache.py
+    M 58:4 CacheManager.get - C
+    M 190:4 CacheManager.cleanup_expired - B
+    M 374:4 CacheManager._cleanup_by_size - B
+    M 344:4 CacheManager._maybe_cleanup - B
+src/proof_sketcher/generator/offline.py
+    M 302:4 OfflineGenerator._classify_theorem_type - D
+    M 368:4 OfflineGenerator._identify_prerequisites - C
+    M 173:4 OfflineGenerator._generate_introduction - B
+    M 345:4 OfflineGenerator._identify_mathematical_areas - B
+    C 86:0 OfflineGenerator - B
+    M 283:4 OfflineGenerator._generate_conclusion - B
+    M 391:4 OfflineGenerator._try_cache_lookup - B
+src/proof_sketcher/generator/ai_generator_fixed.py
+    M 275:4 FixedAIGenerator._parse_proof_sketch - B
+src/proof_sketcher/generator/ai_generator.py
+    M 60:4 AIGenerator.generate_proof_sketch - B
+    M 291:4 AIGenerator.generate_streaming - B
+    M 430:4 AIGenerator._call_ai - B
+src/proof_sketcher/optimizations/resource_limits.py
+    M 139:4 ResourceMonitor._check_limits - B
+src/proof_sketcher/optimizations/batch_api.py
+    M 391:4 BatchAPIOptimizer._handle_response - C
+    M 165:4 BatchAPIOptimizer.submit_request - B
+src/proof_sketcher/optimizations/export_streaming.py
+    F 615:0 estimate_memory_usage - B
+    M 392:4 StreamingExporter.export_large_dataset - B
+    M 284:4 StreamingTemplateRenderer._render_sketches_streaming - B
+    M 502:4 StreamingExporter.export_with_memory_limit - B
+src/proof_sketcher/optimizations/performance.py
+    M 153:4 PerformanceOptimizer.parallel_export - B
+    M 321:4 PerformanceOptimizer.process_theorems_parallel - B
+src/proof_sketcher/optimizations/smart_cache.py
+    M 365:4 SmartCache.set - B
+    M 163:4 LRUCache._make_room - B
+    M 427:4 SmartCache.clear - B
+    M 326:4 SmartCache.get - B
+    M 449:4 SmartCache.invalidate_by_tags - B
+src/proof_sketcher/batch/parallel_processor.py
+    F 21:0 _process_single_theorem_worker - D
+    M 208:4 ParallelProcessor.process_project - C
+    M 270:4 ParallelProcessor._process_theorems_batch - B
+src/proof_sketcher/batch/project_scanner.py
+    M 31:4 ProjectScanner.scan_project - B
+    C 13:0 ProjectScanner - B
+    M 95:4 ProjectScanner._find_lean_files - B
+    M 120:4 ProjectScanner._extract_imports - B
+    M 160:4 ProjectScanner._extract_theorem_names - B
+    M 317:4 ProjectScanner.find_theorem_dependencies - B
+src/proof_sketcher/batch/cache_manager.py
+    M 260:4 CacheManager.get_statistics - B
+    M 95:4 CacheManager.get - B
+    M 412:4 CacheManager.validate_cache - B
+src/proof_sketcher/ai/offline_client.py
+    M 91:4 OfflineClient._extract_theorem_info - B
+src/proof_sketcher/exporter/models.py
+    M 258:4 BaseExporter._create_context - B
+src/proof_sketcher/exporter/html.py
+    M 168:4 HTMLExporter.export_multiple - B
+    M 202:4 HTMLExporter._create_template_context_html - B
+    M 524:4 HTMLExporter._copy_assets - B
+    M 281:4 HTMLExporter._copy_animation_responsive - B
+    M 438:4 HTMLExporter._generate_cross_references - B
+src/proof_sketcher/exporter/pdf.py
+    M 124:4 PDFExporter._compile_latex - B
+src/proof_sketcher/exporter/template_manager.py
+    M 59:4 TemplateManager.get_template - B
+    M 440:4 TemplateManager.get_asset_url - B
+    M 500:4 TemplateManager._load_themes - B
+src/proof_sketcher/exporter/markdown.py
+    M 528:4 MarkdownExporter._generate_enhanced_toc - D
+    M 472:4 MarkdownExporter._generate_toc - C
+    M 436:4 MarkdownExporter.export_multiple - B
+    M 154:4 MarkdownExporter._create_template_context - B
+    C 30:0 MarkdownExporter - B
+    M 382:4 MarkdownExporter._convert_math_to_dollars - B
+src/proof_sketcher/exporter/mathlib_exporter.py
+    M 61:4 MathlibExporter._enhance_mathlib_sketch - B
+    M 177:4 MathlibExporter._detect_mathematical_areas - B
+    M 302:4 MathlibExporter._assess_complexity - B
+    M 412:4 MathlibExporter._find_related_theorems - B
+src/proof_sketcher/exporter/base.py
+    M 75:4 BaseExporterImpl.export_multiple - C
+src/proof_sketcher/exporter/jupyter.py
+    M 83:4 JupyterExporter._create_notebook - B
+    M 186:4 JupyterExporter._create_combined_notebook - B
+
+207 blocks (classes, functions, methods) analyzed.
+Average complexity: B (8.96135265700483)

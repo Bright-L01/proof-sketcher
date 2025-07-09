@@ -7,12 +7,20 @@ import time
 from pathlib import Path
 from typing import Callable, List, Optional
 
-from ..core.exceptions import AnimatorError, AnimationTimeoutError, MemoryError as ProofSketcherMemoryError
+from ..core.exceptions import AnimationTimeoutError, AnimatorError
+from ..core.exceptions import MemoryError as ProofSketcherMemoryError
 from ..generator.models import ProofSketch
 from ..parser.models import TheoremInfo
 from .fallback import FallbackAnimator, StaticAnimationGenerator
 from .manim_mcp import ManimMCPClient
-from .models import AnimationConfig, AnimationRequest, AnimationResponse, AnimationStyle, ManimConfig, AnimationQuality
+from .models import (
+    AnimationConfig,
+    AnimationQuality,
+    AnimationRequest,
+    AnimationResponse,
+    AnimationStyle,
+    ManimConfig,
+)
 
 
 class ProductionAnimator:
@@ -23,13 +31,13 @@ class ProductionAnimator:
         animation_config: Optional[AnimationConfig] = None,
         manim_config: Optional[ManimConfig] = None,
         use_mock: bool = False,
-        progress_callback: Optional[Callable[[str, float], None]] = None
+        progress_callback: Optional[Callable[[str, float], None]] = None,
     ):
         """Initialize the production animator.
 
         Args:
             animation_config: Animation configuration
-            manim_config: Manim server configuration  
+            manim_config: Manim server configuration
             use_mock: Use mock server for testing
             progress_callback: Optional progress callback function
         """
@@ -40,16 +48,12 @@ class ProductionAnimator:
         self.logger = logging.getLogger(__name__)
 
         # Initialize components
-        self.mcp_client = ManimMCPClient(
-            config=self.manim_config,
-            use_mock=use_mock
-        )
+        self.mcp_client = ManimMCPClient(config=self.manim_config, use_mock=use_mock)
         self.static_generator = StaticAnimationGenerator(
             output_dir=self.manim_config.output_dir or Path.cwd() / "animations"
         )
         self.fallback_animator = FallbackAnimator(
-            mcp_client=self.mcp_client,
-            static_generator=self.static_generator
+            mcp_client=self.mcp_client, static_generator=self.static_generator
         )
 
         # Initialize missing components as None (will be mocked in tests)
@@ -66,9 +70,9 @@ class ProductionAnimator:
     def _sanitize_filename(self, name: str) -> str:
         """Sanitize a filename for filesystem use."""
         # Replace problematic characters
-        for char in ['/', '\\', ':', '|', '*', '?', '<', '>', '"']:
-            name = name.replace(char, '')
-        
+        for char in ["/", "\\", ":", "|", "*", "?", "<", ">", '"']:
+            name = name.replace(char, "")
+
         # Limit length
         return name[:50]
 
@@ -85,12 +89,15 @@ class ProductionAnimator:
         # Check memory usage
         try:
             import psutil
+
             process = psutil.Process()
             memory_mb = process.memory_info().rss / (1024 * 1024)
-            
+
             if memory_mb > self.max_memory_mb:
                 raise AnimatorError(
-                    f"Memory usage {memory_mb:.1f}MB exceeds limit {self.max_memory_mb}MB"
+                    f"Memory usage {
+                        memory_mb:.1f}MB exceeds limit {
+                        self.max_memory_mb}MB"
                 )
         except ImportError:
             self.logger.warning("psutil not available, skipping memory check")
@@ -101,10 +108,10 @@ class ProductionAnimator:
         """Validate proof sketch for animation."""
         if not proof_sketch.theorem_name:
             raise AnimatorError("Proof sketch must have a theorem name")
-        
+
         if not proof_sketch.key_steps:
             raise AnimatorError("Proof sketch must have at least one key step")
-        
+
         # Check for excessively long proofs
         if len(proof_sketch.key_steps) > 20:
             self.logger.warning(
@@ -124,10 +131,11 @@ class ProductionAnimator:
             raise AnimatorError(f"Cannot create output directories: {e}")
 
     async def animate_proof(
-        self, proof_sketch: ProofSketch, 
+        self,
+        proof_sketch: ProofSketch,
         style: AnimationStyle = AnimationStyle.MODERN,
         quality: AnimationQuality = AnimationQuality.MEDIUM,
-        output_filename: Optional[str] = None
+        output_filename: Optional[str] = None,
     ) -> AnimationResponse:
         """Generate animation for a proof sketch with comprehensive error handling.
 
@@ -141,51 +149,53 @@ class ProductionAnimator:
             AnimationResponse with results or fallback content
         """
         start_time = time.time()
-        
+
         # Generate output filename if not provided
         if not output_filename:
             safe_name = self._sanitize_filename(proof_sketch.theorem_name)
             output_filename = f"{safe_name}_animation.mp4"
-        
+
         self._report_progress("Starting animation generation", 0.0)
-        
+
         try:
             # Check resource limits before starting
             self._check_resource_limits()
-            
+
             # Validate input
             self._validate_proof_sketch(proof_sketch)
-            
+
             self._report_progress("Connecting to animation services", 0.1)
-            
+
             # Use fallback animator which handles MCP -> static fallback
             response = await asyncio.wait_for(
                 self.fallback_animator.animate(
                     proof_sketch=proof_sketch,
                     style=style,
                     quality=quality,
-                    output_filename=output_filename
+                    output_filename=output_filename,
                 ),
-                timeout=self.max_processing_time
+                timeout=self.max_processing_time,
             )
-            
+
             # Add timing metadata
             processing_time = time.time() - start_time
             if response.metadata is None:
                 response.metadata = {}
-            response.metadata.update({
-                "processing_time_seconds": processing_time,
-                "style": style.value,
-                "quality": quality.value,
-                "theorem_name": proof_sketch.theorem_name
-            })
-            
+            response.metadata.update(
+                {
+                    "processing_time_seconds": processing_time,
+                    "style": style.value,
+                    "quality": quality.value,
+                    "theorem_name": proof_sketch.theorem_name,
+                }
+            )
+
             self._report_progress("Animation generation completed", 1.0)
             self.logger.info(
                 f"Animation completed for {proof_sketch.theorem_name} "
                 f"in {processing_time:.2f}s"
             )
-            
+
             return response
 
         except AnimationTimeoutError as e:
@@ -240,7 +250,9 @@ class ProductionAnimator:
                         self.logger.info("MCP server connection validated")
                         return True
                     else:
-                        self.logger.warning("MCP server health check failed, will use fallback")
+                        self.logger.warning(
+                            "MCP server health check failed, will use fallback"
+                        )
                         return True  # Still valid with fallback
                 else:
                     self.logger.warning("MCP server not available, will use fallback")
@@ -253,50 +265,53 @@ class ProductionAnimator:
             self.logger.error(f"Setup validation failed: {e}")
             return False
 
-    async def animate_batch(self, proof_sketches: List[ProofSketch],
-                           style: AnimationStyle = AnimationStyle.MODERN,
-                           quality: AnimationQuality = AnimationQuality.MEDIUM,
-                           max_concurrent: int = 3) -> List[dict]:
+    async def animate_batch(
+        self,
+        proof_sketches: List[ProofSketch],
+        style: AnimationStyle = AnimationStyle.MODERN,
+        quality: AnimationQuality = AnimationQuality.MEDIUM,
+        max_concurrent: int = 3,
+    ) -> List[dict]:
         """Animate multiple proof sketches with controlled concurrency."""
         self.logger.info(f"Starting batch animation of {len(proof_sketches)} proofs")
-        
+
         semaphore = asyncio.Semaphore(max_concurrent)
-        
+
         async def animate_single(sketch: ProofSketch) -> dict:
             async with semaphore:
                 return await self.animate_proof(sketch, style, quality)
-        
+
         # Process all animations concurrently with limit
         tasks = [animate_single(sketch) for sketch in proof_sketches]
         responses = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # Convert exceptions to error responses
         results = []
         for i, response in enumerate(responses):
             if isinstance(response, Exception):
                 sketch = proof_sketches[i]
                 error_response = {
-                    'video_path': None,
-                    'thumbnail_path': None,
-                    'duration': 0,
-                    'frame_count': 0,
-                    'size_bytes': 0,
-                    'error': str(response),
-                    'metadata': {
-                        'error_type': 'batch_exception',
-                        'theorem_name': sketch.theorem_name
-                    }
+                    "video_path": None,
+                    "thumbnail_path": None,
+                    "duration": 0,
+                    "frame_count": 0,
+                    "size_bytes": 0,
+                    "error": str(response),
+                    "metadata": {
+                        "error_type": "batch_exception",
+                        "theorem_name": sketch.theorem_name,
+                    },
                 }
                 results.append(error_response)
             else:
                 results.append(response)
-        
+
         # Report batch results
-        success_count = sum(1 for r in results if not r.get('error'))
+        success_count = sum(1 for r in results if not r.get("error"))
         self.logger.info(
             f"Batch animation completed: {success_count}/{len(results)} successful"
         )
-        
+
         return results
 
     async def animate_single_step(
@@ -528,7 +543,7 @@ class ProductionAnimator:
                     "quiet",
                     "-show_entries",
                     "format=duration",
-                    "-of",
+                    "-o",
                     "csv=p=0",
                     str(video_path),
                 ],
@@ -552,7 +567,7 @@ class ProductionAnimator:
             preview_path = self.manim_config.output_dir / f"{theorem_name}_preview.png"
 
             # Create LaTeX document
-            latex_content = f"""
+            latex_content = """
 \\documentclass{{article}}
 \\usepackage{{amsmath}}
 \\usepackage{{amsfonts}}
@@ -620,27 +635,27 @@ class ProductionAnimator:
             frame_count=0,
             size_bytes=0,
             metadata={
-                'error': error_message,
-                'error_type': 'fallback',
-                'theorem_name': proof_sketch.theorem_name,
-                'generation_time_ms': generation_time,
-                'warnings': ['Animation generation failed, fallback response created']
-            }
+                "error": error_message,
+                "error_type": "fallback",
+                "theorem_name": proof_sketch.theorem_name,
+                "generation_time_ms": generation_time,
+                "warnings": ["Animation generation failed, fallback response created"],
+            },
         )
-    
+
     async def animate_proof_complete(
-        self, 
+        self,
         proof_sketch: ProofSketch,
         style: AnimationStyle = AnimationStyle.MODERN,
-        quality: AnimationQuality = AnimationQuality.MEDIUM
+        quality: AnimationQuality = AnimationQuality.MEDIUM,
     ) -> AnimationResponse:
         """Animate a complete proof with proper segmentation for long proofs.
-        
+
         Args:
             proof_sketch: The proof sketch to animate
             style: Animation style
             quality: Quality level
-            
+
         Returns:
             AnimationResponse with complete animation or segments
         """
@@ -650,60 +665,69 @@ class ProductionAnimator:
         else:
             # Regular animation for shorter proofs
             return await self.animate_proof(proof_sketch, style, quality)
-    
+
     async def handle_long_proof(
         self,
         proof_sketch: ProofSketch,
         style: AnimationStyle = AnimationStyle.MODERN,
-        quality: AnimationQuality = AnimationQuality.MEDIUM
+        quality: AnimationQuality = AnimationQuality.MEDIUM,
     ) -> AnimationResponse:
         """Handle long proofs by creating segmented animations with chapter markers.
-        
+
         Args:
             proof_sketch: The proof sketch to animate
             style: Animation style
             quality: Quality level
-            
+
         Returns:
             AnimationResponse with segmented animation
         """
-        self.logger.info(f"Handling long proof with {len(proof_sketch.key_steps)} steps")
-        
+        self.logger.info(
+            f"Handling long proof with {len(proof_sketch.key_steps)} steps"
+        )
+
         # Segment the proof into chapters (10 steps per chapter)
         segments = []
         chapter_size = 10
-        
+
         for i in range(0, len(proof_sketch.key_steps), chapter_size):
-            chapter_steps = proof_sketch.key_steps[i:i + chapter_size]
+            chapter_steps = proof_sketch.key_steps[i : i + chapter_size]
             chapter_num = i // chapter_size + 1
-            
+
             # Create a sub-sketch for this chapter
             chapter_sketch = ProofSketch(
                 theorem_name=f"{proof_sketch.theorem_name}_chapter_{chapter_num}",
-                introduction=f"Chapter {chapter_num}: Steps {i+1}-{min(i+chapter_size, len(proof_sketch.key_steps))}",
+                introduction=f"Chapter {chapter_num}: Steps {i+1}-{min(i+chapter_size,
+                                                                       len(proof_sketch.key_steps))}",
                 key_steps=chapter_steps,
-                conclusion=proof_sketch.conclusion if i + chapter_size >= len(proof_sketch.key_steps) else "To be continued..."
+                conclusion=(
+                    proof_sketch.conclusion
+                    if i + chapter_size >= len(proof_sketch.key_steps)
+                    else "To be continued..."
+                ),
             )
-            
+
             # Animate this chapter
             chapter_response = await self.animate_proof(
-                chapter_sketch, 
-                style, 
+                chapter_sketch,
+                style,
                 quality,
-                output_filename=f"{proof_sketch.theorem_name}_chapter_{chapter_num}.mp4"
+                output_filename=f"{proof_sketch.theorem_name}_chapter_{chapter_num}.mp4",
             )
-            
-            segments.append({
-                "chapter": chapter_num,
-                "start_step": i + 1,
-                "end_step": min(i + chapter_size, len(proof_sketch.key_steps)),
-                "video_path": chapter_response.video_path,
-                "duration": chapter_response.duration
-            })
-        
+
+            segments.append(
+                {
+                    "chapter": chapter_num,
+                    "start_step": i + 1,
+                    "end_step": min(i + chapter_size, len(proof_sketch.key_steps)),
+                    "video_path": chapter_response.video_path,
+                    "duration": chapter_response.duration,
+                }
+            )
+
         # Create consolidated response
         total_duration = sum(seg["duration"] for seg in segments)
-        
+
         return AnimationResponse(
             video_path=segments[0]["video_path"] if segments else None,
             thumbnail_path=None,
@@ -715,26 +739,24 @@ class ProductionAnimator:
                 "total_chapters": len(segments),
                 "segments": segments,
                 "theorem_name": proof_sketch.theorem_name,
-                "total_steps": len(proof_sketch.key_steps)
-            }
+                "total_steps": len(proof_sketch.key_steps),
+            },
         )
-    
+
     async def generate_preview_frames(
-        self,
-        proof_sketch: ProofSketch,
-        num_frames: int = 5
+        self, proof_sketch: ProofSketch, num_frames: int = 5
     ) -> List[Path]:
         """Generate preview frames/thumbnails from the proof.
-        
+
         Args:
             proof_sketch: The proof sketch to preview
             num_frames: Number of preview frames to generate
-            
+
         Returns:
             List of paths to preview frame images
         """
         preview_frames = []
-        
+
         try:
             # Select representative steps
             step_indices = []
@@ -744,40 +766,40 @@ class ProductionAnimator:
                 # Evenly distribute frames across the proof
                 interval = len(proof_sketch.key_steps) / num_frames
                 step_indices = [int(i * interval) for i in range(num_frames)]
-            
+
             # Generate frame for each selected step
             for idx, step_idx in enumerate(step_indices):
                 step = proof_sketch.key_steps[step_idx]
-                
+
                 # Try to create LaTeX preview if we have mathematical content
                 if step.mathematical_content:
                     preview_path = self._create_latex_preview(
                         f"{proof_sketch.theorem_name}_frame_{idx}",
                         step.mathematical_content,
-                        self.animation_config
+                        self.animation_config,
                     )
                     if preview_path:
                         preview_frames.append(preview_path)
                         continue
-                
+
                 # Fallback to text-based preview
                 text_preview = self.static_generator._render_text_to_image(
                     f"Step {step.step_number}: {step.description}",
-                    f"{proof_sketch.theorem_name}_frame_{idx}.png"
+                    f"{proof_sketch.theorem_name}_frame_{idx}.png",
                 )
                 if text_preview:
                     preview_frames.append(text_preview)
-            
+
             self.logger.info(f"Generated {len(preview_frames)} preview frames")
-            
+
         except Exception as e:
             self.logger.error(f"Failed to generate preview frames: {e}")
-        
+
         return preview_frames
-    
+
     async def cleanup_resources(self) -> None:
         """Clean up animation resources and manage memory.
-        
+
         This includes:
         - Removing temporary files
         - Clearing animation caches
@@ -786,7 +808,7 @@ class ProductionAnimator:
         """
         try:
             self.logger.info("Starting resource cleanup")
-            
+
             # Clean up temporary files
             if self.manim_config.temp_dir and self.manim_config.temp_dir.exists():
                 temp_files = list(self.manim_config.temp_dir.glob("*"))
@@ -796,25 +818,29 @@ class ProductionAnimator:
                             temp_file.unlink()
                         elif temp_file.is_dir():
                             import shutil
+
                             shutil.rmtree(temp_file)
                     except Exception as e:
-                        self.logger.warning(f"Failed to remove temp file {temp_file}: {e}")
-                
+                        self.logger.warning(
+                            f"Failed to remove temp file {temp_file}: {e}"
+                        )
+
                 self.logger.info(f"Cleaned up {len(temp_files)} temporary files")
-            
+
             # Disconnect from MCP server
             await self.mcp_client.disconnect()
-            
+
             # Clear any internal caches
-            if hasattr(self.static_generator, 'clear_cache'):
+            if hasattr(self.static_generator, "clear_cache"):
                 self.static_generator.clear_cache()
-            
+
             # Force garbage collection to free memory
             import gc
+
             gc.collect()
-            
+
             self.logger.info("Resource cleanup completed")
-            
+
         except Exception as e:
             self.logger.error(f"Error during resource cleanup: {e}")
 
@@ -878,7 +904,9 @@ class CachedManimAnimator:
         for step in proof_sketch.key_steps:
             proof_content += step.description + step.mathematical_content
 
-        content_hash = hashlib.md5(proof_content.encode(), usedforsecurity=False).hexdigest()[:8]
+        content_hash = hashlib.md5(
+            proof_content.encode(), usedforsecurity=False
+        ).hexdigest()[:8]
         content += f":{content_hash}"
 
         return hashlib.sha256(content.encode()).hexdigest()

@@ -300,7 +300,7 @@ proof-sketcher config COMMAND
 Commands:
   show    Display current configuration
   save    Save configuration to file
-  
+
 Options:
   -o, --output PATH    Output file for save command
 ```
@@ -316,7 +316,7 @@ Commands:
   status    Show cache statistics
   clear     Clear all cached data
   list      List cached items
-  
+
 Options:
   --pattern PATTERN    Filter pattern for list command
 ```
@@ -329,7 +329,7 @@ All modules use specific exception types for different error conditions:
 # Parser errors
 from proof_sketcher.parser import LeanParserError, LeanExecutableError
 
-# Generator errors  
+# Generator errors
 from proof_sketcher.generator import ClaudeError, ClaudeAPIError
 
 # Animator errors

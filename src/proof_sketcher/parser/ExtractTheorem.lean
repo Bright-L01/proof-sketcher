@@ -28,7 +28,7 @@ partial def extractTacticsFromSyntax (stx : Syntax) : Array String :=
   match stx with
   | Syntax.node _ kind args =>
     let kindStr := kind.toString
-    let tactics := 
+    let tactics :=
       if kindStr.endsWith ".tactic" || kindStr.contains "Tactic" then
         -- Extract the actual tactic name (last component)
         let tacticName := kindStr.split (· == '.') |>.getLast!
@@ -40,7 +40,7 @@ partial def extractTacticsFromSyntax (stx : Syntax) : Array String :=
         else #[]
       else #[]
     tactics ++ args.concatMap extractTacticsFromSyntax
-  | Syntax.atom _ val => 
+  | Syntax.atom _ val =>
     -- Direct tactic names like "simp", "rfl", etc.
     if val.all Char.isAlpha then #[val] else #[]
   | _ => #[]
@@ -50,14 +50,14 @@ partial def extractDeps (e : Expr) (visited : NameSet := {}) : MetaM NameSet := 
   if visited.contains e.hash then
     return visited
   let visited := visited.insert e.hash
-  
+
   match e with
   | .const name _ =>
     let nameStr := name.toString
     -- Include mathlib and meaningful dependencies, exclude internals
-    if !nameStr.startsWith "_" && 
-       !nameStr.startsWith "Lean." && 
-       !nameStr.startsWith "Classical" && 
+    if !nameStr.startsWith "_" &&
+       !nameStr.startsWith "Lean." &&
+       !nameStr.startsWith "Classical" &&
        !nameStr.startsWith "sorryAx" &&
        nameStr != "True" && nameStr != "False" &&
        nameStr.contains "." then
@@ -86,7 +86,7 @@ partial def extractTacticsFromProof (e : Expr) : Array String :=
   | .const name _ =>
     let nameStr := name.toString
     -- Common tactics that appear as constants
-    if nameStr.endsWith ".simp" || nameStr.endsWith ".rfl" || 
+    if nameStr.endsWith ".simp" || nameStr.endsWith ".rfl" ||
        nameStr.endsWith ".trivial" || nameStr.endsWith ".assumption" ||
        nameStr.endsWith ".exact" || nameStr.endsWith ".apply" then
       #[nameStr.split (· == '.') |>.getLast!]
@@ -103,11 +103,11 @@ partial def extractTacticsFromProof (e : Expr) : Array String :=
 /-- Process a single theorem -/
 def processTheorem (env : Environment) (name : Name) : MetaM TheoremData := do
   let some info := env.find? name | throw $ IO.userError s!"Theorem {name} not found"
-  
+
   -- Format type
   let type ← ppExpr info.type
   let typeStr := toString type
-  
+
   -- Check if it's an axiom
   let (valueStr, isAxiom, tactics) ← match info.value? with
   | none => return ("axiom", true, #[])
@@ -116,19 +116,19 @@ def processTheorem (env : Environment) (name : Name) : MetaM TheoremData := do
     -- Extract tactics from the proof term by analyzing its structure
     let tactics := extractTacticsFromProof val
     return (toString pp, false, tactics)
-  
+
   -- Get docstring
   let docString ← findDocString? env name
-  
+
   -- Extract dependencies
   let typeDeps ← extractDeps info.type {}
   let valueDeps ← match info.value? with
   | none => pure {}
   | some val => extractDeps val {}
-  
+
   let allDeps := (typeDeps.toArray ++ valueDeps.toArray).map toString
   let uniqueDeps := allDeps.toList.eraseDups.toArray
-  
+
   return {
     name := name.toString
     type := typeStr
@@ -148,45 +148,45 @@ def main (args : List String) : IO UInt32 := do
     let mut i := 0
     while i < args.length do
       match args[i]? with
-      | some "--file" => 
+      | some "--file" =>
         fileName := args[i+1]?
         i := i + 2
       | some "--theorem" =>
         theoremName := args[i+1]?
         i := i + 2
       | _ => i := i + 1
-    
+
     let some file := fileName | throw $ IO.userError "Missing --file argument"
     let some theorem := theoremName | throw $ IO.userError "Missing --theorem argument"
-    
+
     -- Initialize Lean
     initSearchPath (← findSysroot)
-    
+
     -- Parse the file
     let input ← IO.FS.readFile file
     let inputCtx := Parser.mkInputContext input file
     let (header, parserState, messages) := Parser.parseHeader inputCtx
-    
+
     if messages.hasErrors then
       throw $ IO.userError "Parse errors in header"
-    
+
     let (env, messages) ← processHeader header {} messages inputCtx
-    
+
     if messages.hasErrors then
       throw $ IO.userError "Errors processing header"
-    
+
     -- Process commands
     let commandState := Command.mkState env messages {}
     let s ← IO.processCommands inputCtx parserState commandState
-    
+
     -- Extract theorem data
     let name := theorem.toName
     let data ← processTheorem s.env name |>.run' {}
-    
+
     -- Output JSON
     IO.println (toJson data).compress
     return 0
-    
+
   catch e =>
     -- Output error as JSON
     let errorData : TheoremData := {

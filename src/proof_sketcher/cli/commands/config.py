@@ -16,26 +16,26 @@ console = Console()
 @click.group()
 def config() -> None:
     """Manage Proof Sketcher configuration settings.
-    
+
     Configure how Proof Sketcher processes files, generates explanations,
     creates animations, and exports results. Settings can be managed through
     configuration files, environment variables, or command-line options.
-    
+
     \b
     Configuration Sources (in priority order):
       1. Command-line options (highest priority)
       2. Environment variables (PROOF_SKETCHER_*)
       3. Configuration file (.proof-sketcher.yaml)
       4. Default values (lowest priority)
-    
+
     \b
     Quick Commands:
       # View current configuration
       python -m proof_sketcher config show
-      
+
       # Save current settings to file
       python -m proof_sketcher config save
-      
+
       # Save to specific location
       python -m proof_sketcher config save -o my-config.yaml
     """
@@ -46,11 +46,11 @@ def config() -> None:
 @click.pass_context
 def show(ctx: click.Context) -> None:
     """Display current configuration settings in a formatted table.
-    
+
     Shows all active configuration values including parser settings,
     generator options, animation preferences, and export configurations.
     Useful for debugging and verifying your setup.
-    
+
     \b
     Categories Displayed:
       • Global: Project name, version, debug settings
@@ -58,7 +58,7 @@ def show(ctx: click.Context) -> None:
       • Generator: AI model, temperature, token limits
       • Animation: Quality, FPS, style preferences
       • Export: Output directories, themes, engines
-    
+
     Configuration values are resolved from all sources (CLI, env, files).
     """
     config: ProofSketcherConfig = ctx.obj["config"]

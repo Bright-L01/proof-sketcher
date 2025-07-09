@@ -17,7 +17,7 @@ class ExportFormat(str, Enum):
 
     HTML = "html"
     MARKDOWN = "markdown"
-    PDF = "pdf"
+    PDF = "pd"
     JUPYTER = "jupyter"
     ALL = "all"
 

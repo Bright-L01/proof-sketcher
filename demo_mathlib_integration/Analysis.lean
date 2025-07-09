@@ -14,7 +14,7 @@ theorem deriv_mul {f g : 𝕜 → 𝕜} {x : 𝕜} (hf : DifferentiableAt 𝕜 f
   exact deriv_mul hf hg
 
 /-- Chain rule -/
-theorem deriv_comp {f : 𝕜 → 𝕜} {g : 𝕜 → 𝕜} {x : 𝕜} 
+theorem deriv_comp {f : 𝕜 → 𝕜} {g : 𝕜 → 𝕜} {x : 𝕜}
     (hf : DifferentiableAt 𝕜 f (g x)) (hg : DifferentiableAt 𝕜 g x) :
     deriv (f ∘ g) x = deriv f (g x) * deriv g x := by
   exact deriv.comp hf hg

@@ -9,7 +9,7 @@ This directory contains performance benchmarks for Proof Sketcher to evaluate pe
 1. **Tiny** (3 theorems) - Basic functionality test
 2. **Small** (10 theorems) - Small file performance
 3. **Medium Small** (25 theorems) - Moderate file performance
-4. **Medium** (50 theorems) - Medium file performance  
+4. **Medium** (50 theorems) - Medium file performance
 5. **Medium Large** (100 theorems) - Large-ish file performance
 6. **Large** (200 theorems) - Large file performance
 7. **Extra Large** (400 theorems) - Very large file performance

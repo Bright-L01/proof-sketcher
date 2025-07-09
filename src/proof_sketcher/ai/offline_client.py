@@ -3,37 +3,37 @@ Offline fallback generator for when AI services are unavailable.
 Provides template-based responses for basic functionality.
 """
 
-import re
 import logging
-from typing import Dict, Any
+import re
+from typing import Any, Dict
 
 from .base_client import AIClient
 
 
 class OfflineClient(AIClient):
     """Offline fallback generator using templates.
-    
+
     This provides basic functionality when AI services are unavailable,
     ensuring the application can still function in a degraded mode.
     """
-    
+
     def __init__(self):
         """Initialize the offline client."""
         self.logger = logging.getLogger(__name__)
         self.logger.info("Using offline fallback generator")
-    
+
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate template response based on prompt analysis.
-        
+
         Args:
             prompt: Input prompt
             **kwargs: Additional parameters (ignored)
-            
+
         Returns:
             Template-based response
         """
         prompt_lower = prompt.lower()
-        
+
         # Analyze prompt type
         if self._is_proof_sketch_request(prompt_lower):
             return self._generate_proof_sketch(prompt)
@@ -45,62 +45,64 @@ class OfflineClient(AIClient):
             return self._generate_step_by_step(prompt)
         else:
             return self._generate_generic_explanation(prompt)
-    
+
     def is_available(self) -> bool:
         """Offline client is always available.
-        
+
         Returns:
             Always True
         """
         return True
-    
+
     def get_info(self) -> Dict[str, Any]:
         """Get information about the offline client.
-        
+
         Returns:
             Dictionary with client information
         """
         info = super().get_info()
-        info.update({
-            "provider": "Offline Templates",
-            "mode": "fallback",
-            "features": ["proof_sketch", "eli5", "tactics", "step_by_step"]
-        })
+        info.update(
+            {
+                "provider": "Offline Templates",
+                "mode": "fallback",
+                "features": ["proof_sketch", "eli5", "tactics", "step_by_step"],
+            }
+        )
         return info
-    
+
     def _is_proof_sketch_request(self, prompt: str) -> bool:
         """Check if prompt is requesting a proof sketch."""
-        keywords = ["proof sketch", "explain.*theorem", "natural language.*proof"]
+        keywords = ["proof sketch", "explain.*theorem", "natural language.*proo"]
         return any(re.search(keyword, prompt) for keyword in keywords)
-    
+
     def _is_eli5_request(self, prompt: str) -> bool:
         """Check if prompt is requesting an ELI5 explanation."""
         keywords = ["eli5", "explain.*five", "simple.*explanation", "beginner"]
         return any(re.search(keyword, prompt) for keyword in keywords)
-    
+
     def _is_tactic_request(self, prompt: str) -> bool:
         """Check if prompt is requesting tactic explanation."""
         keywords = ["tactic", "lean.*command", "proof.*method"]
         return any(re.search(keyword, prompt) for keyword in keywords)
-    
+
     def _is_step_by_step_request(self, prompt: str) -> bool:
         """Check if prompt is requesting step-by-step explanation."""
         keywords = ["step.?by.?step", "detailed.*walk", "each.*step"]
         return any(re.search(keyword, prompt) for keyword in keywords)
-    
+
     def _extract_theorem_info(self, prompt: str) -> Dict[str, str]:
         """Extract theorem information from prompt."""
         info = {
             "name": "the theorem",
             "statement": "the given statement",
-            "type": "mathematical property"
+            "type": "mathematical property",
         }
-        
+
         # Try to extract theorem name
         name_match = re.search(r"theorem\s+(\w+)", prompt, re.IGNORECASE)
         if name_match:
             info["name"] = name_match.group(1)
-        
+
         # Try to identify theorem type
         if "commutative" in prompt.lower() or "comm" in prompt.lower():
             info["type"] = "commutativity property"
@@ -110,14 +112,14 @@ class OfflineClient(AIClient):
             info["type"] = "distributivity property"
         elif "identity" in prompt.lower() or "neutral" in prompt.lower():
             info["type"] = "identity property"
-        
+
         return info
-    
+
     def _generate_proof_sketch(self, prompt: str) -> str:
         """Generate a template proof sketch."""
         info = self._extract_theorem_info(prompt)
-        
-        return f"""{{
+
+        return """{{
   "theorem_name": "{info['name']}",
   "introduction": "This theorem establishes {info['type']}. The proof demonstrates how the property holds under the given conditions.",
   "key_steps": [
@@ -135,7 +137,7 @@ class OfflineClient(AIClient):
     }},
     {{
       "step_number": 3,
-      "description": "Complete the proof",
+      "description": "Complete the proo",
       "mathematical_content": "The desired result follows directly",
       "tactics": ["exact", "rfl"]
     }}
@@ -145,12 +147,12 @@ class OfflineClient(AIClient):
   "mathematical_areas": ["algebra", "logic"],
   "prerequisites": ["basic algebra", "proof techniques"]
 }}"""
-    
+
     def _generate_eli5_explanation(self, prompt: str) -> str:
         """Generate a simple ELI5 explanation."""
         info = self._extract_theorem_info(prompt)
-        
-        return f"""Let me explain {info['name']} in simple terms!
+
+        return """Let me explain {info['name']} in simple terms!
 
 Imagine you have building blocks. This theorem is like a rule about how these blocks work together.
 
@@ -164,7 +166,7 @@ It's like knowing that 2 + 3 always equals 5, no matter when or where you do the
 In grown-up math terms, this is called {info['type']}, and mathematicians use it all the time to solve bigger problems!
 
 Note: This is a simplified template explanation. For more detailed insights, please configure an AI service."""
-    
+
     def _generate_tactic_explanation(self, prompt: str) -> str:
         """Generate a tactic explanation."""
         return """This proof uses several key Lean tactics:
@@ -190,12 +192,12 @@ Note: This is a simplified template explanation. For more detailed insights, ple
 - Often the final step in equality proofs
 
 Note: This is a generic template. For theorem-specific tactic analysis, please configure an AI service."""
-    
+
     def _generate_step_by_step(self, prompt: str) -> str:
         """Generate a step-by-step walkthrough."""
         info = self._extract_theorem_info(prompt)
-        
-        return f"""Step-by-Step Proof Walkthrough for {info['name']}:
+
+        return """Step-by-Step Proof Walkthrough for {info['name']}:
 
 **Step 1: Understanding the Goal**
 - We need to prove {info['type']}
@@ -224,7 +226,7 @@ Note: This is a generic template. For theorem-specific tactic analysis, please c
 Each step builds on the previous one, creating a logical chain from our assumptions to our conclusion.
 
 Note: This is a template walkthrough. For specific proof details, please configure an AI service."""
-    
+
     def _generate_generic_explanation(self, prompt: str) -> str:
         """Generate a generic explanation."""
         return """This mathematical concept represents an important principle in formal reasoning.

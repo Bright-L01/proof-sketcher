@@ -5,7 +5,7 @@ from .base import PromptBase
 
 class ProofSketchTemplate(PromptBase):
     """Template for generating structured proof sketches with pedagogical insight."""
-    
+
     def get_template_string(self) -> str:
         """Enhanced template for generating structured proof sketches."""
         return """

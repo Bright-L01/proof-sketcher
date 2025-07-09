@@ -5,7 +5,7 @@ from .base import PromptBase
 
 class StepByStepTemplate(PromptBase):
     """Template for detailed step-by-step proof walkthroughs."""
-    
+
     def get_template_string(self) -> str:
         """Enhanced template for step-by-step proof explanations."""
         return """
@@ -28,12 +28,12 @@ You are an exceptional mathematics tutor known for making complex proofs feel li
 Watch how a great tutor guides a student through a proof step:
 
 **Step 3 of "Proving commutativity":**
-> "Okay, now we're at the crucial moment. We want to show that a * b = b * a. But look what we've set up in the previous steps - we have these two expressions that look different but are actually the same thing! 
-> 
+> "Okay, now we're at the crucial moment. We want to show that a * b = b * a. But look what we've set up in the previous steps - we have these two expressions that look different but are actually the same thing!
+>
 > Let's use the associative property here. Why? Because it's going to let us rearrange the parentheses in just the right way to reveal the symmetry we're looking for. Watch this magic happen..."
-> 
+>
 > **[Shows the algebraic manipulation]**
-> 
+>
 > "See how that works? The associative property acted like a key that unlocked the door to commutativity. This is the kind of move you'll use again and again in algebra!"
 
 ## 🎯 YOUR TUTORING MISSION
@@ -97,7 +97,7 @@ Structure as a guided journey:
 ## 🎯 The Challenge
 [What exactly are we trying to prove and why it's interesting]
 
-## 🧭 Our Strategy  
+## 🧭 Our Strategy
 [The high-level game plan - how we'll tackle this proof]
 
 ## 🔍 The Investigation
