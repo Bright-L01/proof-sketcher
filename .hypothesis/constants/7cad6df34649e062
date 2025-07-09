@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/generator/models.py
+# hypothesis_version: 6.135.20
+
+[0.0, 0.3, 0.7, 0.9, 1.0, 2000, 4000, 6000, 8192, 'Cache TTL in hours', 'Cache key', 'Cache timestamp', 'Cached response', 'Claude model to use', 'Generated content', 'Generation timestamp', 'GenerationConfig', 'Lean tactics used', 'Name of the theorem', 'Original request', 'Stop sequences', 'TTL in hours', 'Theorem dependencies', 'advanced', 'beginner', 'concise', 'detailed', 'difficulty_level', 'eli5_explanation', 'generated_at', 'intermediate', 'mathematical_context', 'proof_sketch', 'step_by_step', 'tactic_explanation', 'verbose', 'verbosity']

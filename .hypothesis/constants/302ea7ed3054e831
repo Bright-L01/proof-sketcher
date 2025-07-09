@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/generator/ai_generator.py
+# hypothesis_version: 6.135.20
+
+[120, 180, 1000, 4000, '--max-tokens', '--stop', '--stream', '--temperature', '--version', '-p', '-s', 'AI call timed out', 'Claude is working', 'Unknown error', '```', '```json', 'ai_call_failed', 'ai_permission_denied', 'ai_timeout', 'claude', 'command', 'conclusion', 'config', 'difficulty_level', 'error', 'executable', 'intermediate', 'introduction', 'key_steps', 'mathematical_areas', 'prerequisites', 'process', 'theorem_name', 'timeout']

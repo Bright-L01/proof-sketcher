@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/animator/animator.py
+# hypothesis_version: 6.135.20
+
+[0.0, 0.1, 1.0, 1000, 1024, '"', '*', '-density', '-of', '-output-directory', '-show_entries', '-v', '.test_write', '/', '300', ':', '<', '>', '?', 'ProductionAnimator', 'Step completed.', 'To be continued...', '\\', 'animations', 'batch_exception', 'chapter', 'clear_cache', 'convert', 'csv=p=0', 'duration', 'end_step', 'error', 'error_type', 'estimated_duration', 'fallback', 'ffprobe', 'format=duration', 'frame_count', 'generation_time_ms', 'metadata', 'needs_segmentation', 'pdflatex', 'quality', 'quiet', 'scenes', 'segment_info', 'segmented', 'segments', 'single_step', 'size_bytes', 'start_step', 'style', 'temp', 'test', 'theorem_name', 'thumbnail_path', 'title', 'total_chapters', 'total_scenes', 'total_steps', 'video_path', 'warnings', '|', '∀ n : Nat, n + 0 = n']

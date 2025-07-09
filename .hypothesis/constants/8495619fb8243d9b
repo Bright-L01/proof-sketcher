@@ -1,0 +1,4 @@
+# file: /Users/brightliu/Coding_Projects/proof-sketcher/src/proof_sketcher/utils/security.py
+# hypothesis_version: 6.135.20
+
+[255, 256, 1024, '\x00', '#eval.*io', '#eval.*system', '. ', '/', '0.0.0.0', '10.', '127.0.0.1', '192.168.', '[<>:"|?*]', '\\', '^[\\w\\.\\[\\]]+$', '_', 'datetime', 'http', 'https', 'localhost', 'pathlib', 'unnamed']
