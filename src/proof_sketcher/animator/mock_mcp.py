@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-import random
+import secrets
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
@@ -68,20 +68,20 @@ class MockMCPServer:
             raise ConnectionError("Server not running")
             
         # Simulate processing delay
-        delay = random.uniform(*self.delay_range)
+        delay = secrets.randbelow(int((self.delay_range[1] - self.delay_range[0]) * 1000)) / 1000 + self.delay_range[0]
         await asyncio.sleep(delay)
         
         self.request_count += 1
         
         # Simulate random failures
-        if random.random() > self.success_rate:
+        if secrets.randbelow(100) / 100 > self.success_rate:
             error_types = [
                 {"code": -32603, "message": "Internal error: Memory limit exceeded"},
                 {"code": -32603, "message": "Internal error: Rendering failed"},
                 {"code": -32504, "message": "Timeout: Animation took too long"},
                 {"code": -32602, "message": "Invalid params: Unsupported animation style"}
             ]
-            error = random.choice(error_types)
+            error = error_types[secrets.randbelow(len(error_types))]
             self.logger.warning(f"Mock server simulating error: {error['message']}")
             return {"error": error}
         
@@ -146,7 +146,7 @@ class MockMCPServer:
     
     def _mock_progress(self) -> Dict[str, Any]:
         """Mock progress response."""
-        progress = random.uniform(0, 100)
+        progress = secrets.randbelow(100)
         return {
             "result": {
                 "progress": progress,
@@ -198,7 +198,7 @@ class MockMCPTransport:
             "jsonrpc": "2.0",
             "method": method,
             "params": params,
-            "id": request_id or random.randint(1, 10000)
+            "id": request_id or secrets.randbelow(10000) + 1
         }
         
         # Get response from mock server
