@@ -1,16 +1,15 @@
 """Proof Sketcher: Transform Lean 4 theorems into natural language explanations.
 
-Proof Sketcher is a tool that bridges the gap between formal mathematical proofs
-in Lean 4 and human-readable explanations. It automatically generates natural
-language descriptions of theorems and their proofs, optionally creating
-synchronized mathematical animations.
+Proof Sketcher bridges the gap between formal mathematical proofs in Lean 4 
+and human-readable explanations. It generates natural language descriptions 
+of theorems and their proofs with simple static diagrams.
 
 Key Features:
     - Parse Lean 4 theorem files and extract theorem information
     - Generate natural language explanations using Claude AI
-    - Create mathematical animations using Manim
-    - Export to multiple formats (HTML, Markdown, PDF, Jupyter)
-    - Integration with mathlib4 and doc-gen4
+    - Create simple static diagrams for visualization
+    - Export to multiple formats (HTML, Markdown, PDF)
+    - Future: Integration with doc-gen4
 
 Basic Usage:
     >>> from proof_sketcher.parser import LeanParser
@@ -27,7 +26,7 @@ Basic Usage:
     ...     print(sketch.explanation)
 
 Command Line Usage:
-    $ proof-sketcher prove example.lean --animate --format html
+    $ proof-sketcher prove example.lean --format html
     $ proof-sketcher config show
     $ proof-sketcher cache status
 
@@ -45,13 +44,11 @@ __version__ = "0.0.1a1"  # Alpha 1, NOT production!
 __author__ = "Proof Sketcher Contributors"
 
 # Re-export main components for convenience
-from .animator import ManimAnimator
 from .generator import ClaudeGenerator
 from .parser import LeanParser
 
 __all__ = [
     "LeanParser",
     "ClaudeGenerator",
-    "ManimAnimator",
     "__version__",
 ]

@@ -10,8 +10,6 @@ This module contains shared components used across all other modules:
 from .exceptions import (
     AIExecutableError,
     AITimeoutError,
-    AnimationTimeoutError,
-    AnimatorError,
     CacheError,
     ConfigError,
     ExporterError,
@@ -22,7 +20,7 @@ from .exceptions import (
     TemplateError,
     ValidationError,
 )
-from .interfaces import IAnimator, ICache, IConfigurable, IExporter, IGenerator, IParser
+from .interfaces import ICache, IConfigurable, IExporter, IGenerator, IParser
 from .models import (
     BaseConfig,
     BatchProcessingRequest,
@@ -53,7 +51,6 @@ __all__ = [
     "ProofSketcherError",
     "ParserError",
     "GeneratorError",
-    "AnimatorError",
     "ExporterError",
     "ConfigError",
     "CacheError",
@@ -61,12 +58,10 @@ __all__ = [
     "LeanExecutableError",
     "AIExecutableError",
     "AITimeoutError",
-    "AnimationTimeoutError",
     "TemplateError",
     # Interfaces
     "IParser",
     "IGenerator",
-    "IAnimator",
     "IExporter",
     "ICache",
     "IConfigurable",
