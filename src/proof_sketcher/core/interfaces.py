@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, runtime_c
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
-    from ..animator.models import AnimationConfig, AnimationResponse
     from ..exporter.models import ExportResult
     from ..generator.models import GenerationConfig, ProofSketch
     from ..parser.models import ParseResult, TheoremInfo
@@ -87,28 +86,6 @@ class IGenerator(ABC):
             Simple explanation text
         """
         pass
-
-
-# Animator Interfaces
-@runtime_checkable
-class IAnimator(Protocol):
-    """Protocol for proof animators."""
-
-    async def animate_proof(
-        self,
-        proof_sketch: "ProofSketch",
-        config: Optional["AnimationConfig"] = None,
-    ) -> "AnimationResponse":
-        """Create an animation for a proof sketch.
-
-        Args:
-            proof_sketch: Proof sketch to animate
-            config: Optional animation configuration
-
-        Returns:
-            Animation response with paths to generated files
-        """
-        ...
 
 
 # Exporter Interfaces

@@ -68,8 +68,8 @@ def cli(ctx: click.Context, verbose: bool, config: Optional[Path]) -> None:
       # Generate explanation for a specific theorem
       python -m proof_sketcher prove file.lean --theorem add_comm --format markdown
 
-      # Generate all formats with animations
-      python -m proof_sketcher prove file.lean --format all --animate
+      # Generate all formats
+      python -m proof_sketcher prove file.lean --format all
 
     \b
     Getting Started:
