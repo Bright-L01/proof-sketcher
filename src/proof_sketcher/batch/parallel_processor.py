@@ -35,8 +35,6 @@ def _process_single_theorem_worker(args: Tuple) -> Dict[str, Any]:
     # Import here to avoid pickling issues
     from pathlib import Path
 
-    from ..animator.animation_generator import TheoremAnimator
-    from ..animator.static_fallback import StaticVisualizer
     from ..exporter.html import HTMLExporter
     from ..exporter.markdown import MarkdownExporter
     from ..exporter.models import ExportContext, ExportFormat, ExportOptions
@@ -106,34 +104,9 @@ def _process_single_theorem_worker(args: Tuple) -> Dict[str, Any]:
             output_path = Path(output_dir) / "visualizations" / f"{theorem_name}.png"
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # Try animation first
-            if options.get("try_animation", True):
-                try:
-                    animator = TheoremAnimator()
-                    script = animator.generate_animation_script(
-                        theorem_dict, explanation.dict()
-                    )
-                    if script:
-                        visualizer_used = "animator"
-                        # For batch processing, we just generate the script
-                        script_path = output_path.with_suffix(".py")
-                        script_path.write_text(script)
-                        visualization_path = str(script_path)
-                except Exception:
-                    pass
-
-            # Fallback to static visualization
-            if not visualization_path:
-                try:
-                    visualizer = StaticVisualizer()
-                    success = visualizer.create_proof_diagram(
-                        theorem_dict, explanation.dict(), str(output_path)
-                    )
-                    if success and output_path.exists():
-                        visualization_path = str(output_path)
-                        visualizer_used = "static"
-                except Exception:
-                    pass
+            # Static visualization is not available after removing animation system
+            visualization_path = None
+            visualizer_used = "none"
 
         # Export to requested formats
         exported_files = []

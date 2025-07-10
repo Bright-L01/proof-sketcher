@@ -221,7 +221,6 @@ def secure_pickle_load(data: bytes) -> object:
                 "proof_sketcher.generator.models",
                 "proof_sketcher.core.models",
                 "proof_sketcher.parser.models",
-                "proof_sketcher.animator.models",
                 "datetime",
                 "pathlib",
             }

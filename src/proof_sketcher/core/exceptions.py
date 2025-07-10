@@ -91,37 +91,6 @@ class PromptError(GeneratorError):
     pass
 
 
-# Animator Exceptions
-class AnimatorError(ProofSketcherError):
-    """Base exception for animator-related errors."""
-
-    pass
-
-
-class AnimationTimeoutError(AnimatorError):
-    """Raised when animation generation times out."""
-
-    pass
-
-
-class MCPConnectionError(AnimatorError):
-    """Raised when MCP server connection fails."""
-
-    pass
-
-
-class SceneGenerationError(AnimatorError):
-    """Raised when scene generation fails."""
-
-    pass
-
-
-class FormulaExtractionError(AnimatorError):
-    """Raised when formula extraction fails."""
-
-    pass
-
-
 # Exporter Exceptions
 class ExporterError(ProofSketcherError):
     """Base exception for exporter-related errors."""

@@ -18,8 +18,8 @@ def config() -> None:
     """Manage Proof Sketcher configuration settings.
 
     Configure how Proof Sketcher processes files, generates explanations,
-    creates animations, and exports results. Settings can be managed through
-    configuration files, environment variables, or command-line options.
+    and exports results. Settings can be managed through configuration files,
+    environment variables, or command-line options.
 
     \b
     Configuration Sources (in priority order):
@@ -87,11 +87,6 @@ def show(ctx: click.Context) -> None:
     table.add_row("Generator", "Model", config.generator.model.value)
     table.add_row("Generator", "Temperature", str(config.generator.temperature))
     table.add_row("Generator", "Max Tokens", str(config.generator.max_tokens))
-
-    # Animation settings
-    # AnimationConfig doesn't have 'enabled' field - animation is controlled by CLI flag
-    table.add_row("Animation", "Quality", config.animator.quality.value)
-    table.add_row("Animation", "FPS", str(config.animator.fps))
 
     # Export settings
     table.add_row("Export", "Output Directory", str(config.export.output_dir))

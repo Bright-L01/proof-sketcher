@@ -16,7 +16,6 @@ import toml
 import yaml
 from pydantic import BaseModel, Field
 
-from ..animator.models import AnimationConfig, ManimConfig
 from ..core.exceptions import ConfigError, ConfigNotFoundError, ConfigValidationError
 from ..generator.models import GenerationConfig
 from ..parser.config import ParserConfig
@@ -95,8 +94,6 @@ class ProofSketcherConfig:
     # Component configurations
     parser: ParserConfig = field(default_factory=ParserConfig)
     generator: GenerationConfig = field(default_factory=GenerationConfig)
-    animator: AnimationConfig = field(default_factory=AnimationConfig)
-    manim: ManimConfig = field(default_factory=ManimConfig)
     export: ExportConfig = field(default_factory=ExportConfig)
 
     # Global settings
@@ -231,10 +228,6 @@ class ProofSketcherConfig:
             self.parser = ParserConfig(**data["parser"])
         if "generator" in data:
             self.generator = GenerationConfig(**data["generator"])
-        if "animator" in data:
-            self.animator = AnimationConfig(**data["animator"])
-        if "manim" in data:
-            self.manim = ManimConfig(**data["manim"])
         if "export" in data:
             self.export = ExportConfig(**data["export"])
 
@@ -303,10 +296,6 @@ class ProofSketcherConfig:
             setattr(self.parser, key, value)
         elif component == "generator" and hasattr(self.generator, key):
             setattr(self.generator, key, value)
-        elif component == "animator" and hasattr(self.animator, key):
-            setattr(self.animator, key, value)
-        elif component == "manim" and hasattr(self.manim, key):
-            setattr(self.manim, key, value)
         elif component == "export" and hasattr(self.export, key):
             setattr(self.export, key, value)
 
@@ -357,8 +346,6 @@ class ProofSketcherConfig:
             "data_dir": str(self.data_dir),
             "parser": parser_dict,
             "generator": self.generator.dict(),
-            "animator": self.animator.dict(),
-            "manim": self.manim.dict(),
             "export": self.export.dict(exclude_none=True),
         }
 
@@ -400,8 +387,6 @@ class ProofSketcherConfig:
             "generator": (
                 self.generator.dict() if hasattr(self.generator, "dict") else {}
             ),
-            "animator": self.animator.dict() if hasattr(self.animator, "dict") else {},
-            "manim": self.manim.dict() if hasattr(self.manim, "dict") else {},
             "export": self.export.dict() if hasattr(self.export, "dict") else {},
         }
 

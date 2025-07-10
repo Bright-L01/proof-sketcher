@@ -1,6 +1,5 @@
 """Prove command - main theorem processing functionality."""
 
-import asyncio
 from pathlib import Path
 from typing import Any, Optional, Tuple, Union
 
@@ -8,13 +7,6 @@ import click
 from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
-from ...animator.manim_mcp import ManimMCPClient
-from ...animator.models import (
-    AnimationRequest,
-    AnimationScene,
-    AnimationSegment,
-    TransformationType,
-)
 from ...config.config import ProofSketcherConfig
 from ...exporter import (
     ExportContext,
@@ -48,11 +40,6 @@ console = Console()
     help="Export format: html (interactive), markdown (GitHub), pdf (print), jupyter (notebooks), all (everything)",
 )
 @click.option(
-    "--animate",
-    is_flag=True,
-    help="Generate mathematical animations using Manim (requires Node.js and MCP server)",
-)
-@click.option(
     "--theorem",
     "-t",
     multiple=True,
@@ -69,14 +56,13 @@ def prove(
     lean_file: Path,
     output: Optional[Path],
     format: str,
-    animate: bool,
     theorem: Tuple[str, ...],
     offline: bool,
 ) -> None:
     """Process a Lean file and generate natural language explanations.
 
     Parses Lean 4 theorems and generates accessible explanations using Claude AI.
-    Supports multiple export formats, optional mathematical animations, and offline mode.
+    Supports multiple export formats and offline mode.
 
     \b
     Examples:
@@ -89,8 +75,8 @@ def prove(
       # Offline mode - no AI required, uses AST analysis only
       python -m proof_sketcher prove file.lean --offline --format markdown
 
-      # Generate all formats with animations
-      python -m proof_sketcher prove file.lean --format all --animate --output docs/
+      # Generate all formats
+      python -m proof_sketcher prove file.lean --format all --output docs/
 
       # Process multiple specific theorems
       python -m proof_sketcher prove file.lean -t "theorem1" -t "theorem2" -f pdf
@@ -98,7 +84,6 @@ def prove(
     \b
     Prerequisites:
       • Claude CLI must be installed and configured
-      • For animations: Node.js and Manim MCP server
       • For PDF: LaTeX distribution (TeX Live, MiKTeX)
 
     \b
@@ -174,10 +159,9 @@ def prove(
         )
 
         # Generate explanations
-        sketches, animations = _generate_explanations(
+        sketches = _generate_explanations(
             theorems_to_process,
             generator,
-            animate,
             offline,
             config,
             output,
@@ -191,7 +175,7 @@ def prove(
 
         # Export results
         _export_results(
-            sketches, animations, format, output, animate, lean_file, progress
+            sketches, format, output, lean_file, progress
         )
 
     console.print(f"\n[bold green]✨ Success![/bold green] Output saved to: {output}")
@@ -247,12 +231,11 @@ def _setup_generator(
 
 
 def _generate_explanations(
-    theorems, generator, animate, offline, config, output, progress, gen_mode_text
+    theorems, generator, offline, config, output, progress, gen_mode_text
 ):
-    """Generate explanations and optionally animations for theorems."""
+    """Generate explanations for theorems."""
     gen_task = progress.add_task(gen_mode_text, total=len(theorems))
     sketches = []
-    animations = {}
 
     for thm in theorems:
         try:
@@ -260,18 +243,6 @@ def _generate_explanations(
             sketch = generator.generate_proof_sketch(thm)
             sketches.append(sketch)
             progress.update(gen_task, advance=1)
-
-            # Generate animation if requested (skip in offline mode for Manim)
-            if animate and not offline:
-                anim_path = asyncio.run(
-                    _generate_animation(thm.name, sketch, config, output)
-                )
-                if anim_path:
-                    animations[thm.name] = anim_path
-            elif animate and offline:
-                console.print(
-                    f"[yellow]⚠️ Skipping animation for {thm.name} in offline mode[/yellow]"
-                )
 
         except Exception as e:
             if offline:
@@ -285,7 +256,7 @@ def _generate_explanations(
                 )
             progress.update(gen_task, advance=1)
 
-    return sketches, animations
+    return sketches
 
 
 def _show_generation_failure_help(offline: bool) -> None:
@@ -308,7 +279,7 @@ def _show_generation_failure_help(offline: bool) -> None:
         console.print("  • Insufficient AST information")
 
 
-def _export_results(sketches, animations, format, output, animate, lean_file, progress):
+def _export_results(sketches, format, output, lean_file, progress):
     """Export results in the requested format(s)."""
     export_task = progress.add_task("[cyan]Exporting results...", total=1)
 
@@ -317,16 +288,16 @@ def _export_results(sketches, animations, format, output, animate, lean_file, pr
         format=ExportFormat(format if format != "all" else "html"),
         output_dir=output,
         sketches=sketches,
-        animations=animations,
+        animations={},
         project_name=f"Proof Sketcher: {lean_file.stem}",
-        include_animations=animate,
+        include_animations=False,
     )
 
     # Export based on format
     export_options = ExportOptions.model_validate(
         {
             "output_dir": output,
-            "include_animations": animate,
+            "include_animations": False,
             "create_index": len(sketches) > 1,
         }
     )
@@ -365,52 +336,3 @@ def _export_results(sketches, animations, format, output, animate, lean_file, pr
     progress.update(export_task, completed=1)
 
 
-async def _generate_animation(
-    theorem_name: str, sketch: Any, config: Any, output_dir: Path
-) -> Optional[Path]:
-    """Generate animation for a theorem."""
-    try:
-        client = ManimMCPClient(config.manim)
-        await client.start_server()
-
-        # Generate a simple request ID
-        import uuid
-
-        request_id = str(uuid.uuid4())[:8]
-
-        # Create basic animation segments from proof steps
-        segments = []
-        if hasattr(sketch, "key_steps") and sketch.key_steps:
-            scenes = []
-            for i, step in enumerate(sketch.key_steps):
-                scene = AnimationScene(
-                    scene_id=f"step_{i}",
-                    title=f"Step {step.step_number}",
-                    duration=15.0,
-                    initial_formula=f"Step {step.step_number}",
-                    final_formula=step.description,
-                    transformation_type=TransformationType.SUBSTITUTION,
-                )
-                scenes.append(scene)
-
-            segment = AnimationSegment(
-                segment_id="main", title=theorem_name, scenes=scenes
-            )
-            segments = [segment]
-
-        request = AnimationRequest(
-            theorem_name=theorem_name,
-            request_id=request_id,
-            segments=segments,
-            config=config.animator,
-        )
-
-        response = await client.render_animation(request)
-        await client.stop_server()
-
-        if response.success and response.video_path:
-            return Path(response.video_path)
-    except Exception as e:
-        console.print(f"[yellow]Animation failed for {theorem_name}: {e}[/yellow]")
-
-    return None
