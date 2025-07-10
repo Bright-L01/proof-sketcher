@@ -36,10 +36,10 @@
 
 ### Surprising Discovery
 
-**Type errors dropped from 60+ to 2!** 
+**Type errors dropped from 60+ to 2!**
 
 The animation system was the source of most type safety issues. By removing it, we accidentally fixed the type safety problem. The remaining 2 errors are trivial:
-1. Missing type stubs for `tqdm` 
+1. Missing type stubs for `tqdm`
 2. Module path configuration issue
 
 ### Test Situation

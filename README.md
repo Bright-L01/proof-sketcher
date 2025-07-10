@@ -2,8 +2,8 @@
 
 ⚠️ **ALPHA SOFTWARE - MAJOR REFACTORING IN PROGRESS** ⚠️
 
-**Current version**: 0.0.1-alpha2-dev  
-**Status**: Emergency refactoring after removing 8,000+ lines of animation code  
+**Current version**: 0.0.1-alpha2-dev
+**Status**: Emergency refactoring after removing 8,000+ lines of animation code
 **New Direction**: Will become a doc-gen4 enhancer, not a competitor
 
 ## Major Architecture Change (July 2025)
@@ -11,12 +11,14 @@
 We've made a brutal but necessary decision: **remove all animation functionality** and pivot to enhancing doc-gen4 rather than competing with it.
 
 ### What We Removed 🗑️
+
 - ❌ **6,470 lines** of animation code (Manim integration)
 - ❌ **567 lines** of duplicate export system
 - ❌ **~1,000 lines** of animation tests
 - ❌ **Total: ~8,000 lines** of complex, fragile code
 
 ### Why This Change?
+
 1. **Manim added 80% complexity for 20% value** - It worked ~20% of the time
 2. **doc-gen4 already exists** - Why compete when we can enhance?
 3. **Technical debt was killing us** - 60+ type errors, duplicate systems
@@ -25,13 +27,16 @@ We've made a brutal but necessary decision: **remove all animation functionality
 ## New Vision: doc-gen4 Enhancer
 
 ### What Proof Sketcher Will Become
+
 A focused tool that:
+
 1. **Integrates with doc-gen4** output
 2. **Adds natural language explanations** to Lean documentation
 3. **Provides simple static diagrams** (matplotlib only)
 4. **Enhances readability** for newcomers to Lean
 
 ### Current State (Honest)
+
 - ✅ Basic Lean parsing still works
 - ✅ Export to HTML/Markdown still works
 - ✅ Static diagram generation possible
@@ -63,18 +68,21 @@ proof-sketcher list-theorems file.lean
 ## Roadmap
 
 ### Phase 1: Cleanup (Current)
+
 - [x] Remove animation system
 - [x] Remove duplicate export system
 - [ ] Fix all type errors
 - [ ] Achieve 60% test coverage
 
 ### Phase 2: doc-gen4 Integration
+
 - [ ] Research doc-gen4 API
 - [ ] Build adapter layer
 - [ ] Parse doc-gen4 output
 - [ ] Inject explanations
 
 ### Phase 3: Rebuild
+
 - [ ] Clean architecture
 - [ ] Natural language generation via Claude
 - [ ] Simple static diagrams only
@@ -83,12 +91,14 @@ proof-sketcher list-theorems file.lean
 ## For Developers
 
 ### Current Issues
+
 1. **Type Safety**: 60+ mypy errors need fixing
 2. **Test Coverage**: Only 24% (need 60%+)
 3. **Architecture**: Needs complete redesign
 4. **Dependencies**: Many can be removed
 
 ### How to Help
+
 1. **Don't add features** - We're removing, not adding
 2. **Fix type errors** - Run `mypy src/`
 3. **Add tests** - Focus on core functionality
@@ -116,6 +126,6 @@ If you want animations, use Manim directly. If you want Lean documentation, use 
 
 ---
 
-**Contact**: brightliu@college.harvard.edu  
-**License**: MIT  
+**Contact**: <brightliu@college.harvard.edu>
+**License**: MIT
 **Status**: Under heavy refactoring - expect breaking changes

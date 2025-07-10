@@ -45,6 +45,7 @@ dependencies = [
     "h11>=0.16.0,<1.0",  # Security fix: GHSA-vqfr-h8mv-ghfj
     "httpcore>=1.0.7,<2.0",  # Security fix: GHSA-r5v8-xrfc-8v8j
     "urllib3>=2.5.0,<3.0",  # Security fix: GHSA-48p4-8xcf-vxj5, GHSA-pq67-6m6q-mj2v
+    "beautifulsoup4>=4.12,<5.0",  # For doc-gen4 HTML parsing
 ]
 
 [project.optional-dependencies]

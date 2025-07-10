@@ -174,9 +174,7 @@ def prove(
             return
 
         # Export results
-        _export_results(
-            sketches, format, output, lean_file, progress
-        )
+        _export_results(sketches, format, output, lean_file, progress)
 
     console.print(f"\n[bold green]✨ Success![/bold green] Output saved to: {output}")
 
@@ -334,5 +332,3 @@ def _export_results(sketches, format, output, lean_file, progress):
             console.print(f"[red]Export error ({fmt}): {e}[/red]")
 
     progress.update(export_task, completed=1)
-
-
