@@ -16,6 +16,7 @@ from ..core.alpha_warning import print_cli_warning, should_show_warning
 from .commands.batch import batch
 from .commands.cache import cache
 from .commands.config import config
+from .commands.enhance import enhance
 from .commands.info import formats, list_theorems, version
 from .commands.optimize import optimize
 from .commands.performance import performance
@@ -108,6 +109,7 @@ cli.add_command(version)
 cli.add_command(batch)
 cli.add_command(performance)
 cli.add_command(optimize)
+cli.add_command(enhance)
 
 
 def main() -> None:

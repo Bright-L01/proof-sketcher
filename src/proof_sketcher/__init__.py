@@ -1,7 +1,7 @@
 """Proof Sketcher: Transform Lean 4 theorems into natural language explanations.
 
-Proof Sketcher bridges the gap between formal mathematical proofs in Lean 4 
-and human-readable explanations. It generates natural language descriptions 
+Proof Sketcher bridges the gap between formal mathematical proofs in Lean 4
+and human-readable explanations. It generates natural language descriptions
 of theorems and their proofs with simple static diagrams.
 
 Key Features:
