@@ -8,7 +8,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_compl
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore[import-untyped]
 
 from ..config.config import ProofSketcherConfig
 
