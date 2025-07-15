@@ -41,15 +41,21 @@ Generation Types:
 For configuration options, see GenerationConfig documentation.
 """
 
-from .ai_generator import AIGenerator
+from .ai_generator import AIGenerator as ComplexAIGenerator
 from .cache import CacheManager as GenerationCache
 from .models import GenerationConfig, ProofSketch, ProofStep
+from .simple_generator import SimpleGenerator
+
+# Use simple generator for MVP
+AIGenerator = SimpleGenerator
 
 # Backward compatibility aliases
 ClaudeGenerator = AIGenerator
 
 __all__ = [
     "AIGenerator",
+    "SimpleGenerator",
+    "ComplexAIGenerator",
     "ClaudeGenerator",  # Backward compatibility
     "ProofSketch",
     "ProofStep",

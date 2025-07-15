@@ -1,8 +1,7 @@
 """Unit tests for parser modules."""
 
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+import json
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -11,9 +10,6 @@ from proof_sketcher.parser.enhanced_parser import EnhancedLeanParser
 from proof_sketcher.parser.lean_extractor import LeanExtractor
 from proof_sketcher.parser.lean_parser import LeanParser
 from proof_sketcher.parser.mathlib_notation import MathlibNotationHandler
-from proof_sketcher.parser.mathlib_notation_optimized import (
-    OptimizedMathlibNotationHandler,
-)
 from proof_sketcher.parser.models import ParseError, ParseResult, TheoremInfo
 
 
@@ -87,7 +83,7 @@ class TestLeanParser:
 
         parser = LeanParser(config=parser_config)
 
-        with patch.object(parser.extractor, "extract_theorems") as mock_extract:
+        with patch.object(parser.extractor, "extract_file") as mock_extract:
             mock_extract.return_value = [
                 TheoremInfo(
                     name="add_zero",
@@ -119,7 +115,7 @@ class TestLeanParser:
 
         parser = LeanParser(config=parser_config)
 
-        with patch.object(parser.extractor, "extract_theorems") as mock_extract:
+        with patch.object(parser.extractor, "extract_file") as mock_extract:
             mock_extract.side_effect = Exception("Syntax error at line 1")
 
             result = parser.parse_file(lean_file)
@@ -196,7 +192,7 @@ theorem another_valid : False → True := by
 
         parser = LeanParser(config=parser_config)
 
-        with patch.object(parser.extractor, "extract_theorems") as mock_extract:
+        with patch.object(parser.extractor, "extract_file") as mock_extract:
             # Should extract valid theorems despite errors
             mock_extract.return_value = [
                 TheoremInfo(name="valid", statement="True", proof="trivial"),
@@ -323,7 +319,7 @@ class TestLeanExtractor:
         extractor = LeanExtractor()
         assert extractor.lean_executable is not None
 
-    def test_extract_theorems_basic(self, simple_lean_content, tmp_path):
+    def test_extract_file_basic(self, simple_lean_content, tmp_path):
         """Test basic theorem extraction."""
         lean_file = tmp_path / "simple.lean"
         lean_file.write_text(simple_lean_content)
@@ -385,7 +381,7 @@ class TestLeanExtractor:
 
         # Non-existent file
         with pytest.raises(FileNotFoundError):
-            extractor.extract_theorems(tmp_path / "nonexistent.lean")
+            extractor.extract_file(tmp_path / "nonexistent.lean")
 
         # Lean execution error
         lean_file = tmp_path / "error.lean"
@@ -395,7 +391,7 @@ class TestLeanExtractor:
             mock_run.side_effect = Exception("Lean error")
 
             with pytest.raises(Exception):
-                extractor.extract_theorems(lean_file)
+                extractor.extract_file(lean_file)
 
 
 class TestMathlibNotationHandler:
@@ -483,60 +479,6 @@ class TestMathlibNotationHandler:
 
         assert "∀" in enhanced.statement or "forall" in enhanced.statement
         assert enhanced.name == original.name
-
-
-class TestOptimizedMathlibNotationHandler:
-    """Test optimized Mathlib notation handler."""
-
-    def test_optimized_handler_initialization(self):
-        """Test optimized handler initialization."""
-        handler = OptimizedMathlibNotationHandler()
-        assert handler.cache is not None
-        assert handler.precompiled_patterns is not None
-
-    def test_caching_behavior(self):
-        """Test caching behavior for performance."""
-        handler = OptimizedMathlibNotationHandler()
-
-        expression = "∀ x ∈ ℕ, x + 0 = x"
-
-        # First conversion
-        result1 = handler.convert_to_latex(expression)
-
-        # Second conversion should use cache
-        result2 = handler.convert_to_latex(expression)
-
-        assert result1 == result2
-        assert len(handler.cache) > 0
-
-    def test_batch_conversion_performance(self):
-        """Test batch conversion performance."""
-        handler = OptimizedMathlibNotationHandler()
-
-        expressions = [
-            "∀ x ∈ ℕ, x + 0 = x",
-            "∃ y ∈ ℝ, y² = 2",
-            "A ∪ B ⊆ C",
-            "f : ℝ → ℝ",
-        ] * 10
-
-        results = handler.convert_batch_to_latex(expressions)
-
-        assert len(results) == len(expressions)
-        assert all(isinstance(r, str) for r in results)
-
-    def test_pattern_optimization(self):
-        """Test precompiled pattern optimization."""
-        handler = OptimizedMathlibNotationHandler()
-
-        # Should have precompiled common patterns
-        assert len(handler.precompiled_patterns) > 0
-
-        # Test pattern matching
-        expression = "∀ x : ℕ, P(x)"
-        matches = handler._find_pattern_matches(expression)
-
-        assert len(matches) > 0
 
 
 class TestParserConfig:

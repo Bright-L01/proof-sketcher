@@ -33,11 +33,17 @@ For more details, see the individual module documentation.
 """
 
 from .config import ParserConfig
-from .lean_parser import LeanParser
+from .lean_parser import LeanParser as ComplexLeanParser
 from .models import ParseResult, TheoremInfo
+from .simple_parser import SimpleLeanParser
+
+# Use simple parser as default for MVP
+LeanParser = SimpleLeanParser
 
 __all__ = [
     "LeanParser",
+    "SimpleLeanParser",
+    "ComplexLeanParser",
     "ParseResult",
     "TheoremInfo",
     "ParserConfig",

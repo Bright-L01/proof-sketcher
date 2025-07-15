@@ -1,1 +1,0 @@
-theorem test : True := trivial

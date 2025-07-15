@@ -1,50 +1,28 @@
-# Proof Sketcher (Alpha) - Post-Pivot
+# Proof Sketcher
 
-⚠️ **ALPHA SOFTWARE - MAJOR REFACTORING IN PROGRESS** ⚠️
+**Version**: 0.1.0-mvp
+**Status**: Minimal Viable Product - Basic functionality restored
 
-**Current version**: 0.0.1-alpha2-dev
-**Status**: Emergency refactoring after removing 8,000+ lines of animation code
-**New Direction**: Will become a doc-gen4 enhancer, not a competitor
+## What It Actually Does
 
-## Major Architecture Change (July 2025)
+Proof Sketcher parses Lean 4 files and generates natural language explanations of theorems using template-based generation. No AI required, no animations, just simple explanations.
 
-We've made a brutal but necessary decision: **remove all animation functionality** and pivot to enhancing doc-gen4 rather than competing with it.
+**Working Features:**
 
-### What We Removed 🗑️
+- ✅ Parse Lean files to extract theorems
+- ✅ Generate basic explanations (offline/template-based)
+- ✅ Export to Markdown format
+- ✅ Simple command-line interface
 
-- ❌ **6,470 lines** of animation code (Manim integration)
-- ❌ **567 lines** of duplicate export system
-- ❌ **~1,000 lines** of animation tests
-- ❌ **Total: ~8,000 lines** of complex, fragile code
+**Not Working Yet:**
 
-### Why This Change?
+- ❌ AI-powered explanations (offline only)
+- ❌ Visualizations or diagrams
+- ❌ doc-gen4 integration
+- ❌ HTML/PDF export
+- ❌ Advanced parsing features
 
-1. **Manim added 80% complexity for 20% value** - It worked ~20% of the time
-2. **doc-gen4 already exists** - Why compete when we can enhance?
-3. **Technical debt was killing us** - 60+ type errors, duplicate systems
-4. **Wrong problem** - Users need better explanations, not buggy animations
-
-## New Vision: doc-gen4 Enhancer
-
-### What Proof Sketcher Will Become
-
-A focused tool that:
-
-1. **Integrates with doc-gen4** output
-2. **Adds natural language explanations** to Lean documentation
-3. **Provides simple static diagrams** (matplotlib only)
-4. **Enhances readability** for newcomers to Lean
-
-### Current State (Honest)
-
-- ✅ Basic Lean parsing still works
-- ✅ Export to HTML/Markdown still works
-- ✅ Static diagram generation possible
-- ❌ 60+ type errors need fixing
-- ❌ Architecture needs complete overhaul
-- ❌ Not ready for any real use
-
-## Installation (Development Only)
+## Installation
 
 ```bash
 # Clone repository
@@ -55,77 +33,134 @@ cd proof-sketcher
 pip install -e .
 ```
 
-## Basic Usage (Limited Functionality)
+## Quick Start
+
+### Test the Pipeline
 
 ```bash
-# Parse simple theorem
-proof-sketcher prove simple.lean --offline --format markdown
-
-# List theorems in file
-proof-sketcher list-theorems file.lean
+# Run the integration test to verify everything works
+python test_mvp_pipeline.py
 ```
 
-## Roadmap
+### Basic Usage
 
-### Phase 1: Cleanup (Current)
+```python
+from proof_sketcher.parser import LeanParser
+from proof_sketcher.generator import AIGenerator
+from proof_sketcher.exporter import MarkdownExporter
 
-- [x] Remove animation system
-- [x] Remove duplicate export system
-- [ ] Fix all type errors
-- [ ] Achieve 60% test coverage
+# Parse Lean file
+parser = LeanParser()
+result = parser.parse_file("example.lean")
 
-### Phase 2: doc-gen4 Integration
+# Generate explanation
+generator = AIGenerator()  # Uses offline mode
+sketch = generator.generate_offline(result.theorems[0])
 
-- [ ] Research doc-gen4 API
-- [ ] Build adapter layer
+# Export to markdown
+exporter = MarkdownExporter()
+content = exporter.export(sketch, "output.md")
+```
+
+## Example Output
+
+Input theorem:
+
+```lean
+theorem add_zero (n : Nat) : n + 0 = n := by simp
+```
+
+Generated explanation:
+
+```markdown
+# Theorem: add_zero
+
+## Statement
+`n + 0 = n`
+
+## Explanation
+This theorem establishes an equality relationship between mathematical
+expressions. It involves establishing an equality between mathematical
+expressions.
+
+## Proof Steps
+### Step 1: Set up the proof context
+We begin by introducing the mathematical objects we need to work with.
+
+### Step 2: Simplify the expression
+The result follows directly from simplification rules.
+
+## Conclusion
+This completes the proof of add_zero. The proof is straightforward,
+requiring only a few logical steps.
+```
+
+## Current Architecture
+
+After removing 8,000+ lines of animation code:
+
+```
+src/proof_sketcher/
+├── parser/
+│   ├── simple_parser.py    # Basic theorem extraction
+│   └── models.py           # Data models
+├── generator/
+│   ├── simple_generator.py # Template-based generation
+│   └── offline.py          # Offline templates
+└── exporter/
+    └── simple_markdown.py  # Basic markdown export
+```
+
+## Limitations
+
+1. **Parser**: Simple regex-based, may miss complex theorems
+2. **Generator**: Template-only, repetitive explanations
+3. **Export**: Basic markdown, no fancy formatting
+4. **Scale**: Not optimized for large projects
+
+## Roadmap to Recovery
+
+### Phase 8: Expand Export Formats (Next)
+
+- [ ] Add basic HTML export
+- [ ] Improve markdown formatting
+- [ ] Add batch processing
+
+### Phase 9: Better Generation
+
+- [ ] Integrate Claude API (optional)
+- [ ] Improve templates
+- [ ] Add mathematical context
+
+### Phase 10: Real Parser
+
+- [ ] Use Lean's actual AST
+- [ ] Handle complex proofs
+- [ ] Extract more metadata
+
+### Phase 11: doc-gen4 Integration
+
 - [ ] Parse doc-gen4 output
 - [ ] Inject explanations
+- [ ] Generate enhanced docs
 
-### Phase 3: Rebuild
+## Why This Rewrite?
 
-- [ ] Clean architecture
-- [ ] Natural language generation via Claude
-- [ ] Simple static diagrams only
-- [ ] Export enhanced documentation
+We removed 8,000+ lines of broken animation code and started over with the simplest thing that could work. This MVP proves the core concept: we can parse Lean, generate explanations, and export them. Everything else builds on this foundation.
 
-## For Developers
+## Contributing
 
-### Current Issues
+This is a fresh start. The codebase is minimal and focused. Before adding features:
 
-1. **Type Safety**: 60+ mypy errors need fixing
-2. **Test Coverage**: Only 24% (need 60%+)
-3. **Architecture**: Needs complete redesign
-4. **Dependencies**: Many can be removed
+1. Run `test_mvp_pipeline.py` - it must pass
+2. Keep it simple - no complex features yet
+3. Document what actually works - no aspirations
 
-### How to Help
+## License
 
-1. **Don't add features** - We're removing, not adding
-2. **Fix type errors** - Run `mypy src/`
-3. **Add tests** - Focus on core functionality
-4. **Document honestly** - No false claims
-
-## Why This Will Work Better
-
-1. **Focused Scope**: Do one thing well
-2. **Build on Success**: doc-gen4 handles the hard parts
-3. **Real Value**: Natural language explanations help newcomers
-4. **Maintainable**: Smaller, cleaner codebase
-
-## Honest Timeline
-
-- **Week 1**: Fix type errors, achieve 60% coverage
-- **Week 2**: Research and prototype doc-gen4 integration
-- **Week 3**: Rebuild with clean architecture
-- **Week 4**: Beta release as doc-gen4 enhancer
-
-## The Bottom Line
-
-Proof Sketcher tried to do too much. We're cutting scope dramatically to deliver something actually useful. No more animations, no more competing with doc-gen4, just simple enhancements to make Lean documentation more accessible.
-
-If you want animations, use Manim directly. If you want Lean documentation, use doc-gen4. If you want natural language explanations added to your Lean docs, wait for our beta.
+MIT License - See LICENSE file
 
 ---
 
 **Contact**: <brightliu@college.harvard.edu>
-**License**: MIT
-**Status**: Under heavy refactoring - expect breaking changes
+**Note**: This is a complete rewrite. Previous versions with animation support have been deprecated.

@@ -52,7 +52,7 @@ For template customization, see the templates/ directory.
 from .base import BaseExporterImpl
 from .html import HTMLExporter
 from .jupyter import JupyterExporter
-from .markdown import MarkdownExporter
+from .markdown import MarkdownExporter as ComplexMarkdownExporter
 from .models import (
     BaseExporter,
     ExportContext,
@@ -63,7 +63,11 @@ from .models import (
     TemplateType,
 )
 from .pdf import PDFExporter
+from .simple_markdown import SimpleMarkdownExporter
 from .template_manager import TemplateManager
+
+# Use simple exporter for MVP
+MarkdownExporter = SimpleMarkdownExporter
 
 __all__ = [
     "ExportContext",
@@ -77,6 +81,8 @@ __all__ = [
     "TemplateManager",
     "HTMLExporter",
     "MarkdownExporter",
+    "SimpleMarkdownExporter",
+    "ComplexMarkdownExporter",
     "PDFExporter",
     "JupyterExporter",
 ]
