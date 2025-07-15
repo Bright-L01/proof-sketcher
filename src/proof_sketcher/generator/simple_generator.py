@@ -10,7 +10,7 @@ from .offline import OfflineGenerator
 class SimpleGenerator:
     """Simple generator that only uses offline mode for MVP."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize simple generator with offline mode."""
         self.offline_generator = OfflineGenerator()
 

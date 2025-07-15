@@ -1,25 +1,27 @@
 # Proof Sketcher
 
-**Version**: 0.1.0-mvp
-**Status**: Minimal Viable Product - Basic functionality restored
+**Version**: 0.1.1-actual-mvp
+**Status**: Functional MVP - Core pipeline working
 
 ## What It Actually Does
 
-Proof Sketcher parses Lean 4 files and generates natural language explanations of theorems using template-based generation. No AI required, no animations, just simple explanations.
+Proof Sketcher parses Lean 4 files and generates natural language explanations of theorems using template-based generation. Now with modern HTML export and MathJax 4.0 support.
 
 **Working Features:**
 
-- ✅ Parse Lean files to extract theorems
-- ✅ Generate basic explanations (offline/template-based)
+- ✅ Parse Lean files to extract theorems and lemmas
+- ✅ Generate explanations (offline/template-based)
 - ✅ Export to Markdown format
-- ✅ Simple command-line interface
+- ✅ Export to HTML with MathJax 4.0 support
+- ✅ Batch processing for multiple files
+- ✅ Auto-generated index files
+- ✅ Mathematical notation rendering
 
 **Not Working Yet:**
 
 - ❌ AI-powered explanations (offline only)
-- ❌ Visualizations or diagrams
 - ❌ doc-gen4 integration
-- ❌ HTML/PDF export
+- ❌ PDF export
 - ❌ Advanced parsing features
 
 ## Installation
@@ -47,7 +49,7 @@ python test_mvp_pipeline.py
 ```python
 from proof_sketcher.parser import LeanParser
 from proof_sketcher.generator import AIGenerator
-from proof_sketcher.exporter import MarkdownExporter
+from proof_sketcher.exporter import MarkdownExporter, HTMLExporter
 
 # Parse Lean file
 parser = LeanParser()
@@ -58,8 +60,34 @@ generator = AIGenerator()  # Uses offline mode
 sketch = generator.generate_offline(result.theorems[0])
 
 # Export to markdown
-exporter = MarkdownExporter()
-content = exporter.export(sketch, "output.md")
+markdown_exporter = MarkdownExporter()
+markdown_content = markdown_exporter.export(sketch, "output.md")
+
+# Export to HTML with MathJax
+html_exporter = HTMLExporter()
+html_content = html_exporter.export(sketch, "output.html")
+```
+
+### Batch Processing
+
+```python
+from proof_sketcher.parser import LeanParser
+from proof_sketcher.generator import AIGenerator
+from proof_sketcher.exporter import BatchExporter
+
+# Parse multiple theorems
+parser = LeanParser()
+result = parser.parse_file("theorems.lean")
+
+# Batch export to multiple formats
+batch_exporter = BatchExporter()
+files = batch_exporter.export_from_theorems(
+    result.theorems,
+    generator=AIGenerator(),
+    formats=["markdown", "html"],
+    create_index=True
+)
+# Creates: markdown/*.md, html/*.html, README.md, index.html
 ```
 
 ## Example Output
@@ -97,18 +125,20 @@ requiring only a few logical steps.
 
 ## Current Architecture
 
-After removing 8,000+ lines of animation code:
+Clean MVP architecture with modern export capabilities:
 
 ```
 src/proof_sketcher/
 ├── parser/
-│   ├── simple_parser.py    # Basic theorem extraction
-│   └── models.py           # Data models
+│   ├── simple_parser.py    # Lean theorem extraction (multiline support)
+│   └── models.py           # Pydantic data models
 ├── generator/
-│   ├── simple_generator.py # Template-based generation
-│   └── offline.py          # Offline templates
+│   ├── simple_generator.py # Template-based generation  
+│   └── offline.py          # Offline templates with context
 └── exporter/
-    └── simple_markdown.py  # Basic markdown export
+    ├── simple_markdown.py  # Markdown export
+    ├── simple_html.py      # HTML export with MathJax 4.0
+    └── batch_processor.py  # Batch export with indexing
 ```
 
 ## Limitations
@@ -118,35 +148,36 @@ src/proof_sketcher/
 3. **Export**: Basic markdown, no fancy formatting
 4. **Scale**: Not optimized for large projects
 
-## Roadmap to Recovery
+## Roadmap to Full Features
 
-### Phase 8: Expand Export Formats (Next)
+### Phase 8: Enhanced Export ✅ (Completed)
 
-- [ ] Add basic HTML export
-- [ ] Improve markdown formatting
-- [ ] Add batch processing
+- ✅ Add HTML export with MathJax 4.0
+- ✅ Improve markdown formatting
+- ✅ Add batch processing with indexing
 
-### Phase 9: Better Generation
+### Phase 9: Better Generation (Next)
 
 - [ ] Integrate Claude API (optional)
-- [ ] Improve templates
-- [ ] Add mathematical context
+- [ ] Improve templates with mathematical context
+- [ ] Add difficulty assessment
+- [ ] Better prerequisite detection
 
 ### Phase 10: Real Parser
 
-- [ ] Use Lean's actual AST
-- [ ] Handle complex proofs
-- [ ] Extract more metadata
+- [ ] Use Lean's actual AST via LSP
+- [ ] Handle complex proofs with tactics
+- [ ] Extract more metadata (dependencies, imports)
 
 ### Phase 11: doc-gen4 Integration
 
 - [ ] Parse doc-gen4 output
-- [ ] Inject explanations
-- [ ] Generate enhanced docs
+- [ ] Inject explanations into existing docs
+- [ ] Generate enhanced documentation
 
 ## Why This Rewrite?
 
-We removed 8,000+ lines of broken animation code and started over with the simplest thing that could work. This MVP proves the core concept: we can parse Lean, generate explanations, and export them. Everything else builds on this foundation.
+We removed 8,000+ lines of broken animation code and started over with the simplest thing that could work. This MVP proves the core concept works and provides a solid foundation for future features. The current implementation handles real Lean syntax patterns and provides modern export formats.
 
 ## Contributing
 
