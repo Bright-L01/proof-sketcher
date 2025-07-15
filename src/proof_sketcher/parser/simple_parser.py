@@ -2,7 +2,7 @@
 
 import re
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from .models import ParseError, ParseResult, TheoremInfo
 
@@ -10,7 +10,7 @@ from .models import ParseError, ParseResult, TheoremInfo
 class SimpleLeanParser:
     """Minimal parser that extracts theorem names and statements from Lean files."""
 
-    def parse_file(self, file_path: Path) -> ParseResult:
+    def parse_file(self, file_path: Union[Path, str]) -> ParseResult:
         """Parse a Lean file and extract theorem information.
 
         Args:
@@ -26,13 +26,31 @@ class SimpleLeanParser:
         if not file_path.exists():
             return ParseResult(
                 success=False,
-                errors=[ParseError(message=f"File not found: {file_path}")],
+                errors=[ParseError(
+                    message=f"File not found: {file_path}",
+                    line_number=None,
+                    column=None,
+                    error_type="file_not_found",
+                    severity="error"
+                )],
+                theorems=[],
+                metadata=None,
+                parse_time_ms=0.0,
             )
 
         if file_path.suffix != ".lean":
             return ParseResult(
                 success=False,
-                errors=[ParseError(message=f"Not a Lean file: {file_path}")],
+                errors=[ParseError(
+                    message=f"Not a Lean file: {file_path}",
+                    line_number=None,
+                    column=None,
+                    error_type="invalid_file_type",
+                    severity="error"
+                )],
+                theorems=[],
+                metadata=None,
+                parse_time_ms=0.0,
             )
 
         try:
@@ -40,13 +58,26 @@ class SimpleLeanParser:
             theorems = self._extract_theorems(content)
 
             return ParseResult(
-                success=True, theorems=theorems, file_path=str(file_path)
+                success=True, 
+                theorems=theorems,
+                errors=[],
+                metadata=None,
+                parse_time_ms=0.0,
             )
 
         except Exception as e:
             return ParseResult(
                 success=False,
-                errors=[ParseError(message=f"Failed to parse file: {str(e)}")],
+                errors=[ParseError(
+                    message=f"Failed to parse file: {str(e)}",
+                    line_number=None,
+                    column=None,
+                    error_type="parse_exception",
+                    severity="error"
+                )],
+                theorems=[],
+                metadata=None,
+                parse_time_ms=0.0,
             )
 
     def _extract_theorems(self, content: str) -> List[TheoremInfo]:
@@ -60,51 +91,88 @@ class SimpleLeanParser:
         """
         theorems = []
 
-        # Simple regex to find theorem declarations
-        # Matches: theorem name (params) : statement := proof
-        theorem_pattern = (
-            r"theorem\s+(\w+).*?:\s*([^:=]+):=\s*(.*?)(?=\n(?:theorem|lemma|def|end|$))"
-        )
+        # Extract both theorems and lemmas with better regex patterns
+        # Pattern handles: theorem name (params) : statement := by tactics...
+        # Use ^ to match at start of line to avoid matching in comments
+        patterns = [
+            (r"^theorem\s+(\w+)", "theorem"),
+            (r"^lemma\s+(\w+)", "lemma"),
+        ]
 
-        matches = re.finditer(theorem_pattern, content, re.DOTALL | re.MULTILINE)
-
-        for match in matches:
-            name = match.group(1)
-            statement = match.group(2).strip()
-            proof = match.group(3).strip()
-
-            # Clean up the statement
-            statement = re.sub(r"\s+", " ", statement)
-
-            # Create theorem info
-            theorem = TheoremInfo(
-                name=name,
-                statement=statement,
-                proof=proof if len(proof) < 200 else proof[:200] + "...",
-            )
-            theorems.append(theorem)
-
-        # Also look for lemmas
-        lemma_pattern = (
-            r"lemma\s+(\w+).*?:\s*([^:=]+):=\s*(.*?)(?=\n(?:theorem|lemma|def|end|$))"
-        )
-
-        matches = re.finditer(lemma_pattern, content, re.DOTALL | re.MULTILINE)
-
-        for match in matches:
-            name = match.group(1)
-            statement = match.group(2).strip()
-            proof = match.group(3).strip()
-
-            # Clean up the statement
-            statement = re.sub(r"\s+", " ", statement)
-
-            # Create theorem info
-            theorem = TheoremInfo(
-                name=name,
-                statement=statement,
-                proof=proof if len(proof) < 200 else proof[:200] + "...",
-            )
-            theorems.append(theorem)
+        for pattern_start, theorem_type in patterns:
+            # Find all theorem/lemma declarations at start of line
+            for match in re.finditer(pattern_start, content, re.MULTILINE):
+                name = match.group(1)
+                start_pos = match.start()
+                
+                # Find the complete theorem declaration
+                theorem_info = self._extract_complete_theorem(content, start_pos, name)
+                if theorem_info:
+                    theorems.append(theorem_info)
 
         return theorems
+
+    def _extract_complete_theorem(self, content: str, start_pos: int, name: str) -> Optional[TheoremInfo]:
+        """Extract complete theorem including statement and proof.
+        
+        Args:
+            content: Full file content
+            start_pos: Start position of theorem/lemma keyword
+            name: Name of the theorem
+            
+        Returns:
+            TheoremInfo if successfully parsed, None otherwise
+        """
+        # Find the end of this theorem (start of next theorem/lemma/def or end of file)
+        end_patterns = [
+            r"\ntheorem\s+",
+            r"\nlemma\s+", 
+            r"\ndef\s+",
+            r"\nend\s+",
+            r"\n\n(?=\w)",  # Double newline followed by word (likely new declaration)
+        ]
+        
+        end_pos = len(content)
+        for pattern in end_patterns:
+            match = re.search(pattern, content[start_pos + 1:])
+            if match:
+                potential_end = start_pos + 1 + match.start()
+                if potential_end < end_pos:
+                    end_pos = potential_end
+        
+        # Extract the complete theorem text
+        theorem_text = content[start_pos:end_pos].strip()
+        
+        # Parse statement and proof using more flexible regex
+        # Handles patterns like: theorem name (params) : statement := by ... or := proof_term
+        pattern = r"(?:theorem|lemma)\s+\w+(?:\s*\([^)]*\))?\s*:\s*([^:]+?)\s*:=\s*(.*)"
+        match = re.search(pattern, theorem_text, re.DOTALL)
+        
+        if not match:
+            return None
+            
+        statement = match.group(1).strip()
+        proof = match.group(2).strip()
+        
+        # Clean up statement (remove extra whitespace)
+        statement = re.sub(r"\s+", " ", statement)
+        
+        # Truncate very long proofs for readability
+        if len(proof) > 300:
+            proof = proof[:300] + "..."
+            
+        return TheoremInfo(
+            name=name,
+            statement=statement,
+            proof=proof,
+            dependencies=[],
+            line_number=None,
+            docstring=None,
+            namespace=None,
+            visibility="public",
+            tactics=[],
+            is_axiom=False,
+            file_path=None,
+            start_line=None,
+            end_line=None,
+        )
