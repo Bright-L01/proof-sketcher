@@ -163,7 +163,7 @@ class EducationalContentGenerator:
         learning_objectives = [
             f"Understand the statement of {theorem_info.name}",
             f"Grasp the key concepts: {', '.join(concepts[:3])}",
-            f"Follow the proof strategy and main steps",
+            "Follow the proof strategy and main steps",
         ]
 
         # Estimate time based on complexity

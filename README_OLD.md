@@ -133,7 +133,7 @@ src/proof_sketcher/
 │   ├── simple_parser.py    # Lean theorem extraction (multiline support)
 │   └── models.py           # Pydantic data models
 ├── generator/
-│   ├── simple_generator.py # Template-based generation  
+│   ├── simple_generator.py # Template-based generation
 │   └── offline.py          # Offline templates with context
 └── exporter/
     ├── simple_markdown.py  # Markdown export

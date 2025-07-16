@@ -17,7 +17,8 @@ from .commands.batch import batch
 from .commands.cache import cache
 from .commands.config import config
 from .commands.enhance import enhance
-from .commands.info import formats, list_theorems, version
+from .commands.info import formats, version
+from .commands.list_theorems import list_theorems
 from .commands.optimize import optimize
 from .commands.performance import performance
 from .commands.prove import prove

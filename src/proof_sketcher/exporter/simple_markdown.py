@@ -29,7 +29,7 @@ class SimpleMarkdownExporter:
         # Statement
         if sketch.theorem_statement:
             lines.append("## Statement")
-            lines.append(f"```lean")
+            lines.append("```lean")
             lines.append(sketch.theorem_statement)
             lines.append("```")
             lines.append("")

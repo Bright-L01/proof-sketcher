@@ -5,8 +5,6 @@ doc-gen4 documentation generation with educational content.
 """
 
 import json
-import subprocess
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional

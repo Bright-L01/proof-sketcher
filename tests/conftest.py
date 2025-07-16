@@ -7,8 +7,7 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 
-from src.proof_sketcher.ai.anthropic_client import AnthropicClient
-from src.proof_sketcher.ai.offline_client import OfflineClient
+# AI client imports removed - not implemented in alpha version
 from src.proof_sketcher.generator.models import ProofSketch, ProofStep
 from src.proof_sketcher.parser.models import TheoremInfo
 
@@ -129,46 +128,7 @@ def sample_proof_sketch():
     )
 
 
-@pytest.fixture
-def mock_ai_client():
-    """Create a mock AI client for testing."""
-    client = Mock(spec=OfflineClient)
-    client.is_available.return_value = True
-    client.generate.return_value = (
-        "This theorem shows that addition is commutative for natural numbers."
-    )
-    client.get_info.return_value = {
-        "client_type": "MockClient",
-        "is_available": True,
-        "provider": "Mock",
-    }
-    return client
-
-
-@pytest.fixture
-def mock_anthropic_client():
-    """Create a mock Anthropic client for testing."""
-    client = Mock(spec=AnthropicClient)
-    client.is_available.return_value = True
-    client.generate.return_value = """
-    {
-        "theorem_name": "add_comm",
-        "introduction": "This theorem establishes the commutativity of addition.",
-        "key_steps": [
-            {
-                "step_number": 1,
-                "description": "Apply mathematical induction",
-                "mathematical_content": "Base case and inductive step",
-                "tactics": ["induction", "simp"]
-            }
-        ],
-        "conclusion": "Addition is commutative for natural numbers.",
-        "difficulty_level": "intermediate",
-        "mathematical_areas": ["algebra"],
-        "prerequisites": ["natural numbers", "induction"]
-    }
-    """
-    return client
+# AI client fixtures removed - not implemented in alpha version
 
 
 @pytest.fixture

@@ -16,27 +16,32 @@ Pre-commit hooks help maintain code quality by automatically checking and fixing
 ## What Gets Checked
 
 ### 1. Code Formatting (Auto-fixed)
+
 - **Black**: Consistent Python formatting
 - **isort**: Organized imports
 - **Trailing whitespace**: Removed automatically
 - **End of file**: Fixed automatically
 
 ### 2. Code Quality (Enforced)
+
 - **Flake8**: Style guide enforcement
   - Max line length: 88 characters
   - Max complexity: 10 (McCabe)
   - Ignores: E203, W503 (Black compatibility)
-  - Per-file ignores: F401 in __init__.py
+  - Per-file ignores: F401 in **init**.py
 
 ### 3. Security (Informational)
+
 - **Bandit**: Security vulnerability scanning
 - **detect-secrets**: Prevents committing secrets
 
 ### 4. Type Checking (Informational)
+
 - **mypy**: Static type checking
 - Currently non-blocking to allow gradual typing
 
 ### 5. Project-Specific
+
 - **TODO checker**: Warns about TODOs in new code
 - **Test coverage**: Ensures tests exist for new modules
 - **Quality reminder**: Shows current quality metrics
@@ -97,21 +102,27 @@ The configuration is in `.pre-commit-config.yaml`. Key settings:
 ## Troubleshooting
 
 ### "Black and isort conflict"
+
 This is handled by using `--profile black` for isort.
 
 ### "Line too long" errors
+
 Black uses 88 characters. If you have a string that can't be broken, use:
+
 ```python
 # fmt: off
 really_long_string = "..."
 # fmt: on
 ```
 
-### "Import not used" in __init__.py
+### "Import not used" in **init**.py
+
 This is ignored via per-file configuration.
 
 ### Hook runs too slow
+
 Try:
+
 ```bash
 # Run only on staged files
 pre-commit run
@@ -138,6 +149,7 @@ To add a new hook:
 4. Commit the changes
 
 Example:
+
 ```yaml
 - repo: https://github.com/pycqa/pylint
   rev: v3.0.0

@@ -36,17 +36,17 @@ Example:
 For more details, see the individual module documentation.
 """
 
+from .hybrid_parser import HybridLeanParser
+from .lsp_client import LeanLSPClient, ProofState, SemanticTheoremInfo, TacticInfo
 from .models import ParseResult, TheoremInfo
 from .simple_parser import SimpleLeanParser
-from .lsp_client import LeanLSPClient, SemanticTheoremInfo, ProofState, TacticInfo
-from .hybrid_parser import HybridLeanParser
 
 # Use hybrid parser as default (LSP + fallback)
 LeanParser = HybridLeanParser
 
 __all__ = [
     "LeanParser",
-    "HybridLeanParser", 
+    "HybridLeanParser",
     "LeanLSPClient",
     "SimpleLeanParser",
     "ParseResult",

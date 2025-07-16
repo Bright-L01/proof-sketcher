@@ -42,9 +42,14 @@ For configuration options, see GenerationConfig documentation.
 """
 
 from .models import GenerationConfig, ProofSketch, ProofStep
+from .progressive_generator import (
+    ConceptExplanation,
+    LearningStep,
+    ProgressiveGenerator,
+    ProgressiveSketch,
+)
+from .semantic_generator import EducationalLevel, SemanticGenerator
 from .simple_generator import SimpleGenerator
-from .semantic_generator import SemanticGenerator, EducationalLevel
-from .progressive_generator import ProgressiveGenerator, ProgressiveSketch, LearningStep, ConceptExplanation
 
 # Use semantic generator for Phase 9+ (with fallback)
 AIGenerator = SemanticGenerator
@@ -54,7 +59,7 @@ ClaudeGenerator = AIGenerator
 
 __all__ = [
     "AIGenerator",
-    "SimpleGenerator", 
+    "SimpleGenerator",
     "SemanticGenerator",
     "ProgressiveGenerator",
     "ClaudeGenerator",  # Backward compatibility
@@ -63,6 +68,6 @@ __all__ = [
     "ProgressiveSketch",
     "LearningStep",
     "ConceptExplanation",
-    "ProofStep", 
+    "ProofStep",
     "GenerationConfig",
 ]

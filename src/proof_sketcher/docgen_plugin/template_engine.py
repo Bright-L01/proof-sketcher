@@ -1,10 +1,9 @@
 """Template engine for rendering educational content in doc-gen4 HTML."""
 
-import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
-from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import Environment, FileSystemLoader
 
 # from ..exporter.html import HTMLExporter
 

@@ -34,11 +34,15 @@ class SimpleHTMLExporter:
         """Build complete HTML document."""
         # Mathematical expressions for MathJax
         statement_math = self._format_math(sketch.theorem_statement)
-        
+
         # Build proof steps HTML
         steps_html = ""
         for i, step in enumerate(sketch.key_steps, 1):
-            step_math = self._format_math(step.mathematical_content) if step.mathematical_content else ""
+            step_math = (
+                self._format_math(step.mathematical_content)
+                if step.mathematical_content
+                else ""
+            )
             steps_html += f"""
             <div class="proof-step">
                 <h3>Step {i}: {step.description}</h3>
@@ -54,7 +58,7 @@ class SimpleHTMLExporter:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{sketch.theorem_name} - Proof Sketcher</title>
-    
+
     <!-- MathJax 4.0 Configuration -->
     <script>
         window.MathJax = {{
@@ -72,7 +76,7 @@ class SimpleHTMLExporter:
     <script type="text/javascript" id="MathJax-script" async
             src="https://cdn.jsdelivr.net/npm/mathjax@4.0.0-beta.6/tex-mml-chtml.js">
     </script>
-    
+
     <!-- Styles -->
     <style>
         body {{
@@ -83,25 +87,25 @@ class SimpleHTMLExporter:
             padding: 20px;
             background-color: #fafafa;
         }}
-        
+
         .theorem-container {{
             background: white;
             border-radius: 8px;
             padding: 30px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }}
-        
+
         h1 {{
             color: #2c3e50;
             border-bottom: 3px solid #3498db;
             padding-bottom: 10px;
         }}
-        
+
         h2 {{
             color: #34495e;
             margin-top: 30px;
         }}
-        
+
         .theorem-statement {{
             background-color: #f8f9fa;
             border-left: 4px solid #007bff;
@@ -110,7 +114,7 @@ class SimpleHTMLExporter:
             font-family: 'Courier New', monospace;
             border-radius: 4px;
         }}
-        
+
         .explanation {{
             background-color: #e8f5e8;
             border-left: 4px solid #28a745;
@@ -118,7 +122,7 @@ class SimpleHTMLExporter:
             margin: 15px 0;
             border-radius: 4px;
         }}
-        
+
         .proof-step {{
             background-color: #fff3cd;
             border-left: 4px solid #ffc107;
@@ -126,24 +130,24 @@ class SimpleHTMLExporter:
             margin: 15px 0;
             border-radius: 4px;
         }}
-        
+
         .proof-step h3 {{
             margin-top: 0;
             color: #856404;
         }}
-        
+
         .step-intuition {{
             font-style: italic;
             color: #6c757d;
         }}
-        
+
         .step-math {{
             background-color: #f8f9fa;
             padding: 10px;
             border-radius: 4px;
             margin-top: 10px;
         }}
-        
+
         .conclusion {{
             background-color: #d1ecf1;
             border-left: 4px solid #17a2b8;
@@ -151,22 +155,22 @@ class SimpleHTMLExporter:
             margin: 15px 0;
             border-radius: 4px;
         }}
-        
+
         .metadata {{
             background-color: #f8f9fa;
             padding: 15px;
             border-radius: 4px;
             margin-top: 20px;
         }}
-        
+
         .metadata-item {{
             margin: 5px 0;
         }}
-        
+
         .difficulty-beginner {{ color: #28a745; }}
         .difficulty-intermediate {{ color: #ffc107; }}
         .difficulty-advanced {{ color: #dc3545; }}
-        
+
         .footer {{
             text-align: center;
             margin-top: 40px;
@@ -180,38 +184,38 @@ class SimpleHTMLExporter:
 <body>
     <div class="theorem-container">
         <h1>Theorem: {sketch.theorem_name}</h1>
-        
+
         <section>
             <h2>Statement</h2>
             <div class="theorem-statement">
                 {statement_math}
             </div>
         </section>
-        
+
         <section>
             <h2>Explanation</h2>
             <div class="explanation">
                 {sketch.introduction}
             </div>
         </section>
-        
+
         <section>
             <h2>Proof Steps</h2>
             {steps_html}
         </section>
-        
+
         <section>
             <h2>Conclusion</h2>
             <div class="conclusion">
                 {sketch.conclusion}
             </div>
         </section>
-        
+
         <section>
             <h2>Metadata</h2>
             <div class="metadata">
                 <div class="metadata-item">
-                    <strong>Difficulty:</strong> 
+                    <strong>Difficulty:</strong>
                     <span class="difficulty-{sketch.difficulty_level}">{sketch.difficulty_level.title()}</span>
                 </div>
                 <div class="metadata-item">
@@ -223,31 +227,31 @@ class SimpleHTMLExporter:
             </div>
         </section>
     </div>
-    
+
     <div class="footer">
         Generated by <strong>Proof Sketcher</strong> - Transform Lean 4 theorems into natural language
     </div>
 </body>
 </html>"""
-        
+
         return html
 
     def _format_math(self, text: str) -> str:
         """Format mathematical expressions for MathJax.
-        
+
         Args:
             text: Text that may contain mathematical expressions
-            
+
         Returns:
             Text with MathJax formatting
         """
         if not text:
             return ""
-        
+
         # Simple conversion for common mathematical notation
         # This is a basic implementation - could be expanded
         formatted = text
-        
+
         # Convert some common Lean notation to LaTeX
         conversions = {
             "Nat": r"\\mathbb{N}",
@@ -264,12 +268,12 @@ class SimpleHTMLExporter:
             "∪": r"\\cup",
             "∩": r"\\cap",
         }
-        
+
         for lean_notation, latex_notation in conversions.items():
             formatted = formatted.replace(lean_notation, latex_notation)
-        
+
         # Wrap in math delimiters if it looks like a mathematical expression
         if any(char in formatted for char in "=<>+*/-()[]{}∀∃→∈⊆∪∩"):
             formatted = f"$${formatted}$$"
-        
+
         return formatted

@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from ..generator.progressive_generator import ProgressiveGenerator, ProgressiveSketch
-from ..parser.lsp_client import SemanticTheoremInfo
 from ..parser.models import TheoremInfo
 from .content_generator import EducationalContentGenerator
 

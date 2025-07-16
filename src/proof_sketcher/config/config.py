@@ -163,13 +163,15 @@ class ProofSketcherConfig:
             if data:
                 self._apply_config_dict(data)
         except FileNotFoundError:
-            raise ConfigNotFoundError(f"Config file not found: {path}")
+            raise ConfigNotFoundError(f"Config file not found: {path}") from None
         except yaml.YAMLError as e:
-            raise ConfigValidationError(f"Invalid YAML in {path}: {e}")
+            raise ConfigValidationError(f"Invalid YAML in {path}: {e}") from e
         except (OSError, PermissionError) as e:
-            raise ConfigError(f"Failed to read config file {path}: {e}")
+            raise ConfigError(f"Failed to read config file {path}: {e}") from e
         except Exception as e:
-            raise ConfigError(f"Unexpected error loading config from {path}: {e}")
+            raise ConfigError(
+                f"Unexpected error loading config from {path}: {e}"
+            ) from e
 
     def _load_from_pyproject(self, path: Path) -> None:
         """Load configuration from pyproject.toml."""
@@ -180,13 +182,15 @@ class ProofSketcherConfig:
             if "tool" in data and "proof-sketcher" in data["tool"]:
                 self._apply_config_dict(data["tool"]["proof-sketcher"])
         except FileNotFoundError:
-            raise ConfigNotFoundError(f"Config file not found: {path}")
+            raise ConfigNotFoundError(f"Config file not found: {path}") from None
         except toml.TomlDecodeError as e:
-            raise ConfigValidationError(f"Invalid TOML in {path}: {e}")
+            raise ConfigValidationError(f"Invalid TOML in {path}: {e}") from e
         except (OSError, PermissionError) as e:
-            raise ConfigError(f"Failed to read config file {path}: {e}")
+            raise ConfigError(f"Failed to read config file {path}: {e}") from e
         except Exception as e:
-            raise ConfigError(f"Unexpected error loading config from {path}: {e}")
+            raise ConfigError(
+                f"Unexpected error loading config from {path}: {e}"
+            ) from e
 
     def _load_from_toml(self, path: Path) -> None:
         """Load configuration from TOML file."""
@@ -197,13 +201,15 @@ class ProofSketcherConfig:
             if data:
                 self._apply_config_dict(data)
         except FileNotFoundError:
-            raise ConfigNotFoundError(f"Config file not found: {path}")
+            raise ConfigNotFoundError(f"Config file not found: {path}") from None
         except toml.TomlDecodeError as e:
-            raise ConfigValidationError(f"Invalid TOML in {path}: {e}")
+            raise ConfigValidationError(f"Invalid TOML in {path}: {e}") from e
         except (OSError, PermissionError) as e:
-            raise ConfigError(f"Failed to read config file {path}: {e}")
+            raise ConfigError(f"Failed to read config file {path}: {e}") from e
         except Exception as e:
-            raise ConfigError(f"Unexpected error loading config from {path}: {e}")
+            raise ConfigError(
+                f"Unexpected error loading config from {path}: {e}"
+            ) from e
 
     def _apply_config_dict(self, data: Dict[str, Any]) -> None:
         """Apply configuration from dictionary."""
@@ -304,9 +310,7 @@ class ProofSketcherConfig:
         errors = []
 
         # Validate component configs
-        parser_errors = self.parser.validate()
-        if parser_errors:
-            errors.extend([f"Parser: {e}" for e in parser_errors])
+        # ParserConfig validates itself in __post_init__
 
         # Validate and create paths
         if not self.cache_dir.exists():

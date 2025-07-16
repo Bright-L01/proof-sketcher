@@ -14,16 +14,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# Simple exceptions for MVP
-class GeneratorError(Exception):
-    """Exception for generation errors."""
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
-        super().__init__(message)
-        self.details = details or {}
-
-def handle_error(error: Exception) -> None:
-    """Simple error handler."""
-    logging.error(f"Generation error: {error}")
 from ..parser.models import TheoremInfo
 from .models import (
     GenerationConfig,
@@ -32,6 +22,20 @@ from .models import (
     ProofSketch,
     ProofStep,
 )
+
+
+# Simple exceptions for MVP
+class GeneratorError(Exception):
+    """Exception for generation errors."""
+
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message)
+        self.details = details or {}
+
+
+def handle_error(error: Exception) -> None:
+    """Simple error handler."""
+    logging.error(f"Generation error: {error}")
 
 
 class OfflineTemplates:
@@ -174,7 +178,7 @@ class OfflineGenerator:
                 details={"theorem_name": theorem.name, "cause": str(e)},
             )
             handle_error(error)
-            raise error
+            raise error from e
 
     def _generate_from_ast(self, theorem: TheoremInfo) -> ProofSketch:
         """Generate proof sketch by analyzing theorem AST."""

@@ -4,53 +4,70 @@
 [![Lean 4](https://img.shields.io/badge/Lean-4.0+-purple.svg)](https://leanprover.github.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MathJax](https://img.shields.io/badge/MathJax-4.0-green.svg)](https://www.mathjax.org/)
-[![Status: MVP](https://img.shields.io/badge/Status-Functional%20MVP-orange.svg)](https://github.com/Bright-L01/proof-sketcher)
+[![Status: ALPHA](https://img.shields.io/badge/Status-ALPHA%20SOFTWARE-red.svg)](https://github.com/brightlikethelight/proof-sketcher)
 
-**Transform formal proofs into accessible explanations** - Making Lean 4 theorems understandable through natural language and beautiful mathematical rendering.
+# ⚠️ **ALPHA SOFTWARE WARNING** ⚠️
+
+**THIS IS EXPERIMENTAL SOFTWARE WITH LIMITED FUNCTIONALITY**
+
+**NOT SUITABLE FOR PRODUCTION USE**
 
 ---
 
 ## 🎯 **What It Does**
 
-Proof Sketcher bridges the gap between formal verification and human understanding by automatically generating natural language explanations of Lean 4 theorems. Built for researchers, educators, and anyone working with formal mathematics.
+Proof Sketcher is an experimental tool that generates natural language explanations of Lean 4 theorems. This is alpha software with basic functionality only.
 
-### ✨ **Key Features**
+### ✨ **Current Working Features**
 
-🔍 **Smart Parsing** - Extract theorems and lemmas from Lean 4 files with full AST analysis
-📝 **Natural Language Generation** - Template-based explanations with AI integration roadmap
-📊 **Modern Export Formats** - HTML with MathJax 4.0, Markdown, and batch processing
-🎨 **Beautiful Rendering** - Mathematical notation with professional typesetting
-📚 **Batch Processing** - Handle entire Lean projects with auto-generated indices
+🔍 **Basic Parsing** - Extract simple theorems and lemmas from Lean 4 files
+📝 **Template Generation** - Basic structured explanations using offline templates
+📊 **HTML Export** - Simple HTML output with MathJax 4.0
+📝 **Markdown Export** - Basic Markdown output
+📚 **CLI Interface** - Command-line interface for basic operations
 
----
+### ❌ **Known Limitations**
 
-## 🚀 **Current Status: Functional MVP**
-
-### ✅ **Working Features**
-
-- **Lean 4 Parser**: Complete AST extraction from theorem definitions
-- **Template Generation**: Structured explanations with mathematical context
-- **Modern HTML Export**: Professional output with MathJax 4.0 rendering
-- **Batch Processing**: Handle multiple files with organized output
-- **Mathematical Notation**: Beautiful rendering of Lean expressions
-- **Auto-Indexing**: Generated table of contents and navigation
-
-### 🚧 **Roadmap Features**
-
-- **AI-Powered Explanations**: Claude integration for contextual insights
-- **Interactive Animations**: Dynamic proof visualization with Manim
-- **PDF Export**: LaTeX-quality typesetting for publications
-- **Doc-gen4 Integration**: Seamless mathlib4 documentation workflow
+- **No AI Integration** - Template-based explanations only
+- **No Animations** - Static output only
+- **No PDF Export** - HTML and Markdown only
+- **No LSP Integration** - Basic regex parsing only
+- **Limited Test Coverage** - Many tests are broken
+- **Security Issues** - Not suitable for production
+- **No Documentation** - Minimal documentation available
 
 ---
 
-## 📦 **Quick Start**
+## 🚀 **Current Status: ALPHA SOFTWARE**
+
+### ✅ **Actually Working Features**
+
+- **Simple Lean Parser**: Basic theorem extraction from .lean files
+- **Offline Generation**: Template-based explanations (no API required)
+- **HTML Export**: Simple HTML with MathJax 4.0 rendering
+- **Markdown Export**: Basic Markdown output
+- **CLI Commands**: `prove`, `list-theorems`, `version`, `formats`
+- **Batch Processing**: Process multiple files (basic)
+
+### 🚧 **Future Development (Not Current)**
+
+- **AI Integration**: Claude API for enhanced explanations
+- **Animations**: Manim integration for proof visualization
+- **PDF Export**: LaTeX-quality typesetting
+- **Doc-gen4 Integration**: Mathlib documentation enhancement
+- **LSP Support**: Full semantic analysis
+- **Test Coverage**: Comprehensive test suite
+- **Security**: Production-ready security practices
+
+---
+
+## 📦 **Quick Start (Alpha)**
 
 ### Installation
 
 ```bash
 # Clone and install
-git clone https://github.com/Bright-L01/proof-sketcher.git
+git clone https://github.com/brightlikethelight/proof-sketcher.git
 cd proof-sketcher
 pip install -e .
 ```
@@ -58,61 +75,65 @@ pip install -e .
 ### Verify Installation
 
 ```bash
-# Test the complete pipeline
-python test_mvp_pipeline.py
+# Test basic functionality
+python -m proof_sketcher --help
+python -m proof_sketcher version
 ```
 
 ### Basic Usage
 
-```python
-from proof_sketcher.parser import LeanParser
-from proof_sketcher.exporter import HTMLExporter
-
-# Parse Lean file
-parser = LeanParser()
-theorems = parser.parse_file("my_theorems.lean")
-
-# Generate explanations
-exporter = HTMLExporter()
-exporter.export_batch(theorems, output_dir="docs/")
-```
-
-### CLI Interface
-
 ```bash
-# Process single file
-proof-sketcher explain my_file.lean --output html
+# List theorems in a file
+python -m proof_sketcher list-theorems examples/classical/simple_examples.lean
 
-# Batch process project
-proof-sketcher batch src/ --format html --with-index
+# Generate explanation for a theorem
+python -m proof_sketcher prove examples/classical/simple_examples.lean --theorem add_zero
 
-# Generate documentation site
-proof-sketcher docs src/ --output docs/ --with-nav
+# Export to markdown
+python -m proof_sketcher prove examples/classical/simple_examples.lean --format markdown
+
+# Show supported formats
+python -m proof_sketcher formats
 ```
+
+### ⚠️ **Alpha Limitations**
+
+- **No Python API** - CLI only in alpha version
+- **Limited Parsing** - Simple theorems only
+- **No AI Features** - Template-based only
+- **Basic Error Handling** - May crash on complex files
+- **No Configuration** - Uses default settings only
 
 ---
 
-## 🏗️ **Architecture**
+## 🏗️ **Architecture (Alpha)**
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Lean 4 AST   │───▶│  Template-Based │───▶│  Modern HTML    │
-│    Parser       │    │   Generator     │    │   with MathJax  │
+│   Simple Lean   │───▶│  Offline        │───▶│  Basic HTML/MD  │
+│    Parser       │    │  Generator      │    │   Output        │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Theorem AST    │    │   Explanation   │    │  Professional   │
-│   Extraction    │    │   Templates     │    │  Documentation  │
+│   Regex-based   │    │   Hard-coded    │    │   Static Files  │
+│   Extraction    │    │   Templates     │    │   (HTML/MD)     │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-### Core Components
+### Alpha Components
 
-- **🔍 Parser Module**: Lean 4 file analysis and AST extraction
-- **📝 Generator Module**: Template-based explanation synthesis
-- **🎨 Exporter Module**: Multi-format output with professional styling
-- **📚 Documentation Engine**: Batch processing with organized navigation
+- **🔍 Simple Parser**: Basic regex-based theorem extraction
+- **📝 Offline Generator**: Template-based explanations (no AI)
+- **🎨 Simple Exporters**: Basic HTML and Markdown output
+- **📚 CLI Interface**: Command-line tools for basic operations
+
+### Missing Components (Future)
+
+- **Advanced Parser**: LSP-based semantic analysis
+- **AI Generator**: Claude API integration
+- **Rich Exporters**: PDF, Jupyter, animations
+- **Web Interface**: Interactive documentation
 
 ---
 
@@ -158,7 +179,7 @@ proof-sketcher/
 
 ```bash
 # Development setup
-git clone https://github.com/Bright-L01/proof-sketcher.git
+git clone https://github.com/brightlikethelight/proof-sketcher.git
 cd proof-sketcher
 pip install -e ".[dev]"
 
@@ -235,6 +256,6 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 <p align="center">
   <a href="mailto:brightliu@college.harvard.edu">Contact</a> •
-  <a href="https://github.com/Bright-L01/proof-sketcher/issues">Issues</a> •
-  <a href="https://github.com/Bright-L01/proof-sketcher/discussions">Discussions</a>
+  <a href="https://github.com/brightlikethelight/proof-sketcher/issues">Issues</a> •
+  <a href="https://github.com/brightlikethelight/proof-sketcher/discussions">Discussions</a>
 </p>

@@ -7,7 +7,7 @@
 Phase 9 represents the culmination of transforming Proof Sketcher from a simple theorem parser into a sophisticated educational mathematics system. We have successfully implemented:
 
 - **LSP Integration:** Semantic analysis of Lean 4 theorems using Language Server Protocol
-- **Educational AI:** Progressive explanations adapted to learner skill levels  
+- **Educational AI:** Progressive explanations adapted to learner skill levels
 - **Real Mathematics:** Integration with actual mathlib theorems and patterns
 - **Interactive Export:** Enhanced visualizations and proof exploration tools
 

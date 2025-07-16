@@ -1,6 +1,6 @@
 """Simple generator for MVP - uses offline mode only."""
 
-from typing import Optional, Union
+from typing import Optional
 
 from ..parser.models import TheoremInfo
 from .models import GenerationConfig, ProofSketch
@@ -38,12 +38,12 @@ class SimpleGenerator:
             Generated proof sketch
         """
         return self.generate_offline(theorem)
-        
+
     def generate_educational_sketch(
         self,
-        theorem: Union[TheoremInfo, "SemanticTheoremInfo"],
+        theorem: TheoremInfo,
         target_level: str = "intermediate",
-        config: Optional[GenerationConfig] = None
+        config: Optional[GenerationConfig] = None,
     ) -> ProofSketch:
         """Generate educational proof sketch (compatibility method).
 
@@ -57,7 +57,7 @@ class SimpleGenerator:
         """
         # Import here to avoid circular imports
         from ..parser.lsp_client import SemanticTheoremInfo
-        
+
         # Convert SemanticTheoremInfo to TheoremInfo if needed
         if isinstance(theorem, SemanticTheoremInfo):
             base_theorem = TheoremInfo(

@@ -655,7 +655,7 @@ class MarkdownExporter(BaseExporterImpl):
             if self._use_collapsible:
                 toc_content.extend(
                     [
-                        f"<details>",
+                        "<details>",
                         f"<summary><strong>{letter}</strong> ({len(theorems)} theorems)</summary>",
                         "",
                     ]
