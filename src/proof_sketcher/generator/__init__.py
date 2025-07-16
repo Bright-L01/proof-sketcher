@@ -43,18 +43,26 @@ For configuration options, see GenerationConfig documentation.
 
 from .models import GenerationConfig, ProofSketch, ProofStep
 from .simple_generator import SimpleGenerator
+from .semantic_generator import SemanticGenerator, EducationalLevel
+from .progressive_generator import ProgressiveGenerator, ProgressiveSketch, LearningStep, ConceptExplanation
 
-# Use simple generator for MVP
-AIGenerator = SimpleGenerator
+# Use semantic generator for Phase 9+ (with fallback)
+AIGenerator = SemanticGenerator
 
 # Backward compatibility aliases
 ClaudeGenerator = AIGenerator
 
 __all__ = [
     "AIGenerator",
-    "SimpleGenerator",
+    "SimpleGenerator", 
+    "SemanticGenerator",
+    "ProgressiveGenerator",
     "ClaudeGenerator",  # Backward compatibility
+    "EducationalLevel",
     "ProofSketch",
+    "ProgressiveSketch",
+    "LearningStep",
+    "ConceptExplanation",
     "ProofStep", 
     "GenerationConfig",
 ]

@@ -1,0 +1,45 @@
+
+<div class="educational-module">
+    <div class="module-header">
+        <h2>{{ module.name }}</h2>
+        {% if module.doc %}
+        <p class="module-doc">{{ module.doc }}</p>
+        {% endif %}
+    </div>
+
+    {% if module.educational_metadata %}
+    <div class="module-stats">
+        <div class="stat-item">
+            <span class="stat-label">Total Declarations:</span>
+            <span class="stat-value">{{ module.educational_metadata.total_declarations }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Educational Content:</span>
+            <span class="stat-value">{{ module.educational_metadata.educational_declarations }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Generated:</span>
+            <span class="stat-value">{{ module.educational_metadata.generated_at }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="module-declarations">
+        {% for declaration in module.declarations %}
+        <div class="educational-declaration" data-name="{{ declaration.name }}">
+            <div class="declaration-header">
+                <h3 class="declaration-name">{{ declaration.name }}</h3>
+                <span class="declaration-kind">{{ declaration.kind }}</span>
+            </div>
+            <div class="declaration-statement">
+                <code class="lean-code">{{ declaration.type }}</code>
+            </div>
+            {% if declaration.doc %}
+            <div class="declaration-doc">
+                <p>{{ declaration.doc }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>

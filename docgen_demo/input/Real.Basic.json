@@ -1,0 +1,20 @@
+{
+  "name": "Real.Basic",
+  "doc": "Basic properties of real numbers",
+  "declarations": [
+    {
+      "name": "Real.add_assoc",
+      "kind": "theorem",
+      "doc": "Addition of real numbers is associative",
+      "type": "∀ (a b c : ℝ), (a + b) + c = a + (b + c)",
+      "proof": "by exact add_assoc"
+    },
+    {
+      "name": "Real.mul_comm",
+      "kind": "theorem",
+      "doc": "Multiplication of real numbers is commutative",
+      "type": "∀ (a b : ℝ), a * b = b * a",
+      "proof": "by exact mul_comm"
+    }
+  ]
+}

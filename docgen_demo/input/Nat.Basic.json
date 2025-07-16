@@ -1,0 +1,27 @@
+{
+  "name": "Nat.Basic",
+  "doc": "Basic properties of natural numbers",
+  "declarations": [
+    {
+      "name": "Nat.add_comm",
+      "kind": "theorem",
+      "doc": "Addition is commutative",
+      "type": "∀ (n m : ℕ), n + m = m + n",
+      "proof": "by rw [add_comm]"
+    },
+    {
+      "name": "Nat.zero_add",
+      "kind": "theorem",
+      "doc": "Adding zero to any natural number gives the same number",
+      "type": "∀ (n : ℕ), 0 + n = n",
+      "proof": "by rfl"
+    },
+    {
+      "name": "Nat.succ_inj",
+      "kind": "theorem",
+      "doc": "Successor function is injective",
+      "type": "∀ {n m : ℕ}, Nat.succ n = Nat.succ m → n = m",
+      "proof": "by intro h; exact Nat.succ.inj h"
+    }
+  ]
+}
