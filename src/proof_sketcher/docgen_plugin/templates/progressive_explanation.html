@@ -1,0 +1,48 @@
+
+<div class="progressive-explanation">
+    <div class="explanation-overview">
+        <h4>{{ explanation.title }}</h4>
+        <p>{{ explanation.overview }}</p>
+    </div>
+
+    {% if explanation.intuition %}
+    <div class="explanation-intuition">
+        <h5>Intuition</h5>
+        <p>{{ explanation.intuition }}</p>
+    </div>
+    {% endif %}
+
+    {% if explanation.main_ideas %}
+    <div class="explanation-main-ideas">
+        <h5>Main Ideas</h5>
+        <ul>
+            {% for idea in explanation.main_ideas %}
+            <li>{{ idea }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if explanation.examples %}
+    <div class="explanation-examples">
+        <h5>Examples</h5>
+        {% for example in explanation.examples %}
+        <div class="example-item">
+            <strong>{{ example.title }}</strong>
+            <p>{{ example.content }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if explanation.connections %}
+    <div class="explanation-connections">
+        <h5>Connections</h5>
+        <ul>
+            {% for connection in explanation.connections %}
+            <li>{{ connection }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>

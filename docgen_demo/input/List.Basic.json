@@ -1,0 +1,20 @@
+{
+  "name": "List.Basic",
+  "doc": "Basic properties of lists",
+  "declarations": [
+    {
+      "name": "List.append_nil",
+      "kind": "theorem",
+      "doc": "Appending empty list is identity",
+      "type": "∀ (l : List α), l ++ [] = l",
+      "proof": "by rw [append_nil]"
+    },
+    {
+      "name": "List.length_append",
+      "kind": "theorem",
+      "doc": "Length of appended lists is sum of lengths",
+      "type": "∀ (l₁ l₂ : List α), (l₁ ++ l₂).length = l₁.length + l₂.length",
+      "proof": "by induction l₁ with | nil => simp | cons h t ih => simp [length_cons, ih]"
+    }
+  ]
+}

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mul_one - Proof Sketcher</title>
+    
+    <!-- MathJax 4.0 Configuration -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+            }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+            src="https://cdn.jsdelivr.net/npm/mathjax@4.0.0-beta.6/tex-mml-chtml.js">
+    </script>
+    
+    <!-- Styles -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fafafa;
+        }
+        
+        .theorem-container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+        
+        .theorem-statement {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            border-radius: 4px;
+        }
+        
+        .explanation {
+            background-color: #e8f5e8;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .proof-step {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .proof-step h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        
+        .step-intuition {
+            font-style: italic;
+            color: #6c757d;
+        }
+        
+        .step-math {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        .conclusion {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .metadata {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        
+        .metadata-item {
+            margin: 5px 0;
+        }
+        
+        .difficulty-beginner { color: #28a745; }
+        .difficulty-intermediate { color: #ffc107; }
+        .difficulty-advanced { color: #dc3545; }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="theorem-container">
+        <h1>Theorem: mul_one</h1>
+        
+        <section>
+            <h2>Statement</h2>
+            <div class="theorem-statement">
+                $$n * 1 = n$$
+            </div>
+        </section>
+        
+        <section>
+            <h2>Explanation</h2>
+            <div class="explanation">
+                This theorem establishes an equality relationship between mathematical expressions. It involves establishing an equality between mathematical expressions.
+            </div>
+        </section>
+        
+        <section>
+            <h2>Proof Steps</h2>
+            
+            <div class="proof-step">
+                <h3>Step 1: Set up the proof context and introduce necessary assumptions</h3>
+                <p class="step-intuition">We begin by introducing the mathematical objects we need to work with.</p>
+                <div class="step-math">Setting up proof variables and assumptions</div>
+            </div>
+            
+            <div class="proof-step">
+                <h3>Step 2: Simplify the expression using known rules</h3>
+                <p class="step-intuition">The result follows directly from simplification rules.</p>
+                <div class="step-math">Automated simplification</div>
+            </div>
+            
+        </section>
+        
+        <section>
+            <h2>Conclusion</h2>
+            <div class="conclusion">
+                This completes the proof of mul_one. The proof is straightforward, requiring only a few logical steps.
+            </div>
+        </section>
+        
+        <section>
+            <h2>Metadata</h2>
+            <div class="metadata">
+                <div class="metadata-item">
+                    <strong>Difficulty:</strong> 
+                    <span class="difficulty-beginner">Beginner</span>
+                </div>
+                <div class="metadata-item">
+                    <strong>Mathematical Areas:</strong> mathematics
+                </div>
+                <div class="metadata-item">
+                    <strong>Prerequisites:</strong> Basic mathematical reasoning
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <div class="footer">
+        Generated by <strong>Proof Sketcher</strong> - Transform Lean 4 theorems into natural language
+    </div>
+</body>
+</html>

@@ -1,10 +1,11 @@
 """Simple Lean parser for MVP - extracts basic theorem information."""
 
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Union
 
-from .models import ParseError, ParseResult, TheoremInfo
+from .models import ParseError, ParseResult, TheoremInfo, FileMetadata
 
 
 class SimpleLeanParser:
@@ -56,12 +57,23 @@ class SimpleLeanParser:
         try:
             content = file_path.read_text(encoding="utf-8")
             theorems = self._extract_theorems(content)
+            
+            # Create file metadata
+            stat = file_path.stat()
+            metadata = FileMetadata(
+                file_path=file_path,
+                file_size=stat.st_size,
+                last_modified=datetime.fromtimestamp(stat.st_mtime),
+                total_lines=len(content.splitlines()),
+                imports=[],  # Could be extracted later
+                lean_version=None
+            )
 
             return ParseResult(
                 success=True, 
                 theorems=theorems,
                 errors=[],
-                metadata=None,
+                metadata=metadata,
                 parse_time_ms=0.0,
             )
 
