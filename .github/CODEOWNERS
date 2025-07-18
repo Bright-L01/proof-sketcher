@@ -1,0 +1,24 @@
+# CODEOWNERS file for automatic review assignment
+# Each line is a file pattern followed by one or more owners.
+
+# Default owners for everything in the repo
+* @Bright-L01
+
+# Core components
+/src/proof_sketcher/parser/ @Bright-L01
+/src/proof_sketcher/generator/ @Bright-L01
+/src/proof_sketcher/exporter/ @Bright-L01
+/src/proof_sketcher/cli/ @Bright-L01
+
+# Documentation
+/docs/ @Bright-L01
+*.md @Bright-L01
+
+# Configuration and CI/CD
+/.github/ @Bright-L01
+/pyproject.toml @Bright-L01
+/requirements*.txt @Bright-L01
+
+# Security sensitive files
+/src/proof_sketcher/security/ @Bright-L01
+/src/proof_sketcher/config/ @Bright-L01

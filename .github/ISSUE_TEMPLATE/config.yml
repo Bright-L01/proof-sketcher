@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & Discussions
+    url: https://github.com/Bright-L01/proof-sketcher/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: Documentation
+    url: https://github.com/Bright-L01/proof-sketcher/tree/main/docs
+    about: Check our documentation for usage guides and examples
+  - name: Alpha Status & Known Issues
+    url: https://github.com/Bright-L01/proof-sketcher/blob/main/ALPHA_STATUS.md
+    about: Review known limitations before reporting issues

@@ -1,0 +1,66 @@
+{
+  "protection_rules": {
+    "main": {
+      "required_status_checks": {
+        "strict": true,
+        "contexts": [
+          "CI Status Check",
+          "Quality Metrics Report",
+          "Run Working Tests (29/33 passing)",
+          "Code Quality Gates (Clean as You Code)"
+        ]
+      },
+      "enforce_admins": false,
+      "required_pull_request_reviews": {
+        "required_approving_review_count": 1,
+        "dismiss_stale_reviews": true,
+        "require_code_owner_reviews": true,
+        "dismissal_restrictions": {
+          "users": [],
+          "teams": []
+        }
+      },
+      "restrictions": null,
+      "allow_force_pushes": false,
+      "allow_deletions": false,
+      "block_creations": false,
+      "required_conversation_resolution": true,
+      "lock_branch": false,
+      "allow_fork_syncing": true
+    },
+    "develop": {
+      "required_status_checks": {
+        "strict": false,
+        "contexts": [
+          "Run Working Tests (29/33 passing)"
+        ]
+      },
+      "enforce_admins": false,
+      "required_pull_request_reviews": {
+        "required_approving_review_count": 1,
+        "dismiss_stale_reviews": false,
+        "require_code_owner_reviews": false
+      },
+      "restrictions": null,
+      "allow_force_pushes": false,
+      "allow_deletions": false,
+      "block_creations": false,
+      "required_conversation_resolution": false,
+      "lock_branch": false,
+      "allow_fork_syncing": true
+    }
+  },
+  "alpha_notes": {
+    "status": "Alpha software with relaxed protection rules",
+    "quality_gates": {
+      "test_coverage": "11% (target: 70%)",
+      "security_issues": "69 (target: 0)",
+      "linting_issues": "3625 (target: <100)"
+    },
+    "enforcement": {
+      "new_code": "strict",
+      "existing_code": "gradual_improvement",
+      "clean_as_you_code": true
+    }
+  }
+}

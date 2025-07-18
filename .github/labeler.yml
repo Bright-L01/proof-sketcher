@@ -1,0 +1,68 @@
+# Configuration for GitHub labeler action
+# Automatically adds labels to PRs based on changed files
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - docs/**
+      - "*.md"
+      - README.md
+      - ALPHA_STATUS.md
+
+parser:
+  - changed-files:
+    - any-glob-to-any-file:
+      - src/proof_sketcher/parser/**
+
+generator:
+  - changed-files:
+    - any-glob-to-any-file:
+      - src/proof_sketcher/generator/**
+
+exporter:
+  - changed-files:
+    - any-glob-to-any-file:
+      - src/proof_sketcher/exporter/**
+
+cli:
+  - changed-files:
+    - any-glob-to-any-file:
+      - src/proof_sketcher/cli/**
+
+tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - tests/**
+      - "**/test_*.py"
+      - "**/*_test.py"
+
+ci/cd:
+  - changed-files:
+    - any-glob-to-any-file:
+      - .github/**
+      - .pre-commit-config.yaml
+
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - requirements*.txt
+      - pyproject.toml
+      - poetry.lock
+      - Pipfile
+      - Pipfile.lock
+
+security:
+  - changed-files:
+    - any-glob-to-any-file:
+      - src/proof_sketcher/security/**
+      - src/proof_sketcher/config/**
+      - "**/auth*"
+      - "**/secure*"
+
+alpha:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "**"
+  - head-branch:
+    - "alpha/*"
+    - "experimental/*"
