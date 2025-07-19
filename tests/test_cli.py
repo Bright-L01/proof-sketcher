@@ -65,7 +65,7 @@ theorem test_theorem : 1 + 1 = 2 := by norm_num
 
     def test_prove_basic(self, runner, sample_lean_file):
         """Test basic prove command."""
-        with patch("proof_sketcher.cli.LeanParser") as mock_parser:
+        with patch("proof_sketcher.cli.SimpleLeanParser") as mock_parser:
             # Mock parser
             mock_result = Mock()
             mock_result.success = True
@@ -100,7 +100,7 @@ theorem test_theorem : 1 + 1 = 2 := by norm_num
 
     def test_prove_with_options(self, runner, sample_lean_file):
         """Test prove command with various options."""
-        with patch("proof_sketcher.cli.LeanParser") as mock_parser:
+        with patch("proof_sketcher.cli.SimpleLeanParser") as mock_parser:
             mock_parser.return_value.parse_file.return_value = Mock(
                 success=True, theorems=[], errors=[]
             )
@@ -124,7 +124,7 @@ theorem test_theorem : 1 + 1 = 2 := by norm_num
 
     def test_prove_specific_theorem(self, runner, sample_lean_file):
         """Test proving specific theorem."""
-        with patch("proof_sketcher.cli.LeanParser") as mock_parser:
+        with patch("proof_sketcher.cli.SimpleLeanParser") as mock_parser:
             # Return multiple theorems, but only one matches
             mock_result = Mock()
             mock_result.success = True
@@ -406,7 +406,7 @@ class TestListCommand:
             mock_config.parser = Mock()
             mock_load.return_value = mock_config
 
-            with patch("proof_sketcher.cli.LeanParser") as mock_parser:
+            with patch("proof_sketcher.cli.SimpleLeanParser") as mock_parser:
                 mock_result = Mock()
                 mock_result.success = True
                 mock_result.errors = []  # Add the missing errors attribute
@@ -472,7 +472,7 @@ class TestBatchProcessing:
             mock_config.export.output_dir = tmp_path / "output"
             mock_load.return_value = mock_config
 
-            with patch("proof_sketcher.cli.LeanParser") as mock_parser:
+            with patch("proof_sketcher.cli.SimpleLeanParser") as mock_parser:
                 # Create properly configured theorem mock
                 theorem_mock = Mock()
                 theorem_mock.name = "t1"
@@ -520,7 +520,7 @@ class TestBatchProcessing:
             mock_config.export.output_dir = tmp_path / "output"
             mock_load.return_value = mock_config
 
-            with patch("proof_sketcher.cli.LeanParser") as mock_parser:
+            with patch("proof_sketcher.cli.SimpleLeanParser") as mock_parser:
                 theorem_mock = Mock()
                 theorem_mock.name = "t"
                 theorem_mock.statement = "True"
@@ -568,7 +568,7 @@ theorem integration_test : 2 + 2 = 4 := by norm_num
         )
 
         # Mock necessary components
-        with patch("proof_sketcher.cli.LeanParser") as mock_parser:
+        with patch("proof_sketcher.cli.SimpleLeanParser") as mock_parser:
             # Mock ClaudeGenerator to avoid executable check
             mock_generator_instance = Mock()
             mock_generator_instance.generate_proof_sketch.return_value = Mock(

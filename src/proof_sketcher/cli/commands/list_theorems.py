@@ -51,11 +51,11 @@ def list_theorems(
             console.print("[red]Failed to parse file:[/red]")
             for error in result.errors:
                 console.print(f"  • {error.message}")
-            raise click.Exit(1)
+            raise SystemExit(1)
 
         if not result.theorems:
             console.print("[yellow]No theorems found in file[/yellow]")
-            raise click.Exit(0)
+            raise SystemExit(0)
 
     # Filter theorems if requested
     theorems = result.theorems
@@ -65,7 +65,7 @@ def list_theorems(
         theorems = [t for t in theorems if fnmatch.fnmatch(t.name, filter)]
         if not theorems:
             console.print(f"[yellow]No theorems match pattern '{filter}'[/yellow]")
-            raise click.Exit(0)
+            raise SystemExit(0)
 
     # Display theorems
     console.print(f"\n[green]Found {len(theorems)} theorem(s) in {file_path}:[/green]")

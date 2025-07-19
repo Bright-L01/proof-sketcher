@@ -1,7 +1,7 @@
 """Template engine for rendering educational content in doc-gen4 HTML."""
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -25,7 +25,7 @@ class EducationalTemplateEngine:
 
     def render_educational_declaration(
         self,
-        declaration: Dict[str, Any],
+        declaration: dict[str, Any],
         template_name: str = "educational_declaration.html",
     ) -> str:
         """Render an educational declaration to HTML.
@@ -42,7 +42,7 @@ class EducationalTemplateEngine:
 
     def render_educational_module(
         self,
-        module_data: Dict[str, Any],
+        module_data: dict[str, Any],
         template_name: str = "educational_module.html",
     ) -> str:
         """Render an educational module to HTML.
@@ -59,7 +59,7 @@ class EducationalTemplateEngine:
 
     def render_progressive_explanation(
         self,
-        explanation_data: Dict[str, Any],
+        explanation_data: dict[str, Any],
         template_name: str = "progressive_explanation.html",
     ) -> str:
         """Render progressive explanation to HTML.

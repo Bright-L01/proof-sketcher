@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -42,8 +42,8 @@ class ExportContext:
     timestamp: datetime = field(default_factory=datetime.now)
 
     # Content
-    sketches: List[ProofSketch] = field(default_factory=list)
-    animations: Dict[str, Path] = field(default_factory=dict)
+    sketches: list[ProofSketch] = field(default_factory=list)
+    animations: dict[str, Path] = field(default_factory=dict)
 
     # Options
     include_animations: bool = True
@@ -52,14 +52,14 @@ class ExportContext:
     create_subdirs: bool = True
 
     # Cross-references
-    theorem_links: Dict[str, str] = field(default_factory=dict)
-    dependency_graph: Dict[str, Set[str]] = field(default_factory=dict)
+    theorem_links: dict[str, str] = field(default_factory=dict)
+    dependency_graph: dict[str, set[str]] = field(default_factory=dict)
 
     # Custom metadata
     project_name: str = "Proof Sketcher Output"
-    author: Optional[str] = None
-    version: Optional[str] = None
-    custom_metadata: Dict[str, Any] = field(default_factory=dict)
+    author: str | None = None
+    version: str | None = None
+    custom_metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -69,13 +69,13 @@ class ExportResult:
     success: bool
     format: ExportFormat
     output_path: Path
-    files_created: List[Path] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    files_created: list[Path] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
     export_time: float = 0.0
 
     @property
-    def main_file(self) -> Optional[Path]:
+    def main_file(self) -> Path | None:
         """Get the main output file."""
         if self.files_created:
             # Return index file if available
@@ -94,26 +94,26 @@ class TemplateContext(BaseModel):
     theorem_name: str = Field(..., description="Theorem name")
     theorem_statement: str = Field(..., description="Theorem statement")
     explanation: str = Field(..., description="Natural language explanation")
-    proof_steps: List[Dict[str, Any]] = Field(default_factory=list)
+    proof_steps: list[dict[str, Any]] = Field(default_factory=list)
 
     # Optional content
-    key_insights: List[str] = Field(default_factory=list)
-    prerequisites: List[str] = Field(default_factory=list)
-    visualization_hints: List[str] = Field(default_factory=list)
+    key_insights: list[str] = Field(default_factory=list)
+    prerequisites: list[str] = Field(default_factory=list)
+    visualization_hints: list[str] = Field(default_factory=list)
 
     # Media
-    animation_path: Optional[str] = Field(None, description="Path to animation file")
-    animation_thumbnail: Optional[str] = Field(None, description="Path to thumbnail")
+    animation_path: str | None = Field(None, description="Path to animation file")
+    animation_thumbnail: str | None = Field(None, description="Path to thumbnail")
 
     # Metadata
-    timestamp: Optional[str] = Field(None, description="Generation timestamp")
-    source_file: Optional[str] = Field(None, description="Source Lean file")
-    dependencies: List[str] = Field(default_factory=list)
+    timestamp: str | None = Field(None, description="Generation timestamp")
+    source_file: str | None = Field(None, description="Source Lean file")
+    dependencies: list[str] = Field(default_factory=list)
 
     # Navigation
-    prev_theorem: Optional[Dict[str, str]] = Field(None)
-    next_theorem: Optional[Dict[str, str]] = Field(None)
-    index_url: Optional[str] = Field(None)
+    prev_theorem: dict[str, str] | None = Field(None)
+    next_theorem: dict[str, str] | None = Field(None)
+    index_url: str | None = Field(None)
 
     # Formatting options
     syntax_theme: str = Field("monokai", description="Code syntax theme")
@@ -191,7 +191,7 @@ class ExportOptions(BaseModel):
 class BaseExporter(ABC):
     """Abstract base class for all exporters."""
 
-    def __init__(self, options: Optional[ExportOptions] = None):
+    def __init__(self, options: ExportOptions | None = None):
         """Initialize exporter with options.
 
         Args:
@@ -204,11 +204,10 @@ class BaseExporter(ABC):
     @abstractmethod
     def format(self) -> ExportFormat:
         """Get the export format."""
-        pass
 
     @abstractmethod
     def export_single(
-        self, sketch: ProofSketch, context: Optional[ExportContext] = None
+        self, sketch: ProofSketch, context: ExportContext | None = None
     ) -> ExportResult:
         """Export a single proof sketch.
 
@@ -219,11 +218,10 @@ class BaseExporter(ABC):
         Returns:
             Export result
         """
-        pass
 
     @abstractmethod
     def export_multiple(
-        self, sketches: List[ProofSketch], context: Optional[ExportContext] = None
+        self, sketches: list[ProofSketch], context: ExportContext | None = None
     ) -> ExportResult:
         """Export multiple proof sketches.
 
@@ -234,7 +232,6 @@ class BaseExporter(ABC):
         Returns:
             Export result
         """
-        pass
 
     def _ensure_output_dir(self) -> None:
         """Ensure output directory exists."""
@@ -256,7 +253,7 @@ class BaseExporter(ABC):
         return self.options.output_dir / f"{filename}.{extension}"
 
     def _create_context(
-        self, sketch: ProofSketch, animation_path: Optional[Path] = None
+        self, sketch: ProofSketch, animation_path: Path | None = None
     ) -> TemplateContext:
         """Create template context from proof sketch.
 

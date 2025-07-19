@@ -3,7 +3,7 @@
 import hashlib
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -26,41 +26,89 @@ class GenerationType(str, Enum):
     MATHEMATICAL_CONTEXT = "mathematical_context"
 
 
-class ProofStep(BaseModel):
-    """A single step in a proof sketch."""
+class EducationalLevel(str, Enum):
+    """Educational complexity levels for the Proof Explanation Ladder."""
+    
+    INTUITIVE = "intuitive"      # Level 1: Why this theorem matters and what it means
+    CONCEPTUAL = "conceptual"    # Level 2: What proof strategy we're using and why  
+    BRIDGING = "bridging"        # Level 3: How informal reasoning maps to formal steps
+    FORMAL = "formal"            # Level 4: Complete Lean 4 syntax with annotations
 
-    step_number: int = Field(..., description="Step number in the proo")
-    description: str = Field(..., description="Description of what this step does")
-    tactics: List[str] = Field(default_factory=list, description="Lean tactics used")
-    mathematical_content: str = Field(
-        ..., description="Mathematical content of the step"
-    )
-    intuition: Optional[str] = Field(None, description="Intuitive explanation")
+
+class ProofStrategy(str, Enum):
+    """Common proof strategies in discrete mathematics."""
+    
+    INDUCTION = "induction"                    # Mathematical induction
+    CONTRADICTION = "contradiction"           # Proof by contradiction (reductio ad absurdum)
+    DIRECT = "direct"                        # Direct proof
+    CASES = "cases"                          # Case analysis / proof by cases
+    CONSTRUCTION = "construction"            # Constructive existential proof
+    CONTRAPOSITIVE = "contrapositive"        # Proof by contrapositive
+
+
+class ProofStep(BaseModel):
+    """A single step in a proof sketch with educational levels."""
+
+    step_number: int = Field(..., description="Step number in the proof")
+    
+    # Progressive explanations for different educational levels
+    intuitive_explanation: str = Field(..., description="Level 1: Intuitive explanation of what this step does")
+    conceptual_explanation: str = Field(..., description="Level 2: Conceptual explanation with strategy context")
+    bridging_explanation: str = Field(..., description="Level 3: Bridge between informal and formal reasoning")
+    formal_explanation: str = Field(..., description="Level 4: Complete formal explanation with syntax")
+    
+    # Technical details
+    tactics: list[str] = Field(default_factory=list, description="Lean tactics used")
+    mathematical_content: str = Field(..., description="Mathematical content of the step")
+    lean_code: str | None = Field(None, description="Actual Lean 4 code for this step")
 
     class Config:
         """Pydantic configuration."""
 
         str_strip_whitespace = True
+        
+    def get_explanation(self, level: EducationalLevel) -> str:
+        """Get explanation for the specified educational level."""
+        explanations = {
+            EducationalLevel.INTUITIVE: self.intuitive_explanation,
+            EducationalLevel.CONCEPTUAL: self.conceptual_explanation,
+            EducationalLevel.BRIDGING: self.bridging_explanation,
+            EducationalLevel.FORMAL: self.formal_explanation,
+        }
+        return explanations[level]
 
 
 class ProofSketch(BaseModel):
-    """A natural language proof sketch with structured content."""
+    """An educational proof sketch with progressive complexity levels."""
 
     theorem_name: str = Field(..., description="Name of the theorem")
     theorem_statement: str = Field(..., description="Formal statement of the theorem")
-    introduction: str = Field(..., description="Introduction explaining the theorem")
-    key_steps: List[ProofStep] = Field(..., description="Key steps in the proo")
-    conclusion: str = Field(..., description="Conclusion tying everything together")
+    
+    # Progressive educational content
+    intuitive_overview: str = Field(..., description="Level 1: Why this theorem matters and what it means")
+    conceptual_overview: str = Field(..., description="Level 2: What proof strategy we're using and why")
+    bridging_overview: str = Field(..., description="Level 3: How informal reasoning maps to formal steps")
+    formal_overview: str = Field(..., description="Level 4: Complete formal context and setup")
+    
+    key_steps: list[ProofStep] = Field(..., description="Key steps in the proof")
+    
+    # Progressive conclusions
+    intuitive_conclusion: str = Field(..., description="Level 1: Intuitive wrap-up")
+    conceptual_conclusion: str = Field(..., description="Level 2: Strategic significance")
+    bridging_conclusion: str = Field(..., description="Level 3: Connection to formal proof")
+    formal_conclusion: str = Field(..., description="Level 4: Complete formal conclusion")
 
-    # Metadata
+    # Educational metadata
+    proof_strategy: ProofStrategy = Field(..., description="Primary proof strategy used")
+    discrete_math_topic: str | None = Field(None, description="Specific discrete mathematics topic")
     difficulty_level: str = Field(
         "intermediate", description="Difficulty: beginner, intermediate, advanced"
     )
-    mathematical_areas: List[str] = Field(
+    mathematical_areas: list[str] = Field(
         default_factory=list, description="Areas of mathematics involved"
     )
-    prerequisites: List[str] = Field(
-        default_factory=list, description="Prerequisites to understand this proo"
+    prerequisites: list[str] = Field(
+        default_factory=list, description="Prerequisites to understand this proof"
     )
 
     @field_validator("difficulty_level")
@@ -77,12 +125,32 @@ class ProofSketch(BaseModel):
         """Get total number of proof steps."""
         return len(self.key_steps)
 
-    def get_step(self, step_number: int) -> Optional[ProofStep]:
+    def get_step(self, step_number: int) -> ProofStep | None:
         """Get a specific proof step by number."""
         for step in self.key_steps:
             if step.step_number == step_number:
                 return step
         return None
+        
+    def get_overview(self, level: EducationalLevel) -> str:
+        """Get overview for the specified educational level."""
+        overviews = {
+            EducationalLevel.INTUITIVE: self.intuitive_overview,
+            EducationalLevel.CONCEPTUAL: self.conceptual_overview,
+            EducationalLevel.BRIDGING: self.bridging_overview,
+            EducationalLevel.FORMAL: self.formal_overview,
+        }
+        return overviews[level]
+        
+    def get_conclusion(self, level: EducationalLevel) -> str:
+        """Get conclusion for the specified educational level."""
+        conclusions = {
+            EducationalLevel.INTUITIVE: self.intuitive_conclusion,
+            EducationalLevel.CONCEPTUAL: self.conceptual_conclusion,
+            EducationalLevel.BRIDGING: self.bridging_conclusion,
+            EducationalLevel.FORMAL: self.formal_conclusion,
+        }
+        return conclusions[level]
 
     class Config:
         """Pydantic configuration."""
@@ -112,8 +180,8 @@ class GenerationConfig(BaseModel):
     )
 
     # System and behavior
-    system_message: Optional[str] = Field(None, description="Custom system message")
-    stop_sequences: List[str] = Field(
+    system_message: str | None = Field(None, description="Custom system message")
+    stop_sequences: list[str] = Field(
         default_factory=list, description="Stop sequences"
     )
 
@@ -184,16 +252,14 @@ class GenerationRequest(BaseModel):
     )
     theorem_name: str = Field(..., description="Name of the theorem")
     theorem_statement: str = Field(..., description="Statement of the theorem")
-    theorem_dependencies: List[str] = Field(
+    theorem_dependencies: list[str] = Field(
         default_factory=list, description="Theorem dependencies"
     )
 
     # Optional context
-    proof_text: Optional[str] = Field(None, description="Proof text if available")
-    docstring: Optional[str] = Field(
-        None, description="Existing docstring if available"
-    )
-    mathematical_context: Optional[str] = Field(
+    proof_text: str | None = Field(None, description="Proof text if available")
+    docstring: str | None = Field(None, description="Existing docstring if available")
+    mathematical_context: str | None = Field(
         None, description="Additional mathematical context"
     )
 
@@ -214,10 +280,7 @@ class GenerationRequest(BaseModel):
             content += f":{self.mathematical_context}"
 
         # Include relevant config in cache key
-        config_content = f"{
-            self.config.model.value}:{
-            self.config.temperature}:{
-            self.config.verbosity}"
+        config_content = f"{self.config.model.value}:{self.config.temperature}:{self.config.verbosity}"
         content += f":{config_content}"
 
         return hashlib.sha256(content.encode()).hexdigest()
@@ -232,20 +295,20 @@ class GenerationResponse(BaseModel):
     """Response from natural language generation."""
 
     request: GenerationRequest = Field(..., description="Original request")
-    content: Union[str, ProofSketch] = Field(..., description="Generated content")
+    content: str | ProofSketch = Field(..., description="Generated content")
 
     # Metadata
     generated_at: datetime = Field(
         default_factory=datetime.now, description="Generation timestamp"
     )
-    generation_time_ms: Optional[float] = Field(
+    generation_time_ms: float | None = Field(
         None, description="Generation time in milliseconds"
     )
-    token_count: Optional[int] = Field(None, description="Number of tokens generated")
+    token_count: int | None = Field(None, description="Number of tokens generated")
 
     # Success/error information
     success: bool = Field(True, description="Whether generation was successful")
-    error_message: Optional[str] = Field(
+    error_message: str | None = Field(
         None, description="Error message if generation failed"
     )
 
@@ -264,7 +327,7 @@ class GenerationResponse(BaseModel):
         """Check if content is plain text."""
         return isinstance(self.content, str)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         result = self.dict()
 
@@ -278,7 +341,7 @@ class GenerationResponse(BaseModel):
         """Pydantic configuration."""
 
         arbitrary_types_allowed = True
-        json_encoders = {datetime: lambda dt: dt.isoformat()}
+        json_encoders: ClassVar = {datetime: lambda dt: dt.isoformat()}
 
 
 class CacheEntry(BaseModel):
@@ -303,4 +366,4 @@ class CacheEntry(BaseModel):
         """Pydantic configuration."""
 
         arbitrary_types_allowed = True
-        json_encoders = {datetime: lambda dt: dt.isoformat()}
+        json_encoders: ClassVar = {datetime: lambda dt: dt.isoformat()}

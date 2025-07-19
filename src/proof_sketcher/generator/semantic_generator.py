@@ -28,7 +28,6 @@ Usage:
 """
 
 import logging
-from typing import Dict, List, Optional, Union
 
 from ..parser.lsp_client import SemanticTheoremInfo, TacticInfo
 from ..parser.models import TheoremInfo
@@ -46,7 +45,7 @@ class EducationalLevel:
 class SemanticGenerator:
     """Advanced generator using semantic analysis for educational content."""
 
-    def __init__(self, cache_dir: Optional[str] = None):
+    def __init__(self, cache_dir: str | None = None):
         """Initialize the semantic generator.
 
         Args:
@@ -62,9 +61,9 @@ class SemanticGenerator:
 
     def generate_educational_sketch(
         self,
-        theorem: Union[SemanticTheoremInfo, TheoremInfo],
+        theorem: SemanticTheoremInfo | TheoremInfo,
         target_level: str = EducationalLevel.INTERMEDIATE,
-        config: Optional[GenerationConfig] = None,
+        config: GenerationConfig | None = None,
     ) -> ProofSketch:
         """Generate an educational proof sketch adapted to the target level.
 
@@ -88,8 +87,8 @@ class SemanticGenerator:
 
     def generate_proof_sketch(
         self,
-        theorem: Union[SemanticTheoremInfo, TheoremInfo],
-        config: Optional[GenerationConfig] = None,
+        theorem: SemanticTheoremInfo | TheoremInfo,
+        config: GenerationConfig | None = None,
     ) -> ProofSketch:
         """Generate proof sketch (backward compatibility method).
 
@@ -105,7 +104,7 @@ class SemanticGenerator:
         )
 
     def generate_offline(
-        self, theorem: Union[SemanticTheoremInfo, TheoremInfo]
+        self, theorem: SemanticTheoremInfo | TheoremInfo
     ) -> ProofSketch:
         """Generate proof sketch using offline mode (backward compatibility).
 
@@ -123,7 +122,7 @@ class SemanticGenerator:
         self,
         theorem: SemanticTheoremInfo,
         target_level: str,
-        config: Optional[GenerationConfig] = None,
+        config: GenerationConfig | None = None,
     ) -> ProofSketch:
         """Generate sketch using full semantic analysis."""
 
@@ -163,17 +162,9 @@ class SemanticGenerator:
         self,
         theorem: TheoremInfo,
         target_level: str,
-        config: Optional[GenerationConfig] = None,
+        config: GenerationConfig | None = None,
     ) -> ProofSketch:
         """Generate basic educational sketch for non-semantic theorems."""
-
-        # Create a basic educational profile
-        edu_profile = {
-            "complexity": 2.0,  # Default moderate complexity
-            "proof_method": "unknown",
-            "mathematical_entities": [],
-            "educational_level": target_level,
-        }
 
         # Generate basic introduction
         introduction = self._generate_basic_introduction(theorem, target_level)
@@ -223,7 +214,7 @@ class SemanticGenerator:
 
     def _generate_basic_steps(
         self, theorem: TheoremInfo, target_level: str
-    ) -> List[ProofStep]:
+    ) -> list[ProofStep]:
         """Generate basic steps for non-semantic theorems."""
 
         steps = []
@@ -337,7 +328,7 @@ class SemanticGenerator:
 
     def _analyze_educational_profile(
         self, theorem: SemanticTheoremInfo
-    ) -> Dict[str, any]:
+    ) -> dict[str, any]:
         """Analyze theorem for educational characteristics."""
         return {
             "complexity": theorem.complexity_score,
@@ -358,7 +349,7 @@ class SemanticGenerator:
         self,
         theorem: SemanticTheoremInfo,
         target_level: str,
-        edu_profile: Dict[str, any],
+        edu_profile: dict[str, any],
     ) -> str:
         """Generate introduction appropriate to the educational level."""
 
@@ -378,7 +369,7 @@ class SemanticGenerator:
             )
 
     def _generate_beginner_introduction(
-        self, theorem: SemanticTheoremInfo, edu_profile: Dict[str, any], base: str
+        self, theorem: SemanticTheoremInfo, edu_profile: dict[str, any], base: str
     ) -> str:
         """Generate beginner-level introduction with intuitive explanations."""
 
@@ -413,7 +404,7 @@ class SemanticGenerator:
         return intro
 
     def _generate_intermediate_introduction(
-        self, theorem: SemanticTheoremInfo, edu_profile: Dict[str, any], base: str
+        self, theorem: SemanticTheoremInfo, edu_profile: dict[str, any], base: str
     ) -> str:
         """Generate intermediate-level introduction with mathematical context."""
 
@@ -453,7 +444,7 @@ class SemanticGenerator:
         return intro
 
     def _generate_advanced_introduction(
-        self, theorem: SemanticTheoremInfo, edu_profile: Dict[str, any], base: str
+        self, theorem: SemanticTheoremInfo, edu_profile: dict[str, any], base: str
     ) -> str:
         """Generate advanced-level introduction with formal context."""
 
@@ -496,8 +487,8 @@ class SemanticGenerator:
         self,
         theorem: SemanticTheoremInfo,
         target_level: str,
-        edu_profile: Dict[str, any],
-    ) -> List[ProofStep]:
+        edu_profile: dict[str, any],
+    ) -> list[ProofStep]:
         """Generate proof steps appropriate to the educational level."""
 
         if theorem.tactic_sequence:
@@ -511,8 +502,8 @@ class SemanticGenerator:
         self,
         theorem: SemanticTheoremInfo,
         target_level: str,
-        edu_profile: Dict[str, any],
-    ) -> List[ProofStep]:
+        edu_profile: dict[str, any],
+    ) -> list[ProofStep]:
         """Generate steps based on actual tactic sequence."""
 
         steps = []
@@ -533,8 +524,8 @@ class SemanticGenerator:
         return steps
 
     def _group_tactics_educationally(
-        self, tactics: List[TacticInfo]
-    ) -> List[List[TacticInfo]]:
+        self, tactics: list[TacticInfo]
+    ) -> list[list[TacticInfo]]:
         """Group tactics into educational units."""
         if not tactics:
             return []
@@ -559,10 +550,10 @@ class SemanticGenerator:
     def _create_educational_step(
         self,
         step_number: int,
-        tactics: List[TacticInfo],
+        tactics: list[TacticInfo],
         theorem: SemanticTheoremInfo,
         target_level: str,
-        edu_profile: Dict[str, any],
+        edu_profile: dict[str, any],
     ) -> ProofStep:
         """Create an educational proof step from tactics."""
 
@@ -598,7 +589,7 @@ class SemanticGenerator:
         )
 
     def _enhance_intuition_for_beginners(
-        self, base_intuition: str, tactic: TacticInfo, edu_profile: Dict[str, any]
+        self, base_intuition: str, tactic: TacticInfo, edu_profile: dict[str, any]
     ) -> str:
         """Enhance intuition with beginner-friendly explanations."""
 
@@ -616,7 +607,7 @@ class SemanticGenerator:
         return enhanced
 
     def _enhance_description_for_advanced(
-        self, base_description: str, tactic: TacticInfo, edu_profile: Dict[str, any]
+        self, base_description: str, tactic: TacticInfo, edu_profile: dict[str, any]
     ) -> str:
         """Enhance description with advanced technical details."""
 
@@ -635,8 +626,8 @@ class SemanticGenerator:
         self,
         theorem: SemanticTheoremInfo,
         target_level: str,
-        edu_profile: Dict[str, any],
-    ) -> List[ProofStep]:
+        edu_profile: dict[str, any],
+    ) -> list[ProofStep]:
         """Generate generic educational steps when specific tactics aren't available."""
 
         steps = []
@@ -679,7 +670,7 @@ class SemanticGenerator:
         return steps
 
     def _get_setup_intuition(
-        self, target_level: str, edu_profile: Dict[str, any]
+        self, target_level: str, edu_profile: dict[str, any]
     ) -> str:
         """Generate setup intuition based on level and complexity."""
 
@@ -691,7 +682,7 @@ class SemanticGenerator:
             return "We initialize the proof state, establish the hypothesis context, and formalize the goal statement within the appropriate logical framework."
 
     def _get_main_reasoning_intuition(
-        self, target_level: str, edu_profile: Dict[str, any]
+        self, target_level: str, edu_profile: dict[str, any]
     ) -> str:
         """Generate main reasoning intuition."""
 
@@ -715,7 +706,7 @@ class SemanticGenerator:
             return "We employ the relevant proof-theoretic techniques, leveraging the logical structure of the statement and available hypotheses."
 
     def _get_conclusion_intuition(
-        self, target_level: str, edu_profile: Dict[str, any]
+        self, target_level: str, edu_profile: dict[str, any]
     ) -> str:
         """Generate conclusion intuition."""
 
@@ -741,7 +732,7 @@ class SemanticGenerator:
         self,
         theorem: SemanticTheoremInfo,
         target_level: str,
-        edu_profile: Dict[str, any],
+        edu_profile: dict[str, any],
     ) -> str:
         """Generate educational conclusion with learning insights."""
 
@@ -757,7 +748,7 @@ class SemanticGenerator:
             )
 
     def _generate_beginner_conclusion(
-        self, base: str, edu_profile: Dict[str, any]
+        self, base: str, edu_profile: dict[str, any]
     ) -> str:
         """Generate beginner-friendly conclusion with learning takeaways."""
 
@@ -782,7 +773,7 @@ class SemanticGenerator:
         return conclusion
 
     def _generate_intermediate_conclusion(
-        self, base: str, edu_profile: Dict[str, any]
+        self, base: str, edu_profile: dict[str, any]
     ) -> str:
         """Generate intermediate-level conclusion with mathematical connections."""
 
@@ -805,7 +796,7 @@ class SemanticGenerator:
         return conclusion
 
     def _generate_advanced_conclusion(
-        self, base: str, edu_profile: Dict[str, any], theorem: SemanticTheoremInfo
+        self, base: str, edu_profile: dict[str, any], theorem: SemanticTheoremInfo
     ) -> str:
         """Generate advanced conclusion with formal insights."""
 
@@ -858,7 +849,7 @@ class SemanticGenerator:
             else:
                 return "advanced"
 
-    def _identify_educational_areas(self, theorem: SemanticTheoremInfo) -> List[str]:
+    def _identify_educational_areas(self, theorem: SemanticTheoremInfo) -> list[str]:
         """Identify mathematical areas for educational context."""
 
         areas = set(theorem.mathematical_entities)
@@ -887,7 +878,7 @@ class SemanticGenerator:
 
     def _generate_educational_prerequisites(
         self, theorem: SemanticTheoremInfo, target_level: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate educational prerequisites based on analysis and level."""
 
         prereqs = set()
@@ -919,7 +910,7 @@ class SemanticGenerator:
 
         return list(prereqs) if prereqs else ["Basic mathematical reasoning"]
 
-    def _init_proof_method_explanations(self) -> Dict[str, Dict[str, str]]:
+    def _init_proof_method_explanations(self) -> dict[str, dict[str, str]]:
         """Initialize explanations for different proof methods."""
 
         return {
@@ -949,7 +940,7 @@ class SemanticGenerator:
             },
         }
 
-    def _init_tactic_explanations(self) -> Dict[str, Dict[str, Dict[str, str]]]:
+    def _init_tactic_explanations(self) -> dict[str, dict[str, dict[str, str]]]:
         """Initialize detailed tactic explanations by level."""
 
         return {
@@ -997,7 +988,7 @@ class SemanticGenerator:
             },
         }
 
-    def _init_mathematical_contexts(self) -> Dict[str, str]:
+    def _init_mathematical_contexts(self) -> dict[str, str]:
         """Initialize mathematical context explanations."""
 
         return {

@@ -14,7 +14,7 @@ def should_show_warning() -> bool:
     warning_file = os.path.expanduser("~/.proof_sketcher_warning_shown")
     if os.path.exists(warning_file):
         try:
-            with open(warning_file, "r") as f:
+            with open(warning_file) as f:
                 last_shown = datetime.fromisoformat(f.read().strip())
                 # Show warning once per day
                 if (datetime.now() - last_shown).days < 1:

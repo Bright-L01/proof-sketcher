@@ -1,7 +1,6 @@
 """Parser configuration."""
 
 from dataclasses import dataclass, field
-from typing import List
 
 
 @dataclass
@@ -16,10 +15,10 @@ class ParserConfig:
     # Lean settings
     lean_executable: str = "lean"
     lake_executable: str = "lake"
-    search_paths: List[str] = field(default_factory=list)
+    search_paths: list[str] = field(default_factory=list)
 
     # Feature flags
-    use_lsp: bool = False
+    use_lsp: bool = False  # DEPRECATED: LSP is non-functional, always use False
     extract_proofs: bool = True
     extract_comments: bool = True
 
@@ -33,3 +32,15 @@ class ParserConfig:
             raise ValueError("timeout must be positive")
         if self.max_file_size <= 0:
             raise ValueError("max_file_size must be positive")
+        
+        # Warn if LSP is enabled
+        if self.use_lsp:
+            import warnings
+            warnings.warn(
+                "LSP integration is deprecated and non-functional. "
+                "It extracts 0 theorems and is 1000x slower than the simple parser. "
+                "Setting use_lsp=False automatically.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+            self.use_lsp = False

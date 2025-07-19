@@ -6,10 +6,10 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from proof_sketcher.generator import AIGenerator as ClaudeGenerator
+from proof_sketcher.generator.simple_generator import SimpleGenerator as ClaudeGenerator
 from proof_sketcher.generator.models import GenerationConfig, GenerationModel
 from proof_sketcher.parser.config import ParserConfig
-from proof_sketcher.parser.lean_parser import LeanParser
+from proof_sketcher.parser.simple_parser import SimpleLeanParser
 
 
 class TestParserGeneratorIntegration:
@@ -79,7 +79,7 @@ theorem eq_trans (a b c : Nat) (h1 : a = b) (h2 : b = c) : a = c :=
         self, parser_config, generator_config, lean_files
     ):
         """Test parsing and generating for a simple theorem."""
-        parser = LeanParser(parser_config)
+        parser = SimpleLeanParser(parser_config)
 
         # Mock Claude availability check
         with patch.object(ClaudeGenerator, "check_claude_available", return_value=True):
@@ -108,7 +108,7 @@ theorem eq_trans (a b c : Nat) (h1 : a = b) (h2 : b = c) : a = c :=
         self, parser_config, generator_config, lean_files
     ):
         """Test parsing and generating for an induction proof."""
-        parser = LeanParser(parser_config)
+        parser = SimpleLeanParser(parser_config)
 
         # Mock Claude availability check
         with patch.object(ClaudeGenerator, "check_claude_available", return_value=True):
@@ -136,7 +136,7 @@ theorem eq_trans (a b c : Nat) (h1 : a = b) (h2 : b = c) : a = c :=
         self, parser_config, generator_config, lean_files
     ):
         """Test parsing and generating for multiple theorems."""
-        parser = LeanParser(parser_config)
+        parser = SimpleLeanParser(parser_config)
 
         # Mock Claude availability check
         with patch.object(ClaudeGenerator, "check_claude_available", return_value=True):
@@ -170,7 +170,7 @@ theorem eq_trans (a b c : Nat) (h1 : a = b) (h2 : b = c) : a = c :=
 
     def test_mathematical_context_generation(self, parser_config, generator_config):
         """Test generating with mathematical context."""
-        parser = LeanParser(parser_config)
+        parser = SimpleLeanParser(parser_config)
 
         # Mock Claude availability check
         with patch.object(ClaudeGenerator, "check_claude_available", return_value=True):
@@ -213,7 +213,7 @@ theorem prime_exists (n : Nat) : ∃ p, Nat.Prime p ∧ p > n := by
 
     def test_error_recovery(self, parser_config, generator_config, tmp_path):
         """Test error recovery in the pipeline."""
-        parser = LeanParser(parser_config)
+        parser = SimpleLeanParser(parser_config)
 
         # Mock Claude availability check
         with patch.object(ClaudeGenerator, "check_claude_available", return_value=True):
@@ -260,7 +260,7 @@ theorem another_valid : 2 = 2 := rfl
         parser_config.cache_results = True
         generator_config.cache_responses = True
 
-        parser = LeanParser(parser_config)
+        parser = SimpleLeanParser(parser_config)
 
         # Mock Claude availability check
         with patch.object(ClaudeGenerator, "check_claude_available", return_value=True):

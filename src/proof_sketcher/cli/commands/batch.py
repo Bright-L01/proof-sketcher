@@ -67,7 +67,7 @@ def batch(
 
     if not lean_files:
         console.print(f"[yellow]No files found matching pattern '{pattern}'[/yellow]")
-        raise click.Exit(0)
+        raise SystemExit(0)
 
     console.print(f"[green]Found {len(lean_files)} file(s) to process[/green]")
 

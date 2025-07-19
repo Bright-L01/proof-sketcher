@@ -23,6 +23,6 @@ __all__ = [
     "ExportConfig",
     "ProofSketcherConfig",
     "get_config",
-    "set_config",
     "reset_config",
+    "set_config",
 ]

@@ -4,7 +4,7 @@ import json
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from ..generator.progressive_generator import ProgressiveGenerator, ProgressiveSketch
 from ..parser.models import TheoremInfo
@@ -16,8 +16,8 @@ class DocgenModuleInfo:
     """Information about a module from doc-gen4 JSON."""
 
     name: str
-    doc: Optional[str] = None
-    declarations: List[Dict[str, Any]] = None
+    doc: str | None = None
+    declarations: list[dict[str, Any]] = None
 
     def __post_init__(self):
         if self.declarations is None:
@@ -30,10 +30,10 @@ class EducationalDeclaration:
 
     name: str
     kind: str  # theorem, lemma, def, etc.
-    doc: Optional[str] = None
-    type: Optional[str] = None
-    original_data: Dict[str, Any] = None
-    educational_content: Optional[ProgressiveSketch] = None
+    doc: str | None = None
+    type: str | None = None
+    original_data: dict[str, Any] = None
+    educational_content: ProgressiveSketch | None = None
 
     def __post_init__(self):
         if self.original_data is None:
@@ -48,9 +48,7 @@ class ModuleProcessor:
         self.content_generator = EducationalContentGenerator()
         self.progressive_generator = ProgressiveGenerator()
 
-    def enhance_module_json(
-        self, module_json: Union[str, Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def enhance_module_json(self, module_json: str | dict[str, Any]) -> dict[str, Any]:
         """Enhance a doc-gen4 module JSON with educational content.
 
         Args:
@@ -86,7 +84,7 @@ class ModuleProcessor:
 
         return data
 
-    def _parse_module_info(self, data: Dict[str, Any]) -> DocgenModuleInfo:
+    def _parse_module_info(self, data: dict[str, Any]) -> DocgenModuleInfo:
         """Parse doc-gen4 module JSON into structured info.
 
         Args:
@@ -97,11 +95,11 @@ class ModuleProcessor:
         """
         return DocgenModuleInfo(
             name=data.get("name", "Unknown"),
-            doc=data.get("doc", None),
+            doc=data.get("doc"),
             declarations=data.get("declarations", []),
         )
 
-    def _enhance_declaration(self, decl: Dict[str, Any]) -> EducationalDeclaration:
+    def _enhance_declaration(self, decl: dict[str, Any]) -> EducationalDeclaration:
         """Enhance a single declaration with educational content.
 
         Args:
@@ -112,8 +110,8 @@ class ModuleProcessor:
         """
         name = decl.get("name", "")
         kind = decl.get("kind", "")
-        doc = decl.get("doc", None)
-        type_info = decl.get("type", None)
+        doc = decl.get("doc")
+        type_info = decl.get("type")
 
         # Create enhanced declaration
         enhanced_decl = EducationalDeclaration(
@@ -137,8 +135,8 @@ class ModuleProcessor:
         name: str,
         statement: str,
         proof: str = "",
-        docstring: Optional[str] = None,
-    ) -> Optional[ProgressiveSketch]:
+        docstring: str | None = None,
+    ) -> ProgressiveSketch | None:
         """Generate educational content for a theorem or lemma.
 
         Args:
@@ -189,7 +187,7 @@ class ModuleProcessor:
             input_path: Path to input doc-gen4 JSON file
             output_path: Path to write enhanced JSON file
         """
-        with open(input_path, "r", encoding="utf-8") as f:
+        with open(input_path, encoding="utf-8") as f:
             module_json = json.load(f)
 
         enhanced_json = self.enhance_module_json(module_json)
@@ -214,7 +212,7 @@ class ModuleProcessor:
             except Exception as e:
                 print(f"Error enhancing {json_file.name}: {e}")
 
-    def get_educational_stats(self, enhanced_json: Dict[str, Any]) -> Dict[str, Any]:
+    def get_educational_stats(self, enhanced_json: dict[str, Any]) -> dict[str, Any]:
         """Get statistics about educational content generation.
 
         Args:

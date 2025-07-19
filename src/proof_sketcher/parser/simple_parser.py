@@ -1,17 +1,25 @@
 """Simple Lean parser for MVP - extracts basic theorem information."""
 
 import re
+import time
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Union
 
+from ..core.error_handling import error_context, setup_error_logger
+from ..core.exceptions import FileParseError
+from ..core.resource_limits import timeout, TimeoutError
 from .models import FileMetadata, ParseError, ParseResult, TheoremInfo
 
 
 class SimpleLeanParser:
     """Minimal parser that extracts theorem names and statements from Lean files."""
+    
+    # Resource limits
+    MAX_FILE_SIZE_MB = 10  # Maximum file size in megabytes
+    MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024  # Convert to bytes
+    PARSE_TIMEOUT_SECONDS = 30  # Maximum time for parsing
 
-    def parse_file(self, file_path: Union[Path, str]) -> ParseResult:
+    def parse_file(self, file_path: Path | str) -> ParseResult:
         """Parse a Lean file and extract theorem information.
 
         Args:
@@ -58,27 +66,68 @@ class SimpleLeanParser:
                 parse_time_ms=0.0,
             )
 
-        try:
-            content = file_path.read_text(encoding="utf-8")
-            theorems = self._extract_theorems(content)
-
-            # Create file metadata
-            stat = file_path.stat()
-            metadata = FileMetadata(
-                file_path=file_path,
-                file_size=stat.st_size,
-                last_modified=datetime.fromtimestamp(stat.st_mtime),
-                total_lines=len(content.splitlines()),
-                imports=[],  # Could be extracted later
-                lean_version=None,
-            )
-
+        # Check file size before reading
+        file_size = file_path.stat().st_size
+        if file_size > self.MAX_FILE_SIZE:
             return ParseResult(
-                success=True,
-                theorems=theorems,
-                errors=[],
-                metadata=metadata,
+                success=False,
+                errors=[
+                    ParseError(
+                        message=f"File too large: {file_size / (1024 * 1024):.1f} MB (max: {self.MAX_FILE_SIZE_MB} MB)",
+                        line_number=None,
+                        column=None,
+                        error_type="file_too_large",
+                        severity="error",
+                    )
+                ],
+                theorems=[],
+                metadata=None,
                 parse_time_ms=0.0,
+            )
+        
+        start_time = time.time()
+        try:
+            # Apply timeout to the entire parsing operation
+            with timeout(self.PARSE_TIMEOUT_SECONDS):
+                content = file_path.read_text(encoding="utf-8")
+                theorems = self._extract_theorems(content)
+
+                # Create file metadata
+                stat = file_path.stat()
+                metadata = FileMetadata(
+                    file_path=file_path,
+                    file_size=stat.st_size,
+                    last_modified=datetime.fromtimestamp(stat.st_mtime),
+                    total_lines=len(content.splitlines()),
+                    imports=[],  # Could be extracted later
+                    lean_version=None,
+                )
+                
+                parse_time_ms = (time.time() - start_time) * 1000
+
+                return ParseResult(
+                    success=True,
+                    theorems=theorems,
+                    errors=[],
+                    metadata=metadata,
+                    parse_time_ms=parse_time_ms,
+                )
+                
+        except TimeoutError as e:
+            return ParseResult(
+                success=False,
+                errors=[
+                    ParseError(
+                        message=str(e),
+                        line_number=None,
+                        column=None,
+                        error_type="timeout",
+                        severity="error",
+                    )
+                ],
+                theorems=[],
+                metadata=None,
+                parse_time_ms=(time.time() - start_time) * 1000,
             )
 
         except Exception as e:
@@ -86,7 +135,7 @@ class SimpleLeanParser:
                 success=False,
                 errors=[
                     ParseError(
-                        message=f"Failed to parse file: {str(e)}",
+                        message=f"Failed to parse file: {e!s}",
                         line_number=None,
                         column=None,
                         error_type="parse_exception",
@@ -98,7 +147,7 @@ class SimpleLeanParser:
                 parse_time_ms=0.0,
             )
 
-    def _extract_theorems(self, content: str) -> List[TheoremInfo]:
+    def _extract_theorems(self, content: str) -> list[TheoremInfo]:
         """Extract theorems from Lean content using regex.
 
         Args:
@@ -132,7 +181,7 @@ class SimpleLeanParser:
 
     def _extract_complete_theorem(
         self, content: str, start_pos: int, name: str
-    ) -> Optional[TheoremInfo]:
+    ) -> TheoremInfo | None:
         """Extract complete theorem including statement and proof.
 
         Args:

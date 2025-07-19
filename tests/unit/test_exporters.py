@@ -7,14 +7,14 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from proof_sketcher.exporter.base import BaseExporterImpl
+from proof_sketcher.exporter.models import BaseExporter
 from proof_sketcher.exporter.html import HTMLExporter
-from proof_sketcher.exporter.jupyter import JupyterExporter
+from proof_sketcher.exporter.models import BaseExporter
 from proof_sketcher.exporter.markdown import MarkdownExporter
-from proof_sketcher.exporter.mathlib_exporter import MathlibExporter
+from proof_sketcher.exporter.markdown import MarkdownExporter
 from proof_sketcher.exporter.models import ExportFormat, ExportOptions, ExportResult
-from proof_sketcher.exporter.pdf import PDFExporter
-from proof_sketcher.exporter.template_manager import TemplateManager
+from proof_sketcher.exporter.models import BaseExporter
+
 from proof_sketcher.generator.models import ProofSketch, ProofStep
 
 
@@ -51,13 +51,13 @@ def export_options(tmp_path):
     )
 
 
-class TestExporterBase:
+class TestBaseExporterBase:
     """Test the base exporter class."""
 
     def test_base_exporter_initialization(self, export_options):
         """Test base exporter initialization."""
 
-        class TestExporter(BaseExporterImpl):
+        class TestBaseExporter(BaseExporter):
             def export_single(self, proof_sketch, animation_path=None):
                 return ExportResult(
                     success=True,
@@ -66,7 +66,7 @@ class TestExporterBase:
                     metadata={},
                 )
 
-        exporter = TestExporter(ExportFormat.HTML, export_options)
+        exporter = TestBaseExporter(ExportFormat.HTML, export_options)
         assert exporter.options == export_options
         assert exporter.options.output_dir == export_options.output_dir
 
@@ -74,26 +74,26 @@ class TestExporterBase:
         """Test output directory setup."""
         options = ExportOptions(output_dir=tmp_path / "new_dir")
 
-        class TestExporter(BaseExporterImpl):
+        class TestBaseExporter(BaseExporter):
             def export_single(self, proof_sketch, animation_path=None):
                 return ExportResult(
                     success=True, format=ExportFormat.HTML, output_files=[], metadata={}
                 )
 
-        exporter = TestExporter(ExportFormat.HTML, options)
+        exporter = TestBaseExporter(ExportFormat.HTML, options)
         exporter._ensure_output_dir()
         assert (tmp_path / "new_dir").exists()
 
     # def test_base_exporter_validation(self, export_options):
     #     """Test input validation."""
     #
-    #     class TestExporter(BaseExporterImpl):
+    #     class TestBaseExporter(BaseExporter):
     #         def export_single(self, proof_sketch, animation_path=None):
     #             return ExportResult(
     #                 success=True, format=ExportFormat.HTML, output_files=[], metadata={}
     #             )
     #
-    #     exporter = TestExporter(ExportFormat.HTML, export_options)
+    #     exporter = TestBaseExporter(ExportFormat.HTML, export_options)
     #
     #     # Valid proof sketch should not raise
     #     valid_sketch = ProofSketch(
@@ -242,7 +242,7 @@ class TestMarkdownExporter:
             assert result.success
 
 
-class TestPDFExporter:
+class TestBaseExporter:
     """Test PDF exporter."""
 
     def test_pdf_exporter_initialization(self, export_options):
@@ -250,7 +250,7 @@ class TestPDFExporter:
         options = ExportOptions(
             output_dir=export_options.output_dir, format=ExportFormat.PDF
         )
-        exporter = PDFExporter(options)
+        exporter = BaseExporter(options)
         assert exporter.options.format == ExportFormat.PDF
 
     def test_pdf_export_latex_generation(self, sample_proof_sketch, export_options):
@@ -258,7 +258,7 @@ class TestPDFExporter:
         options = ExportOptions(
             output_dir=export_options.output_dir, format=ExportFormat.PDF
         )
-        exporter = PDFExporter(options)
+        exporter = BaseExporter(options)
 
         with patch.object(exporter.template_manager, "render_template") as mock_render:
             mock_render.return_value = (
@@ -276,7 +276,7 @@ class TestPDFExporter:
         options = ExportOptions(
             output_dir=export_options.output_dir, format=ExportFormat.PDF
         )
-        exporter = PDFExporter(options)
+        exporter = BaseExporter(options)
 
         with patch.object(exporter, "_generate_latex") as mock_latex:
             mock_latex.return_value = (
@@ -296,7 +296,7 @@ class TestPDFExporter:
         options = ExportOptions(
             output_dir=export_options.output_dir, format=ExportFormat.PDF
         )
-        exporter = PDFExporter(options)
+        exporter = BaseExporter(options)
 
         latex_file = tmp_path / "test.tex"
         latex_file.write_text(
@@ -310,7 +310,7 @@ class TestPDFExporter:
             assert success
 
 
-class TestJupyterExporter:
+class TestBaseExporter:
     """Test Jupyter notebook exporter."""
 
     def test_jupyter_exporter_initialization(self, export_options):
@@ -318,7 +318,7 @@ class TestJupyterExporter:
         options = ExportOptions(
             output_dir=export_options.output_dir, format=ExportFormat.JUPYTER
         )
-        exporter = JupyterExporter(options)
+        exporter = BaseExporter(options)
         assert exporter.options.format == ExportFormat.JUPYTER
 
     def test_jupyter_export_single(self, sample_proof_sketch, export_options):
@@ -326,7 +326,7 @@ class TestJupyterExporter:
         options = ExportOptions(
             output_dir=export_options.output_dir, format=ExportFormat.JUPYTER
         )
-        exporter = JupyterExporter(options)
+        exporter = BaseExporter(options)
 
         result = exporter.export_single(sample_proof_sketch)
 
@@ -340,7 +340,7 @@ class TestJupyterExporter:
         options = ExportOptions(
             output_dir=export_options.output_dir, format=ExportFormat.JUPYTER
         )
-        exporter = JupyterExporter(options)
+        exporter = BaseExporter(options)
 
         notebook = exporter._create_notebook(sample_proof_sketch)
 
@@ -356,7 +356,7 @@ class TestJupyterExporter:
             format=ExportFormat.JUPYTER,
             include_lean_code=True,
         )
-        exporter = JupyterExporter(options)
+        exporter = BaseExporter(options)
 
         notebook = exporter._create_notebook(sample_proof_sketch)
 
@@ -365,17 +365,17 @@ class TestJupyterExporter:
         assert len(code_cells) > 0
 
 
-class TestMathlibExporter:
+class TestMarkdownExporter:
     """Test Mathlib-specific exporter."""
 
     def test_mathlib_exporter_initialization(self, export_options):
         """Test Mathlib exporter initialization."""
-        exporter = MathlibExporter(export_options)
+        exporter = MarkdownExporter(export_options)
         assert exporter.notation_handler is not None
 
     def test_mathlib_notation_enhancement(self, sample_proof_sketch, export_options):
         """Test Mathlib notation enhancement."""
-        exporter = MathlibExporter(export_options)
+        exporter = MarkdownExporter(export_options)
 
         with patch.object(
             exporter.notation_handler, "enhance_proof_sketch"
@@ -389,7 +389,7 @@ class TestMathlibExporter:
 
     def test_mathlib_complexity_assessment(self, sample_proof_sketch, export_options):
         """Test complexity assessment for Mathlib theorems."""
-        exporter = MathlibExporter(export_options)
+        exporter = MarkdownExporter(export_options)
 
         complexity = exporter._assess_complexity(sample_proof_sketch)
 
@@ -400,7 +400,7 @@ class TestMathlibExporter:
 
     def test_mathlib_export_single(self, sample_proof_sketch, export_options):
         """Test single Mathlib export."""
-        exporter = MathlibExporter(export_options)
+        exporter = MarkdownExporter(export_options)
 
         with patch.object(exporter, "_enhance_with_mathlib_notation") as mock_enhance:
             mock_enhance.return_value = sample_proof_sketch
@@ -425,13 +425,13 @@ class TestTemplateManager:
 
     def test_template_manager_initialization(self):
         """Test template manager initialization."""
-        manager = TemplateManager()
+        manager = TemplateContext()
         assert manager.env is not None
         assert manager.template_dir.exists()
 
     def test_render_html_template(self, sample_proof_sketch):
         """Test HTML template rendering."""
-        manager = TemplateManager()
+        manager = TemplateContext()
 
         with patch.object(manager.env, "get_template") as mock_get:
             mock_template = Mock()
@@ -447,7 +447,7 @@ class TestTemplateManager:
 
     def test_render_markdown_template(self, sample_proof_sketch):
         """Test Markdown template rendering."""
-        manager = TemplateManager()
+        manager = TemplateContext()
 
         with patch.object(manager.env, "get_template") as mock_get:
             mock_template = Mock()
@@ -462,7 +462,7 @@ class TestTemplateManager:
 
     def test_template_context_helpers(self):
         """Test template context helpers."""
-        manager = TemplateManager()
+        manager = TemplateContext()
 
         # Test math formatting helper
         assert hasattr(manager, "_format_math")
@@ -471,7 +471,7 @@ class TestTemplateManager:
 
     def test_custom_template_filters(self):
         """Test custom Jinja2 filters."""
-        manager = TemplateManager()
+        manager = TemplateContext()
 
         # Check custom filters are registered
         assert "format_math" in manager.env.filters
@@ -480,14 +480,14 @@ class TestTemplateManager:
 
     def test_template_not_found_handling(self):
         """Test handling of missing templates."""
-        manager = TemplateManager()
+        manager = TemplateContext()
 
         with pytest.raises(Exception):
             manager.render_template("nonexistent.jinja2", data={})
 
     def test_template_inheritance(self, sample_proof_sketch):
         """Test template inheritance system."""
-        manager = TemplateManager()
+        manager = TemplateContext()
 
         with patch.object(manager.env, "get_template") as mock_get:
             # Mock a template that extends base

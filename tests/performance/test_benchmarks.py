@@ -30,15 +30,9 @@ sys.path.insert(0, str(project_root / "src"))
 from proof_sketcher.exporter.html import HTMLExporter
 from proof_sketcher.exporter.models import ExportContext, ExportOptions
 from proof_sketcher.generator.offline import OfflineGenerator
-from proof_sketcher.optimizations.performance import (
-    BatchConfig,
-    PerformanceOptimizer,
-    WorkloadMetrics,
-)
-from proof_sketcher.optimizations.resource_limits import ResourceLimiter, ResourceLimits
-from proof_sketcher.optimizations.smart_cache import SmartCache
-from proof_sketcher.parser.lean_parser import LeanParser
-from proof_sketcher.parser.mathlib_notation import MathlibNotationHandler
+from proof_sketcher.config.config import ProofSketcherConfig
+from proof_sketcher.parser.simple_parser import SimpleLeanParser
+from proof_sketcher.parser.config import ParserConfig
 
 
 class BenchmarkSuite:
@@ -97,7 +91,7 @@ class BenchmarkSuite:
         """Benchmark mathematical notation handling performance."""
         print(f"\n🔤 Benchmarking notation handler ({iterations} iterations)...")
 
-        handler = MathlibNotationHandler()
+        handler = ParserConfig()
         expressions = self.test_expressions[:iterations]
 
         # Baseline performance (no caching)
@@ -114,9 +108,9 @@ class BenchmarkSuite:
         baseline_time = time.time() - start_time
 
         # Optimized performance (with caching)
-        from proof_sketcher.optimizations.performance import PerformanceOptimizer
+        from proof_sketcher.core.exceptions import ProofSketcherConfig
 
-        optimizer = PerformanceOptimizer()
+        optimizer = ProofSketcherConfig()
 
         start_time = time.time()
         optimized_results = []
@@ -161,7 +155,7 @@ class BenchmarkSuite:
         """Benchmark caching system performance."""
         print(f"\n💾 Benchmarking caching system ({cache_size} operations)...")
 
-        cache = SmartCache()
+        cache = ProofSketcherConfig()
         test_data = {f"key_{i}": f"value_{i}" * 100 for i in range(cache_size)}
 
         # Measure cache write performance
@@ -257,8 +251,8 @@ class BenchmarkSuite:
         sequential_time = time.time() - start_time
 
         # Optimized: Parallel processing
-        optimizer = PerformanceOptimizer()
-        config = BatchConfig(batch_size=10, max_concurrent=4, use_caching=True)
+        optimizer = ProofSketcherConfig()
+        config = ExportOptions(batch_size=10, max_concurrent=4, use_caching=True)
 
         start_time = time.time()
         parallel_results, metrics = asyncio.run(
@@ -317,7 +311,7 @@ class BenchmarkSuite:
 
         # Simulate processing without caching
         results_no_cache = []
-        handler = MathlibNotationHandler()
+        handler = ParserConfig()
 
         for theorem in large_theorems:
             latex = handler.convert_to_latex(theorem["statement"])
@@ -333,7 +327,7 @@ class BenchmarkSuite:
         gc.collect()
 
         # Memory usage with optimization
-        optimizer = PerformanceOptimizer()
+        optimizer = ProofSketcherConfig()
 
         start_memory_opt = process.memory_info().rss / 1024 / 1024
 
@@ -374,8 +368,8 @@ class BenchmarkSuite:
         """Benchmark resource limiting effectiveness."""
         print(f"\n🛡️ Benchmarking resource limits...")
 
-        limiter = ResourceLimiter(
-            ResourceLimits(
+        limiter = ProofSketcherConfig(
+            ExportOptions(
                 max_memory_mb=500, max_execution_seconds=10, max_animation_duration=60
             )
         )
@@ -629,16 +623,16 @@ def test_performance_improvements():
     # Verify notation handler improvement
     if "notation_handler" in results and "speedup" in results["notation_handler"]:
         speedup = results["notation_handler"]["speedup"]
-        assert (
-            speedup > 3.0
-        ), f"Notation handler only {speedup:.2f}x faster (target: 3x)"
+        assert speedup > 3.0, (
+            f"Notation handler only {speedup:.2f}x faster (target: 3x)"
+        )
 
     # Verify parallel processing improvement
     if "parallel_processing" in results and "speedup" in results["parallel_processing"]:
         speedup = results["parallel_processing"]["speedup"]
-        assert (
-            speedup > 2.0
-        ), f"Parallel processing only {speedup:.2f}x faster (target: 2x)"
+        assert speedup > 2.0, (
+            f"Parallel processing only {speedup:.2f}x faster (target: 2x)"
+        )
 
     # Verify memory efficiency
     if (
@@ -646,9 +640,9 @@ def test_performance_improvements():
         and "memory_efficiency_percent" in results["memory_usage"]
     ):
         efficiency = results["memory_usage"]["memory_efficiency_percent"]
-        assert (
-            efficiency > 10.0
-        ), f"Memory efficiency only {efficiency:.1f}% (target: 10%)"
+        assert efficiency > 10.0, (
+            f"Memory efficiency only {efficiency:.1f}% (target: 10%)"
+        )
 
     # Verify overall performance score
     if "overall_performance_score" in results:
@@ -680,9 +674,9 @@ def test_resource_limits_functionality():
     assert results["monitoring_functional"], "Resource monitoring not working"
 
     # Animation limits should be applied
-    assert results[
-        "animation_limits_applied"
-    ], "Animation complexity limits not applied"
+    assert results["animation_limits_applied"], (
+        "Animation complexity limits not applied"
+    )
 
 
 if __name__ == "__main__":

@@ -7,10 +7,9 @@ import logging
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from ..generator.models import ProofSketch
-from .base import BaseExporterImpl
+from .models import BaseExporter as BaseExporterImpl
 from .models import (
     ExportContext,
     ExportFormat,
@@ -18,7 +17,7 @@ from .models import (
     ExportResult,
     TemplateType,
 )
-from .template_manager import TemplateManager
+from .models import TemplateContext as TemplateManager
 
 
 class HTMLExporter(BaseExporterImpl):
@@ -34,8 +33,8 @@ class HTMLExporter(BaseExporterImpl):
 
     def __init__(
         self,
-        options: Optional[ExportOptions] = None,
-        template_manager: Optional[TemplateManager] = None,
+        options: ExportOptions | None = None,
+        template_manager: TemplateManager | None = None,
     ):
         """Initialize HTML exporter.
 
@@ -63,7 +62,7 @@ class HTMLExporter(BaseExporterImpl):
             "math": "math-display",
         }
 
-    def _export_sketch(self, sketch: ProofSketch, context: ExportContext) -> List[Path]:
+    def _export_sketch(self, sketch: ProofSketch, context: ExportContext) -> list[Path]:
         """Export a single proof sketch to HTML.
 
         Args:
@@ -109,8 +108,8 @@ class HTMLExporter(BaseExporterImpl):
         return created_files
 
     def _create_index(
-        self, sketches: List[ProofSketch], context: ExportContext
-    ) -> Optional[Path]:
+        self, sketches: list[ProofSketch], context: ExportContext
+    ) -> Path | None:
         """Create an index HTML file.
 
         Args:
@@ -168,7 +167,7 @@ class HTMLExporter(BaseExporterImpl):
         return index_file
 
     def export_multiple(
-        self, sketches: List[ProofSketch], context: Optional[ExportContext] = None
+        self, sketches: list[ProofSketch], context: ExportContext | None = None
     ) -> ExportResult:
         """Export multiple sketches with additional HTML features.
 
@@ -218,8 +217,8 @@ class HTMLExporter(BaseExporterImpl):
 
         # Add HTML-specific fields with doc-gen4 compatibility
         base_context["syntax_theme"] = (
-            self.options.syntax_highlighting and "monokai" or "none"
-        )
+            self.options.syntax_highlighting and "monokai"
+        ) or "none"
         base_context["math_renderer"] = "katex"  # or "mathjax"
         base_context["doc_gen4_classes"] = self._doc_gen4_classes
         base_context["responsive_design"] = True
@@ -284,7 +283,7 @@ class HTMLExporter(BaseExporterImpl):
 
     def _copy_animation_responsive(
         self, source: Path, theorem_name: str
-    ) -> Dict[str, Dict]:
+    ) -> dict[str, dict]:
         """Copy animation with responsive embedding support.
 
         Creates multiple formats and poster frames for responsive design.
@@ -351,7 +350,7 @@ class HTMLExporter(BaseExporterImpl):
 
     def _generate_poster_frame(
         self, video_path: Path, name: str, output_dir: Path
-    ) -> Optional[Path]:
+    ) -> Path | None:
         """Generate poster frame from video.
 
         Args:
@@ -394,7 +393,7 @@ class HTMLExporter(BaseExporterImpl):
 
     def _convert_to_webm(
         self, source: Path, name: str, output_dir: Path
-    ) -> Optional[Path]:
+    ) -> Path | None:
         """Convert video to WebM format.
 
         Args:
@@ -434,9 +433,7 @@ class HTMLExporter(BaseExporterImpl):
 
         return None
 
-    def _convert_to_gif(
-        self, source: Path, name: str, output_dir: Path
-    ) -> Optional[Path]:
+    def _convert_to_gif(self, source: Path, name: str, output_dir: Path) -> Path | None:
         """Convert video to animated GIF.
 
         Args:
@@ -475,7 +472,7 @@ class HTMLExporter(BaseExporterImpl):
 
     def _generate_cross_references(
         self, sketch: ProofSketch, context: ExportContext
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Generate cross-references for doc-gen4 compatibility.
 
         Args:
@@ -489,29 +486,27 @@ class HTMLExporter(BaseExporterImpl):
 
         # Find references in the proof text
         for other_sketch in context.sketches:
-            if other_sketch.theorem_name != sketch.theorem_name:
-                # Check if referenced in content
-                if (
-                    other_sketch.theorem_name.lower() in sketch.introduction.lower()
-                    or any(
-                        other_sketch.theorem_name.lower() in step.description.lower()
-                        for step in sketch.key_steps
-                    )
-                ):
-                    cross_refs.append(
-                        {
-                            "name": other_sketch.theorem_name,
-                            "url": context.theorem_links.get(
-                                other_sketch.theorem_name, "#"
-                            ),
-                            "type": "theorem",
-                            "statement": getattr(other_sketch, "theorem_statement", ""),
-                        }
-                    )
+            if other_sketch.theorem_name != sketch.theorem_name and (
+                other_sketch.theorem_name.lower() in sketch.introduction.lower()
+                or any(
+                    other_sketch.theorem_name.lower() in step.description.lower()
+                    for step in sketch.key_steps
+                )
+            ):
+                cross_refs.append(
+                    {
+                        "name": other_sketch.theorem_name,
+                        "url": context.theorem_links.get(
+                            other_sketch.theorem_name, "#"
+                        ),
+                        "type": "theorem",
+                        "statement": getattr(other_sketch, "theorem_statement", ""),
+                    }
+                )
 
         return cross_refs
 
-    def _get_asset_hashes(self) -> Dict[str, str]:
+    def _get_asset_hashes(self) -> dict[str, str]:
         """Get hashes of static assets for cache busting.
 
         Returns:
@@ -530,12 +525,12 @@ class HTMLExporter(BaseExporterImpl):
                         ).hexdigest()[:8]
                         rel_path = asset_file.relative_to(asset_dir)
                         hashes[str(rel_path)] = hash_value
-                    except (OSError, IOError):
+                    except OSError:
                         continue
 
         return hashes
 
-    def _generate_search_index(self, sketches: List[ProofSketch]) -> Optional[Path]:
+    def _generate_search_index(self, sketches: list[ProofSketch]) -> Path | None:
         """Generate search index for client-side search.
 
         Args:
@@ -571,7 +566,7 @@ class HTMLExporter(BaseExporterImpl):
 
         return search_file
 
-    def _copy_assets(self) -> List[Path]:
+    def _copy_assets(self) -> list[Path]:
         """Copy HTML-specific assets with optimization.
 
         Returns:
@@ -598,9 +593,7 @@ class HTMLExporter(BaseExporterImpl):
                 dst.parent.mkdir(parents=True, exist_ok=True)
 
                 # Optimize asset if enabled
-                if self._minify_assets and (
-                    dst_rel.endswith(".css") or dst_rel.endswith(".js")
-                ):
+                if self._minify_assets and dst_rel.endswith((".css", ".js")):
                     self._copy_and_minify_asset(src, dst)
                 else:
                     shutil.copy2(src, dst)
@@ -634,10 +627,7 @@ class HTMLExporter(BaseExporterImpl):
 
             dst.write_text(minified, encoding="utf-8")
             self.logger.debug(
-                f"Minified {
-                    src.name}: {
-                    len(content)} → {
-                    len(minified)} chars"
+                f"Minified {src.name}: {len(content)} → {len(minified)} chars"
             )
 
         except (UnicodeDecodeError, OSError) as e:
@@ -695,9 +685,11 @@ class HTMLExporter(BaseExporterImpl):
             file_path: Path to file to compress
         """
         try:
-            with open(file_path, "rb") as f_in:
-                with gzip.open(f"{file_path}.gz", "wb") as f_out:
-                    shutil.copyfileobj(f_in, f_out)
+            with (
+                open(file_path, "rb") as f_in,
+                gzip.open(f"{file_path}.gz", "wb") as f_out,
+            ):
+                shutil.copyfileobj(f_in, f_out)
 
             # Only keep compressed version if it's significantly smaller
             original_size = file_path.stat().st_size
@@ -705,11 +697,10 @@ class HTMLExporter(BaseExporterImpl):
 
             if compressed_size < original_size * 0.8:  # 20% improvement threshold
                 self.logger.debug(
-                    f"Compressed {
-                        file_path.name}: {original_size} → {compressed_size} bytes"
+                    f"Compressed {file_path.name}: {original_size} → {compressed_size} bytes"
                 )
             else:
                 Path(f"{file_path}.gz").unlink()  # Remove if not beneficial
 
-        except (OSError, IOError) as e:
+        except OSError as e:
             self.logger.warning(f"Failed to compress {file_path}: {e}")

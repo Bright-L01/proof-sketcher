@@ -2,8 +2,10 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, List
 
+from ..core.error_handling import ErrorAccumulator, setup_error_logger
+from ..core.exceptions import ExportFailedError
+from ..core.resource_limits import sanitize_theorem_name
 from ..generator.models import ProofSketch
 from ..parser.models import TheoremInfo
 from .simple_html import SimpleHTMLExporter
@@ -12,6 +14,10 @@ from .simple_markdown import SimpleMarkdownExporter
 
 class BatchExporter:
     """Batch processor for exporting multiple theorems to various formats."""
+    
+    # Resource limits
+    MAX_BATCH_SIZE = 100  # Maximum number of theorems to process at once
+    MAX_CONCURRENT_EXPORTS = 10  # Maximum concurrent export operations
 
     def __init__(self, output_dir: Path = Path("output")):
         """Initialize batch exporter.
@@ -25,14 +31,14 @@ class BatchExporter:
         self.markdown_exporter = SimpleMarkdownExporter()
         self.html_exporter = SimpleHTMLExporter()
 
-        self.logger = logging.getLogger(__name__)
+        self.logger = setup_error_logger(__name__)
 
     def export_multiple(
         self,
-        sketches: List[ProofSketch],
-        formats: List[str] = None,
+        sketches: list[ProofSketch],
+        formats: list[str] | None = None,
         create_index: bool = True,
-    ) -> Dict[str, List[Path]]:
+    ) -> dict[str, list[Path]]:
         """Export multiple proof sketches to various formats.
 
         Args:
@@ -45,6 +51,15 @@ class BatchExporter:
         """
         if formats is None:
             formats = ["markdown", "html"]
+            
+        # Validate batch size
+        if len(sketches) > self.MAX_BATCH_SIZE:
+            self.logger.warning(
+                f"Batch size ({len(sketches)}) exceeds maximum ({self.MAX_BATCH_SIZE}). "
+                f"Processing first {self.MAX_BATCH_SIZE} sketches only."
+            )
+            sketches = sketches[:self.MAX_BATCH_SIZE]
+            
         results = {}
 
         for format_name in formats:
@@ -61,50 +76,60 @@ class BatchExporter:
 
         return results
 
-    def _export_markdown_batch(self, sketches: List[ProofSketch]) -> List[Path]:
+    def _export_markdown_batch(self, sketches: list[ProofSketch]) -> list[Path]:
         """Export all sketches to markdown format."""
         markdown_dir = self.output_dir / "markdown"
         markdown_dir.mkdir(exist_ok=True)
 
         files = []
+        error_accumulator = ErrorAccumulator(self.logger)
+        
         for sketch in sketches:
-            filename = f"{sketch.theorem_name}.md"
-            output_path = markdown_dir / filename
+            with error_accumulator.capture(f"exporting {sketch.theorem_name} to markdown"):
+                # Sanitize theorem name for safe filename
+                safe_name = sanitize_theorem_name(sketch.theorem_name)
+                filename = f"{safe_name}.md"
+                output_path = markdown_dir / filename
 
-            try:
                 self.markdown_exporter.export(sketch, output_path)
                 files.append(output_path)
                 self.logger.info(f"Exported {sketch.theorem_name} to markdown")
-            except Exception as e:
-                self.logger.error(
-                    f"Failed to export {sketch.theorem_name} to markdown: {e}"
-                )
+
+        # Log summary if there were errors
+        if error_accumulator.has_errors:
+            self.logger.warning(f"Markdown export completed with {error_accumulator.error_count} errors")
+            self.logger.debug(error_accumulator.get_summary())
 
         return files
 
-    def _export_html_batch(self, sketches: List[ProofSketch]) -> List[Path]:
+    def _export_html_batch(self, sketches: list[ProofSketch]) -> list[Path]:
         """Export all sketches to HTML format."""
         html_dir = self.output_dir / "html"
         html_dir.mkdir(exist_ok=True)
 
         files = []
+        error_accumulator = ErrorAccumulator(self.logger)
+        
         for sketch in sketches:
-            filename = f"{sketch.theorem_name}.html"
-            output_path = html_dir / filename
+            with error_accumulator.capture(f"exporting {sketch.theorem_name} to HTML"):
+                # Sanitize theorem name for safe filename
+                safe_name = sanitize_theorem_name(sketch.theorem_name)
+                filename = f"{safe_name}.html"
+                output_path = html_dir / filename
 
-            try:
                 self.html_exporter.export(sketch, output_path)
                 files.append(output_path)
                 self.logger.info(f"Exported {sketch.theorem_name} to HTML")
-            except Exception as e:
-                self.logger.error(
-                    f"Failed to export {sketch.theorem_name} to HTML: {e}"
-                )
+
+        # Log summary if there were errors
+        if error_accumulator.has_errors:
+            self.logger.warning(f"HTML export completed with {error_accumulator.error_count} errors")
+            self.logger.debug(error_accumulator.get_summary())
 
         return files
 
     def _create_index_files(
-        self, sketches: List[ProofSketch], formats: List[str]
+        self, sketches: list[ProofSketch], formats: list[str]
     ) -> None:
         """Create index files for easy navigation."""
         # Create markdown index
@@ -115,7 +140,7 @@ class BatchExporter:
         if "html" in formats:
             self._create_html_index(sketches)
 
-    def _create_markdown_index(self, sketches: List[ProofSketch]) -> None:
+    def _create_markdown_index(self, sketches: list[ProofSketch]) -> None:
         """Create a markdown index file."""
         index_content = [
             "# Proof Sketcher - Theorem Index",
@@ -137,8 +162,9 @@ class BatchExporter:
             if len(sketch.mathematical_areas) > 3:
                 areas += "..."
 
+            safe_name = sanitize_theorem_name(sketch.theorem_name)
             index_content.append(
-                f"- [{sketch.theorem_name}](markdown/{sketch.theorem_name}.md) "
+                f"- [{sketch.theorem_name}](markdown/{safe_name}.md) "
                 f"{difficulty_emoji} *{areas}*"
             )
 
@@ -158,7 +184,7 @@ class BatchExporter:
         index_path.write_text("\n".join(index_content), encoding="utf-8")
         self.logger.info(f"Created markdown index: {index_path}")
 
-    def _create_html_index(self, sketches: List[ProofSketch]) -> None:
+    def _create_html_index(self, sketches: list[ProofSketch]) -> None:
         """Create an HTML index file."""
         theorem_rows = ""
         for sketch in sketches:
@@ -172,12 +198,13 @@ class BatchExporter:
             if len(sketch.mathematical_areas) > 3:
                 areas += "..."
 
+            safe_name = sanitize_theorem_name(sketch.theorem_name)
             theorem_rows += f"""
             <tr>
-                <td><a href="html/{sketch.theorem_name}.html">{sketch.theorem_name}</a></td>
+                <td><a href="html/{safe_name}.html">{sketch.theorem_name}</a></td>
                 <td><span style="color: {difficulty_color}">●</span> {sketch.difficulty_level.title()}</td>
                 <td>{areas}</td>
-                <td>{sketch.introduction[:100]}...</td>
+                <td>{sketch.intuitive_overview[:100]}...</td>
             </tr>
             """
 
@@ -292,11 +319,11 @@ class BatchExporter:
 
     def export_from_theorems(
         self,
-        theorems: List[TheoremInfo],
+        theorems: list[TheoremInfo],
         generator,
-        formats: List[str] = None,
+        formats: list[str] | None = None,
         create_index: bool = True,
-    ) -> Dict[str, List[Path]]:
+    ) -> dict[str, list[Path]]:
         """Export theorems by generating sketches first.
 
         Args:

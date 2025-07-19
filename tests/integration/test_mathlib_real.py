@@ -12,12 +12,12 @@ from typing import Dict, List, Optional
 
 import pytest
 
-from src.proof_sketcher.batch import ProjectScanner
-from src.proof_sketcher.exporter.mathlib_exporter import MathlibExporter
-from src.proof_sketcher.generator import AIGenerator
-from src.proof_sketcher.generator.offline import OfflineGenerator
-from src.proof_sketcher.parser.lean_parser import LeanParser
-from src.proof_sketcher.parser.mathlib_notation import MathlibNotationHandler
+from proof_sketcher.exporter.batch_processor import BatchExporter
+from proof_sketcher.exporter.markdown import MarkdownExporter
+from proof_sketcher.generator import SimpleGenerator
+from proof_sketcher.generator.offline import OfflineGenerator
+from proof_sketcher.parser.simple_parser import SimpleLeanParser
+from proof_sketcher.parser.config import ParserConfig
 
 
 class MathlibTestFixtures:
@@ -137,12 +137,12 @@ end TopologicalSpace
         return files
 
 
-class TestMathlibNotationHandler:
+class TestParserConfig:
     """Test the Mathlib notation handler."""
 
     def test_basic_notation_conversion(self):
         """Test basic notation conversion."""
-        handler = MathlibNotationHandler()
+        handler = ParserConfig()
 
         # Test basic symbols
         assert handler.convert_to_latex("∀ x ∈ ℕ") == r"\forall x \in \mathbb{N}"
@@ -151,7 +151,7 @@ class TestMathlibNotationHandler:
 
     def test_complex_notation(self):
         """Test complex mathematical notation."""
-        handler = MathlibNotationHandler()
+        handler = ParserConfig()
 
         # Function types
         result = handler.convert_to_latex("f : ℕ → ℝ")
@@ -163,7 +163,7 @@ class TestMathlibNotationHandler:
 
     def test_notation_table_generation(self):
         """Test generation of notation tables."""
-        handler = MathlibNotationHandler()
+        handler = ParserConfig()
 
         text = "∀ x ∈ ℕ, ∃ y ∈ ℝ"
         table = handler.get_notation_table(text)
@@ -178,7 +178,7 @@ class TestMathlibNotationHandler:
 
     def test_mathematical_area_detection(self):
         """Test detection of mathematical areas."""
-        handler = MathlibNotationHandler()
+        handler = ParserConfig()
 
         # Set theory text
         set_text = "Let A ⊆ B and x ∈ A ∪ C"
@@ -191,13 +191,13 @@ class TestMathlibNotationHandler:
         assert "Mathematical Analysis" in areas
 
 
-class TestMathlibExporter:
+class TestMarkdownExporter:
     """Test the Mathlib-specific exporter."""
 
     @pytest.fixture
     def sample_mathlib_sketch(self):
         """Create a sample proof sketch with mathlib notation."""
-        from src.proof_sketcher.generator.models import ProofSketch, ProofStep
+        from proof_sketcher.generator.models import ProofSketch, ProofStep
 
         return ProofSketch(
             theorem_name="Nat.add_comm",
@@ -223,7 +223,7 @@ class TestMathlibExporter:
 
     def test_mathlib_sketch_enhancement(self, sample_mathlib_sketch, tmp_path):
         """Test enhancement of mathlib sketches."""
-        exporter = MathlibExporter()
+        exporter = MarkdownExporter()
         enhanced = exporter._enhance_mathlib_sketch(sample_mathlib_sketch)
 
         # Check that mathematical areas were detected/preserved
@@ -238,7 +238,7 @@ class TestMathlibExporter:
 
     def test_notation_table_generation(self, sample_mathlib_sketch):
         """Test notation table generation for mathlib content."""
-        exporter = MathlibExporter()
+        exporter = MarkdownExporter()
         notation_table = exporter._generate_notation_table(sample_mathlib_sketch)
 
         # Should be a list of notation entries
@@ -247,7 +247,7 @@ class TestMathlibExporter:
 
     def test_complexity_assessment(self, sample_mathlib_sketch):
         """Test complexity assessment."""
-        exporter = MathlibExporter()
+        exporter = MarkdownExporter()
         complexity = exporter._assess_complexity(sample_mathlib_sketch)
 
         assert "level" in complexity
@@ -257,11 +257,11 @@ class TestMathlibExporter:
 
     def test_mathlib_export(self, sample_mathlib_sketch, tmp_path):
         """Test full mathlib export process."""
-        from src.proof_sketcher.exporter.models import ExportContext, ExportOptions
+        from proof_sketcher.exporter.models import ExportContext, ExportOptions
 
         # Set up exporter
         options = ExportOptions(output_dir=tmp_path, create_subdirs=True)
-        exporter = MathlibExporter(options)
+        exporter = MarkdownExporter(options)
 
         # Create export context
         context = ExportContext(
@@ -299,7 +299,7 @@ class TestMathlibIntegration:
         fixtures = MathlibTestFixtures.create_minimal_mathlib_files(tmp_path)
 
         # Scan project
-        scanner = ProjectScanner()
+        scanner = BatchExporter()
         result = scanner.scan_project(tmp_path)
 
         # Verify scanning results
@@ -329,7 +329,7 @@ theorem unicode_test (A B : Set ℕ) : A ∪ B = B ∪ A := by
         )
 
         # Parse file
-        parser = LeanParser()
+        parser = SimpleLeanParser()
         try:
             theorems = parser.parse_file(test_file)
 
@@ -349,14 +349,14 @@ theorem unicode_test (A B : Set ℕ) : A ∪ B = B ∪ A := by
 
         # Test with offline generator (more reliable than AI for testing)
         generator = OfflineGenerator()
-        exporter = MathlibExporter()
+        exporter = MarkdownExporter()
 
         processed_theorems = []
 
         for file_type, file_path in fixtures.items():
             try:
                 # Parse file
-                parser = LeanParser()
+                parser = SimpleLeanParser()
                 theorems = parser.parse_file(file_path)
 
                 for theorem in theorems[:2]:  # Limit to first 2 theorems per file
@@ -382,13 +382,13 @@ theorem unicode_test (A B : Set ℕ) : A ∪ B = B ∪ A := by
         # Test export of processed theorems
         for item in processed_theorems[:3]:  # Test first 3
             try:
-                from src.proof_sketcher.exporter.models import (
+                from proof_sketcher.exporter.models import (
                     ExportContext,
                     ExportOptions,
                 )
 
                 options = ExportOptions(output_dir=tmp_path / "output")
-                exporter = MathlibExporter(options)
+                exporter = MarkdownExporter(options)
 
                 context = ExportContext(
                     format=exporter.format,
@@ -406,13 +406,13 @@ theorem unicode_test (A B : Set ℕ) : A ∪ B = B ∪ A := by
 
     def test_mathlib_batch_processing(self, tmp_path):
         """Test batch processing with mathlib-style content."""
-        from src.proof_sketcher.batch import ParallelProcessor, ProjectScanner
+        from proof_sketcher.exporter.batch_processor import ParallelProcessor, BatchExporter
 
         # Create test files
         fixtures = MathlibTestFixtures.create_minimal_mathlib_files(tmp_path)
 
         # Scan project
-        scanner = ProjectScanner()
+        scanner = BatchExporter()
         project_data = scanner.scan_project(tmp_path)
 
         # Process with batch system
@@ -457,7 +457,7 @@ class TestMathlibPerformance:
 
     def test_notation_handler_performance(self):
         """Test performance of notation handling."""
-        handler = MathlibNotationHandler()
+        handler = ParserConfig()
 
         # Large text with lots of notation
         large_text = " ".join(["∀ x ∈ ℕ, ∃ y ∈ ℝ, x + y ∈ ℂ ∧ x ⊆ y ∪ z ∩ w"] * 100)
@@ -472,7 +472,7 @@ class TestMathlibPerformance:
 
     def test_exporter_performance(self, tmp_path):
         """Test performance of mathlib exporter."""
-        from src.proof_sketcher.generator.models import ProofSketch, ProofStep
+        from proof_sketcher.generator.models import ProofSketch, ProofStep
 
         # Create a complex sketch
         complex_sketch = ProofSketch(
@@ -493,10 +493,10 @@ class TestMathlibPerformance:
         )
 
         # Test export performance
-        from src.proof_sketcher.exporter.models import ExportContext, ExportOptions
+        from proof_sketcher.exporter.models import ExportContext, ExportOptions
 
         options = ExportOptions(output_dir=tmp_path)
-        exporter = MathlibExporter(options)
+        exporter = MarkdownExporter(options)
         context = ExportContext(
             format=exporter.format,
             output_dir=tmp_path,
@@ -545,7 +545,7 @@ class TestRealMathlibIntegration:
             "Mathlib/Data/Set/Basic.lean",
         ]
 
-        parser = LeanParser()
+        parser = SimpleLeanParser()
         parsed_any = False
 
         for rel_path in potential_files:
@@ -562,7 +562,7 @@ class TestRealMathlibIntegration:
                             assert theorem.statement
 
                             # Test notation handling
-                            handler = MathlibNotationHandler()
+                            handler = ParserConfig()
                             latex_statement = handler.convert_to_latex(
                                 theorem.statement
                             )
@@ -585,9 +585,9 @@ class TestRealMathlibIntegration:
         if not test_dir.exists():
             pytest.skip("Mathlib Data/Nat directory not found")
 
-        from src.proof_sketcher.batch import ProjectScanner
+        from proof_sketcher.exporter.batch_processor import BatchExporter
 
-        scanner = ProjectScanner()
+        scanner = BatchExporter()
 
         try:
             # Scan just the Nat directory (should be manageable)

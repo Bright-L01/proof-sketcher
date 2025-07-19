@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -12,23 +12,23 @@ class TheoremInfo(BaseModel):
 
     name: str = Field(..., description="The theorem name")
     statement: str = Field(..., description="The theorem statement/type")
-    proof: Optional[str] = Field(None, description="The proof body if available")
-    dependencies: List[str] = Field(
+    proof: str | None = Field(None, description="The proof body if available")
+    dependencies: list[str] = Field(
         default_factory=list, description="List of dependencies"
     )
-    line_number: Optional[int] = Field(None, description="Line number in source file")
-    docstring: Optional[str] = Field(None, description="Associated documentation")
-    namespace: Optional[str] = Field(None, description="Lean namespace")
+    line_number: int | None = Field(None, description="Line number in source file")
+    docstring: str | None = Field(None, description="Associated documentation")
+    namespace: str | None = Field(None, description="Lean namespace")
     visibility: str = Field(
         "public", description="Visibility (public, private, protected)"
     )
-    tactics: List[str] = Field(
+    tactics: list[str] = Field(
         default_factory=list, description="Tactics used in the proo"
     )
     is_axiom: bool = Field(False, description="Whether this is an axiom")
-    file_path: Optional[Path] = Field(None, description="Path to source file")
-    start_line: Optional[int] = Field(None, description="Start line in source file")
-    end_line: Optional[int] = Field(None, description="End line in source file")
+    file_path: Path | None = Field(None, description="Path to source file")
+    start_line: int | None = Field(None, description="Start line in source file")
+    end_line: int | None = Field(None, description="End line in source file")
 
     class Config:
         """Pydantic configuration."""
@@ -41,10 +41,10 @@ class ParseError(BaseModel):
     """Information about a parsing error."""
 
     message: str = Field(..., description="Error message")
-    line_number: Optional[int] = Field(
+    line_number: int | None = Field(
         None, description="Line number where error occurred"
     )
-    column: Optional[int] = Field(None, description="Column where error occurred")
+    column: int | None = Field(None, description="Column where error occurred")
     error_type: str = Field("parse_error", description="Type of error")
     severity: str = Field("error", description="Severity level (error, warning, info)")
 
@@ -84,8 +84,8 @@ class FileMetadata(BaseModel):
     file_path: Path = Field(..., description="Path to the Lean file")
     file_size: int = Field(..., description="File size in bytes")
     last_modified: datetime = Field(..., description="Last modification time")
-    lean_version: Optional[str] = Field(None, description="Lean version if detected")
-    imports: List[str] = Field(default_factory=list, description="Import statements")
+    lean_version: str | None = Field(None, description="Lean version if detected")
+    imports: list[str] = Field(default_factory=list, description="Import statements")
     total_lines: int = Field(0, description="Total lines in file")
 
     class Config:
@@ -97,17 +97,15 @@ class FileMetadata(BaseModel):
 class ParseResult(BaseModel):
     """Result of parsing a Lean file."""
 
-    theorems: List[TheoremInfo] = Field(
+    theorems: list[TheoremInfo] = Field(
         default_factory=list, description="Extracted theorems"
     )
-    errors: List[ParseError] = Field(default_factory=list, description="Parsing errors")
-    warnings: List[ParseError] = Field(
+    errors: list[ParseError] = Field(default_factory=list, description="Parsing errors")
+    warnings: list[ParseError] = Field(
         default_factory=list, description="Parsing warnings"
     )
-    metadata: Optional[FileMetadata] = Field(None, description="File metadata")
-    parse_time_ms: Optional[float] = Field(
-        None, description="Parse time in milliseconds"
-    )
+    metadata: FileMetadata | None = Field(None, description="File metadata")
+    parse_time_ms: float | None = Field(None, description="Parse time in milliseconds")
     success: bool = Field(True, description="Whether parsing was successful")
 
     @property
@@ -120,14 +118,14 @@ class ParseResult(BaseModel):
         """Check if any theorems were found."""
         return len(self.theorems) > 0
 
-    def get_theorem_by_name(self, name: str) -> Optional[TheoremInfo]:
+    def get_theorem_by_name(self, name: str) -> TheoremInfo | None:
         """Get a theorem by name."""
         for theorem in self.theorems:
             if theorem.name == name:
                 return theorem
         return None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return self.dict(by_alias=True)
 

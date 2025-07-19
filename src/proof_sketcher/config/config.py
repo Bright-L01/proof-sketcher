@@ -10,7 +10,7 @@ This module provides a unified configuration system that supports:
 import os
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import toml
 import yaml
@@ -37,7 +37,7 @@ class ExportConfig(BaseModel):
         "monokai", description="Code syntax highlighting style"
     )
     html_embed_videos: bool = Field(True, description="Embed videos in HTML")
-    html_video_formats: List[str] = Field(
+    html_video_formats: list[str] = Field(
         ["mp4", "webm"], description="Video formats to include"
     )
 
@@ -111,7 +111,7 @@ class ProofSketcherConfig:
     )
 
     @classmethod
-    def load(cls, config_path: Optional[Path] = None) -> "ProofSketcherConfig":
+    def load(cls, config_path: Path | None = None) -> "ProofSketcherConfig":
         """Load configuration from various sources.
 
         Priority order (highest to lowest):
@@ -157,7 +157,7 @@ class ProofSketcherConfig:
     def _load_from_yaml(self, path: Path) -> None:
         """Load configuration from YAML file."""
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 data = yaml.safe_load(f)
 
             if data:
@@ -176,7 +176,7 @@ class ProofSketcherConfig:
     def _load_from_pyproject(self, path: Path) -> None:
         """Load configuration from pyproject.toml."""
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 data = toml.load(f)
 
             if "tool" in data and "proof-sketcher" in data["tool"]:
@@ -195,7 +195,7 @@ class ProofSketcherConfig:
     def _load_from_toml(self, path: Path) -> None:
         """Load configuration from TOML file."""
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 data = toml.load(f)
 
             if data:
@@ -211,7 +211,7 @@ class ProofSketcherConfig:
                 f"Unexpected error loading config from {path}: {e}"
             ) from e
 
-    def _apply_config_dict(self, data: Dict[str, Any]) -> None:
+    def _apply_config_dict(self, data: dict[str, Any]) -> None:
         """Apply configuration from dictionary."""
         # Global settings
         if "project_name" in data:
@@ -378,7 +378,7 @@ class ProofSketcherConfig:
         else:
             raise ValueError(f"Unsupported config format: {path.suffix}")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary."""
         return {
             "project_name": self.project_name,
@@ -396,7 +396,7 @@ class ProofSketcherConfig:
 
 
 # Global configuration instance
-_config: Optional[ProofSketcherConfig] = None
+_config: ProofSketcherConfig | None = None
 
 
 def get_config() -> ProofSketcherConfig:

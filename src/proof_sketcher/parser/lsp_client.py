@@ -1,11 +1,22 @@
 """Lean 4 LSP client for semantic analysis of theorems and proofs.
 
-This module provides a Language Server Protocol client for Lean 4 that extracts
-rich semantic information about theorems, proofs, and mathematical context.
-Unlike regex-based parsing, this provides true understanding of Lean syntax,
-proof states, tactic applications, and dependencies.
+DEPRECATED: This LSP client is non-functional and has been deprecated.
+Performance testing showed it is 1000x slower than the simple parser and
+extracts 0 theorems. DO NOT USE THIS MODULE.
 
-Key Features:
+Use SimpleLeanParser instead for all parsing needs.
+
+This module was intended to provide LSP-based semantic analysis but has
+proven to be broken and unusable. It is kept in the codebase only for
+historical reference and potential future fixes.
+
+Known issues:
+- Extracts 0 theorems from any file
+- 1000x slower than simple regex parser  
+- LSP communication appears to be broken
+- No working implementation found
+
+Original intended features (non-functional):
 - Full Lean 4 LSP integration
 - Semantic analysis of proof steps
 - Tactic sequence extraction
@@ -13,84 +24,160 @@ Key Features:
 - Dependency analysis
 - Mathematical context detection
 - Progressive difficulty assessment
-
-Usage:
-    >>> client = LeanLSPClient()
-    >>> result = await client.parse_file("Basic.lean")
-    >>> theorem = result.theorems[0]
-    >>> print(f"Proof states: {len(theorem.proof_states)}")
-    >>> print(f"Tactics: {theorem.tactic_sequence}")
 """
 
 import asyncio
 import json
 import logging
+import os
+import shlex
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from pydantic import BaseModel, Field
 
+from ..core.error_handling import error_context, setup_error_logger
+from ..core.exceptions import LSPConnectionError, LSPTimeoutError, FileParseError
+from ..core.resource_limits import RateLimiter, ResourceMonitor, async_timeout, TimeoutError
 from .models import FileMetadata, ParseError, ParseResult, TheoremInfo
 
 
 class ProofState(BaseModel):
     """Represents a proof state at a specific point in the proof."""
 
-    goals: List[str] = Field(default_factory=list)
-    hypotheses: List[str] = Field(default_factory=list)
-    tactic_applied: Optional[str] = None
-    line_number: Optional[int] = None
-    column: Optional[int] = None
+    goals: list[str] = Field(default_factory=list)
+    hypotheses: list[str] = Field(default_factory=list)
+    tactic_applied: str | None = None
+    line_number: int | None = None
+    column: int | None = None
 
 
 class TacticInfo(BaseModel):
     """Information about a specific tactic application."""
 
     name: str
-    arguments: List[str] = Field(default_factory=list)
+    arguments: list[str] = Field(default_factory=list)
     line_number: int
     column: int
-    before_state: Optional[ProofState] = None
-    after_state: Optional[ProofState] = None
-    error_message: Optional[str] = None
+    before_state: ProofState | None = None
+    after_state: ProofState | None = None
+    error_message: str | None = None
 
 
 class SemanticTheoremInfo(TheoremInfo):
     """Enhanced theorem info with semantic analysis from LSP."""
 
     # Semantic analysis fields
-    proof_states: List[ProofState] = Field(default_factory=list)
-    tactic_sequence: List[TacticInfo] = Field(default_factory=list)
-    semantic_dependencies: List[str] = Field(default_factory=list)
-    mathematical_entities: List[str] = Field(default_factory=list)
+    proof_states: list[ProofState] = Field(default_factory=list)
+    tactic_sequence: list[TacticInfo] = Field(default_factory=list)
+    semantic_dependencies: list[str] = Field(default_factory=list)
+    mathematical_entities: list[str] = Field(default_factory=list)
     complexity_score: float = Field(default=0.0)
     proof_method: str = Field(default="unknown")
 
     # LSP-specific metadata
-    definition_location: Optional[Tuple[int, int]] = None
-    type_signature: Optional[str] = None
-    hover_info: Optional[str] = None
+    definition_location: tuple[int, int] | None = None
+    type_signature: str | None = None
+    hover_info: str | None = None
 
 
 class LeanLSPClient:
     """Lean 4 Language Server Protocol client for semantic analysis."""
 
-    def __init__(self, lean_executable: str = "lean", timeout: float = 30.0):
+    def __init__(self, lean_executable: str = "lean", timeout: float = 30.0,
+                 max_memory_mb: int = 500, rate_limit_calls: int = 100,
+                 rate_limit_window: float = 60.0):
         """Initialize the LSP client.
+
+        DEPRECATED: This LSP client is non-functional. Use SimpleLeanParser instead.
 
         Args:
             lean_executable: Path to Lean 4 executable
             timeout: Timeout for LSP operations in seconds
+            max_memory_mb: Maximum memory usage in MB
+            rate_limit_calls: Maximum LSP calls allowed
+            rate_limit_window: Time window for rate limiting (seconds)
         """
-        self.lean_executable = lean_executable
+        import warnings
+        warnings.warn(
+            "LeanLSPClient is deprecated and non-functional. "
+            "It extracts 0 theorems and is 1000x slower than SimpleLeanParser. "
+            "Use SimpleLeanParser instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        
+        # Validate and sanitize the executable path
+        self.lean_executable = self._validate_executable(lean_executable)
         self.timeout = timeout
-        self.logger = logging.getLogger(__name__)
-        self._process: Optional[subprocess.Popen] = None
+        self.logger = setup_error_logger(__name__)
+        self._process: subprocess.Popen | None = None
         self._request_id = 0
+        
+        # Resource limits
+        self.resource_monitor = ResourceMonitor(max_memory_mb=max_memory_mb)
+        self.rate_limiter = RateLimiter(
+            max_calls=rate_limit_calls,
+            time_window=rate_limit_window
+        )
 
-    async def parse_file(self, file_path: Union[Path, str]) -> ParseResult:
+    def _validate_executable(self, executable_path: str) -> str:
+        """Validate and sanitize the executable path for security.
+        
+        Args:
+            executable_path: Path to the executable
+            
+        Returns:
+            Validated and sanitized executable path
+            
+        Raises:
+            ValueError: If the executable path is invalid or insecure
+        """
+        # Validate against shell injection characters first
+        if any(char in executable_path for char in [';', '&', '|', '`', '$', '(', ')', '<', '>', '\n', '\r', '"', "'"]):
+            raise ValueError(f"Invalid characters in executable path: {executable_path}")
+        
+        # Check if it's a simple command name (no path separators)
+        if os.sep not in executable_path and '/' not in executable_path and '\\' not in executable_path:
+            # It's just a command name like "lean", check if it's allowed
+            allowed_commands = ['lean', 'lean4', 'lean.exe', 'lean4.exe']
+            if executable_path not in allowed_commands:
+                raise ValueError(f"Command must be one of {allowed_commands}, got: {executable_path}")
+            
+            # Try to find it in PATH
+            import shutil
+            full_path = shutil.which(executable_path)
+            if not full_path:
+                raise ValueError(f"Executable '{executable_path}' not found in PATH")
+            
+            # Use the full path for additional validation
+            path = Path(full_path).resolve()
+        else:
+            # It's a path, validate it
+            path = Path(executable_path).resolve()
+            
+            # Security checks
+            if not path.exists():
+                raise ValueError(f"Executable not found: {executable_path}")
+                
+            if not path.is_file():
+                raise ValueError(f"Executable path is not a file: {executable_path}")
+                
+            # Check if executable
+            if not os.access(str(path), os.X_OK):
+                raise ValueError(f"File is not executable: {executable_path}")
+                
+            # Only allow specific executable names for Lean
+            allowed_names = ['lean', 'lean4', 'lean.exe', 'lean4.exe']
+            if path.name not in allowed_names:
+                raise ValueError(f"Executable must be one of {allowed_names}, got: {path.name}")
+        
+        # Return the validated path as string
+        return str(path)
+
+    async def parse_file(self, file_path: Path | str) -> ParseResult:
         """Parse a Lean file using LSP for semantic analysis.
 
         Args:
@@ -142,14 +229,27 @@ class LeanLSPClient:
 
             start_time = time.time()
 
-            # Start LSP server and analyze file
-            await self._start_lsp_server()
+            # Apply rate limiting
+            await self.rate_limiter.acquire()
+            
+            # Monitor resources during LSP operations
+            async def lsp_operations():
+                # Start LSP server and analyze file
+                await self._start_lsp_server()
 
-            # Initialize the file with LSP
-            await self._initialize_file(file_path)
+                # Initialize the file with LSP
+                await self._initialize_file(file_path)
 
-            # Extract theorem information using LSP
-            theorems = await self._extract_theorems_semantic(file_path)
+                # Extract theorem information using LSP
+                return await self._extract_theorems_semantic(file_path)
+            
+            # Run with timeout and resource monitoring
+            try:
+                theorems = await self.resource_monitor.monitor_async(
+                    async_timeout(lsp_operations(), self.timeout)
+                )
+            except asyncio.TimeoutError:
+                raise LSPTimeoutError(f"LSP parsing timed out after {self.timeout} seconds")
 
             end_time = time.time()
             parse_time_ms = (end_time - start_time) * 1000
@@ -174,21 +274,40 @@ class LeanLSPClient:
                 parse_time_ms=parse_time_ms,
             )
 
-        except Exception as e:
-            self.logger.error(f"LSP parsing failed: {e}")
+        except (LSPTimeoutError, LSPConnectionError, FileParseError) as e:
+            # Handle our custom exceptions
+            self.logger.error(f"LSP parsing failed: {e}", extra={"details": getattr(e, 'details', {})})
             return ParseResult(
                 success=False,
                 errors=[
                     ParseError(
-                        message=f"LSP parsing failed: {str(e)}",
+                        message=str(e),
                         line_number=None,
                         column=None,
-                        error_type="lsp_error",
+                        error_type=type(e).__name__,
                         severity="error",
                     )
                 ],
                 theorems=[],
-                metadata=None,  # No metadata available on error
+                metadata=None,
+                parse_time_ms=0.0,
+            )
+        except Exception as e:
+            # Handle unexpected exceptions
+            self.logger.error(f"Unexpected error during LSP parsing: {e}", exc_info=True)
+            return ParseResult(
+                success=False,
+                errors=[
+                    ParseError(
+                        message=f"Unexpected error during LSP parsing: {e!s}",
+                        line_number=None,
+                        column=None,
+                        error_type="unexpected_error",
+                        severity="error",
+                    )
+                ],
+                theorems=[],
+                metadata=None,
                 parse_time_ms=0.0,
             )
         finally:
@@ -197,14 +316,20 @@ class LeanLSPClient:
     async def _start_lsp_server(self) -> None:
         """Start the Lean 4 LSP server process."""
         try:
-            # Start Lean LSP server
+            # Start Lean LSP server with security measures
+            # Use shlex.quote to prevent shell injection
+            command = [self.lean_executable, "--server"]
+            
+            # Additional security: no shell execution
             self._process = subprocess.Popen(
-                [self.lean_executable, "--server"],
+                command,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=0,
+                shell=False,  # Explicitly disable shell execution
+                env=os.environ.copy(),  # Use a copy of environment
             )
 
             # Initialize LSP with standard initialize request
@@ -231,9 +356,12 @@ class LeanLSPClient:
 
             self.logger.debug("LSP server started successfully")
 
+        except subprocess.SubprocessError as e:
+            self.logger.error(f"Failed to start LSP server process: {e}")
+            raise LSPConnectionError(f"Failed to start LSP server: {e}")
         except Exception as e:
-            self.logger.error(f"Failed to start LSP server: {e}")
-            raise
+            self.logger.error(f"Unexpected error starting LSP server: {e}", exc_info=True)
+            raise LSPConnectionError(f"Failed to start LSP server: {e}")
 
     async def _stop_lsp_server(self) -> None:
         """Stop the LSP server process."""
@@ -255,8 +383,8 @@ class LeanLSPClient:
                 self._process = None
 
     async def _send_lsp_request(
-        self, method: str, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, method: str, params: dict[str, Any]
+    ) -> dict[str, Any]:
         """Send an LSP request and wait for response."""
         if not self._process or not self._process.stdin:
             raise RuntimeError("LSP server not running")
@@ -285,7 +413,7 @@ class LeanLSPClient:
 
         return response.get("result", {})
 
-    async def _send_lsp_notification(self, method: str, params: Dict[str, Any]) -> None:
+    async def _send_lsp_notification(self, method: str, params: dict[str, Any]) -> None:
         """Send an LSP notification (no response expected)."""
         if not self._process or not self._process.stdin:
             raise RuntimeError("LSP server not running")
@@ -299,7 +427,7 @@ class LeanLSPClient:
         self._process.stdin.write(message)
         self._process.stdin.flush()
 
-    async def _read_lsp_response(self) -> Dict[str, Any]:
+    async def _read_lsp_response(self) -> dict[str, Any]:
         """Read an LSP response from the server."""
         if not self._process or not self._process.stdout:
             raise RuntimeError("LSP server not running")
@@ -341,7 +469,7 @@ class LeanLSPClient:
 
     async def _extract_theorems_semantic(
         self, file_path: Path
-    ) -> List[SemanticTheoremInfo]:
+    ) -> list[SemanticTheoremInfo]:
         """Extract theorems with semantic analysis using LSP."""
         theorems = []
 
@@ -370,8 +498,8 @@ class LeanLSPClient:
         return theorems
 
     async def _analyze_theorem_symbol(
-        self, file_path: Path, symbol: Dict[str, Any]
-    ) -> Optional[SemanticTheoremInfo]:
+        self, file_path: Path, symbol: dict[str, Any]
+    ) -> SemanticTheoremInfo | None:
         """Analyze a single theorem symbol using LSP."""
         try:
             name = symbol.get("name", "unknown")
@@ -437,7 +565,7 @@ class LeanLSPClient:
 
     async def _get_hover_info(
         self, file_path: Path, line: int, character: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get hover information for a position."""
         try:
             result = await self._send_lsp_request(
@@ -453,7 +581,7 @@ class LeanLSPClient:
 
     async def _get_definition_info(
         self, file_path: Path, line: int, character: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get definition information for a position."""
         try:
             result = await self._send_lsp_request(
@@ -467,7 +595,7 @@ class LeanLSPClient:
         except Exception:
             return {}
 
-    def _extract_statement_from_hover(self, hover_info: Dict[str, Any]) -> str:
+    def _extract_statement_from_hover(self, hover_info: dict[str, Any]) -> str:
         """Extract theorem statement from hover information."""
         contents = hover_info.get("contents", {})
         if isinstance(contents, dict):
@@ -481,8 +609,8 @@ class LeanLSPClient:
         return str(contents) if contents else ""
 
     def _extract_proof_info(
-        self, file_path: Path, range_info: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, file_path: Path, range_info: dict[str, Any]
+    ) -> dict[str, Any]:
         """Extract proof information from file content."""
         try:
             content = file_path.read_text(encoding="utf-8")
@@ -503,8 +631,8 @@ class LeanLSPClient:
             return {"text": "", "dependencies": [], "semantic_deps": []}
 
     async def _analyze_proof_structure(
-        self, file_path: Path, range_info: Dict[str, Any], proof_info: Dict[str, Any]
-    ) -> Tuple[List[ProofState], List[TacticInfo]]:
+        self, file_path: Path, range_info: dict[str, Any], proof_info: dict[str, Any]
+    ) -> tuple[list[ProofState], list[TacticInfo]]:
         """Analyze the structure of a proof to extract states and tactics."""
         # This is a simplified version - full implementation would use LSP's
         # goal state information and tactic analysis
@@ -543,7 +671,7 @@ class LeanLSPClient:
         return proof_states, tactic_sequence
 
     def _calculate_complexity(
-        self, tactics: List[TacticInfo], states: List[ProofState]
+        self, tactics: list[TacticInfo], states: list[ProofState]
     ) -> float:
         """Calculate proof complexity score."""
         if not tactics:
@@ -568,8 +696,8 @@ class LeanLSPClient:
         return total_score / len(tactics) if tactics else 0.0
 
     def _extract_mathematical_entities(
-        self, statement: str, hover_info: Dict[str, Any]
-    ) -> List[str]:
+        self, statement: str, hover_info: dict[str, Any]
+    ) -> list[str]:
         """Extract mathematical entities from statement and hover information."""
         entities = set()
 
@@ -586,7 +714,7 @@ class LeanLSPClient:
 
         return list(entities)
 
-    def _identify_proof_method(self, tactics: List[TacticInfo]) -> str:
+    def _identify_proof_method(self, tactics: list[TacticInfo]) -> str:
         """Identify the primary proof method used."""
         if not tactics:
             return "unknown"
@@ -609,7 +737,7 @@ class LeanLSPClient:
         else:
             return "direct"
 
-    def _extract_dependencies(self, proof_text: str) -> List[str]:
+    def _extract_dependencies(self, proof_text: str) -> list[str]:
         """Extract theorem dependencies from proof text."""
         import re
 
@@ -627,12 +755,12 @@ class LeanLSPClient:
 
         return list(dependencies)
 
-    def _extract_semantic_dependencies(self, proof_text: str) -> List[str]:
+    def _extract_semantic_dependencies(self, proof_text: str) -> list[str]:
         """Extract semantic dependencies (imports, namespaces, etc.)."""
         # This would analyze semantic relationships - simplified for now
         return []
 
-    def _is_axiom(self, hover_info: Dict[str, Any]) -> bool:
+    def _is_axiom(self, hover_info: dict[str, Any]) -> bool:
         """Determine if this is an axiom."""
         contents = str(hover_info.get("contents", "")).lower()
         return "axiom" in contents or "sorry" in contents
@@ -652,7 +780,7 @@ class LeanLSPClient:
 
     async def _fallback_to_simple_parsing(
         self, file_path: Path
-    ) -> List[SemanticTheoremInfo]:
+    ) -> list[SemanticTheoremInfo]:
         """Fallback to simple regex parsing if LSP fails."""
         from .simple_parser import SimpleLeanParser
 
@@ -690,7 +818,7 @@ class LeanLSPClient:
 
 
 # Convenience function for backward compatibility
-async def parse_file_with_lsp(file_path: Union[Path, str]) -> ParseResult:
+async def parse_file_with_lsp(file_path: Path | str) -> ParseResult:
     """Parse a Lean file using LSP client.
 
     Args:

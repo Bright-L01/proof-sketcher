@@ -58,9 +58,9 @@ MarkdownExporter = SimpleMarkdownExporter
 HTMLExporter = SimpleHTMLExporter
 
 __all__ = [
-    "MarkdownExporter",
-    "SimpleMarkdownExporter",
-    "HTMLExporter",
-    "SimpleHTMLExporter",
     "BatchExporter",
+    "HTMLExporter",
+    "MarkdownExporter",
+    "SimpleHTMLExporter",
+    "SimpleMarkdownExporter",
 ]

@@ -36,7 +36,7 @@ from .module_processor import ModuleProcessor
 from .template_engine import EducationalTemplateEngine
 
 __all__ = [
-    "ModuleProcessor",
     "EducationalContentGenerator",
     "EducationalTemplateEngine",
+    "ModuleProcessor",
 ]

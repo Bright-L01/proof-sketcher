@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import click
 from rich.console import Console
@@ -56,7 +55,7 @@ def setup_logging(config: ProofSketcherConfig) -> None:
     help="Path to configuration file (default: .proof-sketcher.yaml)",
 )
 @click.pass_context
-def cli(ctx: click.Context, verbose: bool, config: Optional[Path]) -> None:
+def cli(ctx: click.Context, verbose: bool, config: Path | None) -> None:
     """Proof Sketcher: Transform Lean 4 theorems into natural language explanations.
 
     Transform formal mathematical proofs into accessible explanations with beautiful

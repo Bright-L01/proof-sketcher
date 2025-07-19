@@ -1,8 +1,12 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# C extensions
 *.so
+
+# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -16,79 +20,174 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
 
-# Virtual Environment
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+.pdm-python
+.pdm-build/
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
 venv/
 ENV/
-env/
-.venv
+env.bak/
+venv.bak/
 
-# IDE
-.vscode/
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# IDEs
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
-
-# Project specific
-.autodoc_cache/
-.lake/
-lake-manifest.json
-*.olean
-*.ilean
-output/
-docs/_build/
-
-# Secrets
-.env
-.anthropic_key
-.openai_key
-*_api_key.txt
-credentials/
-*.pem
-
-# Claude Code / MCP
-.claude/
-.mcp.json
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Test coverage
-htmlcov/
-.coverage
-.coverage.*
-.cache
-.pytest_cache/
-coverage.xml
-*.cover
+# Project specific
+*.lean.olean
+*.lean.ilean
+*.lean.clean
+*.lean.d
+*.lean.trace
+lean_test_project/
+benchmark_results/
+*.html
+*.md.bak
+.proof-sketcher.yaml
+.ruff.toml
 
-# Code quality tools
-.mypy_cache/
-.ruff_cache/
-.benchmarks/
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.orig
 
-# Sphinx documentation builds
-docs/api/_build/
+# Generated documentation
+docs/api/
+docs/_build/
+docs/reports/performance_*.json
 
-# Runtime directories
-temp/
-animations/
+# Test outputs
+test_output/
+test_results/
+*.log
 
-# Jupyter
-.ipynb_checkpoints
-*.ipynb
-!examples/*.ipynb
+# Security test files (should never be committed)
+*exploit*.py
+*xss*.py
+*vulnerability*.py
+*attack*.py
 
-# Manim
-media/
-__pycache__/
-*.mp4
-*.png
-*.gif
-!examples/*.mp4
+# Local configuration
+.env.local
+config.local.yaml
+
+# Generated outputs
+output/
+generated/
+exports/

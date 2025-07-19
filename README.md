@@ -1,261 +1,125 @@
-# 📐 Proof Sketcher
+# Proof-Sketcher (Alpha)
 
-[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Lean 4](https://img.shields.io/badge/Lean-4.0+-purple.svg)](https://leanprover.github.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![MathJax](https://img.shields.io/badge/MathJax-4.0-green.svg)](https://www.mathjax.org/)
-[![Status: ALPHA](https://img.shields.io/badge/Status-ALPHA%20SOFTWARE-red.svg)](https://github.com/brightlikethelight/proof-sketcher)
+**⚠️ IMPORTANT: This is alpha software under active development. It is not ready for production use.**
 
-# ⚠️ **ALPHA SOFTWARE WARNING** ⚠️
+## What is Proof-Sketcher?
 
-**THIS IS EXPERIMENTAL SOFTWARE WITH LIMITED FUNCTIONALITY**
+Proof-Sketcher is an educational tool that generates natural language explanations for Lean 4 theorems. It parses Lean files and creates explanations at multiple educational levels to help students understand formal proofs.
 
-**NOT SUITABLE FOR PRODUCTION USE**
+## Current Status: Alpha (v0.1.0)
 
----
+### ✅ What Works
+- **Basic Lean parsing**: Extracts theorems from `.lean` files
+- **Template-based explanations**: Generates explanations at 4 educational levels
+- **Multiple export formats**: HTML and Markdown output
+- **Security**: XSS protection and path sanitization implemented
+- **Resource limits**: Memory and timeout protection
 
-## 🎯 **What It Does**
+### ❌ Known Limitations
+- **No concurrent user support**: Single-user only (critical limitation)
+- **Template-based content**: Not AI-generated despite package names
+- **LSP integration non-functional**: Use simple parser instead
+- **Limited educational value**: Generic templates need improvement
+- **Low test coverage**: Currently 11% (target: 80%)
 
-Proof Sketcher is an experimental tool that generates natural language explanations of Lean 4 theorems. This is alpha software with basic functionality only.
+### 🚧 Under Development
+- Concurrent user support (required for classroom use)
+- Improved educational content quality
+- Real semantic analysis of proofs
+- Integration with doc-gen4
+- Comprehensive test suite
 
-### ✨ **Current Working Features**
+## Installation
 
-🔍 **Basic Parsing** - Extract simple theorems and lemmas from Lean 4 files
-📝 **Template Generation** - Basic structured explanations using offline templates
-📊 **HTML Export** - Simple HTML output with MathJax 4.0
-📝 **Markdown Export** - Basic Markdown output
-📚 **CLI Interface** - Command-line interface for basic operations
+### Requirements
+- Python 3.10+
+- Lean 4 (optional, for `.lean` file validation)
 
-### ❌ **Known Limitations**
-
-- **No AI Integration** - Template-based explanations only
-- **No Animations** - Static output only
-- **No PDF Export** - HTML and Markdown only
-- **No LSP Integration** - Basic regex parsing only
-- **Limited Test Coverage** - Many tests are broken
-- **Security Issues** - Not suitable for production
-- **No Documentation** - Minimal documentation available
-
----
-
-## 🚀 **Current Status: ALPHA SOFTWARE**
-
-### ✅ **Actually Working Features**
-
-- **Simple Lean Parser**: Basic theorem extraction from .lean files
-- **Offline Generation**: Template-based explanations (no API required)
-- **HTML Export**: Simple HTML with MathJax 4.0 rendering
-- **Markdown Export**: Basic Markdown output
-- **CLI Commands**: `prove`, `list-theorems`, `version`, `formats`
-- **Batch Processing**: Process multiple files (basic)
-
-### 🚧 **Future Development (Not Current)**
-
-- **AI Integration**: Claude API for enhanced explanations
-- **Animations**: Manim integration for proof visualization
-- **PDF Export**: LaTeX-quality typesetting
-- **Doc-gen4 Integration**: Mathlib documentation enhancement
-- **LSP Support**: Full semantic analysis
-- **Test Coverage**: Comprehensive test suite
-- **Security**: Production-ready security practices
-
----
-
-## 📦 **Quick Start (Alpha)**
-
-### Installation
+### Quick Start
 
 ```bash
-# Clone and install
-git clone https://github.com/brightlikethelight/proof-sketcher.git
+# Clone the repository
+git clone https://github.com/yourusername/proof-sketcher.git
 cd proof-sketcher
+
+# Install in development mode
 pip install -e .
+
+# Run basic example
+proof-sketcher prove examples/basic.lean
 ```
 
-### Verify Installation
-
-```bash
-# Test basic functionality
-python -m proof_sketcher --help
-python -m proof_sketcher version
-```
+## Usage
 
 ### Basic Usage
 
 ```bash
-# List theorems in a file
-python -m proof_sketcher list-theorems examples/classical/simple_examples.lean
+# Generate explanation for a single theorem
+proof-sketcher prove theorem.lean
 
-# Generate explanation for a theorem
-python -m proof_sketcher prove examples/classical/simple_examples.lean --theorem add_zero
+# Specify educational level (intuitive, conceptual, bridging, formal)
+proof-sketcher prove theorem.lean --educational-level formal
 
-# Export to markdown
-python -m proof_sketcher prove examples/classical/simple_examples.lean --format markdown
+# Export to HTML
+proof-sketcher prove theorem.lean --format html
 
-# Show supported formats
-python -m proof_sketcher formats
+# Process multiple theorems
+proof-sketcher batch process theorems/
 ```
 
-### ⚠️ **Alpha Limitations**
+### Educational Levels
 
-- **No Python API** - CLI only in alpha version
-- **Limited Parsing** - Simple theorems only
-- **No AI Features** - Template-based only
-- **Basic Error Handling** - May crash on complex files
-- **No Configuration** - Uses default settings only
+1. **Intuitive**: Plain language explanation for beginners
+2. **Conceptual**: Introduction of mathematical concepts
+3. **Bridging**: Connection between informal and formal reasoning
+4. **Formal**: Complete formal proof explanation
 
----
-
-## 🏗️ **Architecture (Alpha)**
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Simple Lean   │───▶│  Offline        │───▶│  Basic HTML/MD  │
-│    Parser       │    │  Generator      │    │   Output        │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Regex-based   │    │   Hard-coded    │    │   Static Files  │
-│   Extraction    │    │   Templates     │    │   (HTML/MD)     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-### Alpha Components
-
-- **🔍 Simple Parser**: Basic regex-based theorem extraction
-- **📝 Offline Generator**: Template-based explanations (no AI)
-- **🎨 Simple Exporters**: Basic HTML and Markdown output
-- **📚 CLI Interface**: Command-line tools for basic operations
-
-### Missing Components (Future)
-
-- **Advanced Parser**: LSP-based semantic analysis
-- **AI Generator**: Claude API integration
-- **Rich Exporters**: PDF, Jupyter, animations
-- **Web Interface**: Interactive documentation
-
----
-
-## 🎓 **Use Cases**
-
-### **For Researchers**
-
-- **Publication Ready**: Generate theorem explanations for academic papers
-- **Documentation**: Create accessible descriptions of formal proofs
-- **Education**: Bridge formal and informal mathematics
-
-### **For Educators**
-
-- **Course Materials**: Explain formal proofs to students
-- **Interactive Learning**: Convert Lean theorems to readable content
-- **Assessment**: Document proof understanding and verification
-
-### **For Lean Community**
-
-- **Mathlib Documentation**: Enhanced theorem explanations
-- **Knowledge Sharing**: Make formal proofs more accessible
-- **Onboarding**: Help newcomers understand existing proofs
-
----
-
-## 🔧 **Development**
-
-### Project Structure
+## Architecture
 
 ```
 proof-sketcher/
 ├── src/proof_sketcher/
-│   ├── parser/          # Lean 4 AST extraction
+│   ├── parser/          # Lean file parsing
 │   ├── generator/       # Explanation generation
-│   ├── exporter/        # Multi-format output
-│   └── cli.py          # Command-line interface
-├── tests/              # Comprehensive test suite
-├── examples/           # Sample Lean files and outputs
-└── docs/              # Documentation and guides
+│   ├── exporter/        # HTML/Markdown export
+│   └── cli/            # Command-line interface
+└── tests/              # Test suite
 ```
 
-### Contributing
+## Contributing
 
-```bash
-# Development setup
-git clone https://github.com/brightlikethelight/proof-sketcher.git
-cd proof-sketcher
-pip install -e ".[dev]"
+We welcome contributions! However, please be aware:
 
-# Run tests
-pytest --cov=proof_sketcher
+1. This is alpha software with significant architectural changes planned
+2. Major refactoring is needed for concurrent user support
+3. The codebase will change substantially before v1.0
 
-# Format code
-black src/ tests/
-ruff check src/ tests/
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup.
 
----
+## Honest Limitations
 
-## 📊 **Technical Specifications**
+1. **Performance**: Cannot handle multiple concurrent users
+2. **Content Quality**: Template-based explanations are generic
+3. **Integration**: No working integration with other Lean tools
+4. **Stability**: Alpha software with breaking changes expected
 
-| Feature | Status | Technology |
-|---------|--------|------------|
-| **Lean 4 Parsing** | ✅ Complete | Python subprocess, AST analysis |
-| **Template Generation** | ✅ Working | Jinja2, structured templates |
-| **HTML Export** | ✅ Production | MathJax 4.0, responsive CSS |
-| **Mathematical Rendering** | ✅ Professional | LaTeX notation, symbol support |
-| **Batch Processing** | ✅ Efficient | Parallel processing, progress tracking |
-| **AI Integration** | 🚧 Planned | Claude API, contextual enhancement |
-| **Animation Support** | 🚧 Research | Manim integration, dynamic visualization |
+## Roadmap to Beta
 
----
+1. **v0.2.0**: Fix concurrent user support (critical)
+2. **v0.3.0**: Improve educational content quality
+3. **v0.4.0**: Add real doc-gen4 integration
+4. **v0.5.0**: Achieve 80% test coverage
+5. **v0.6.0-beta**: First beta release
 
-## 🌟 **Why Proof Sketcher?**
+## License
 
-### **Unique Position**
+MIT License - See [LICENSE](LICENSE) file
 
-- **First of its kind**: Dedicated Lean 4 to natural language tool
-- **Modern Technology**: Built with latest web standards and rendering
-- **Research Foundation**: Grounded in formal verification best practices
-- **Extensible Design**: Modular architecture for future enhancements
+## Acknowledgments
 
-### **Technical Innovation**
-
-- **AST-Level Analysis**: Deep understanding of theorem structure
-- **Template-Based Generation**: Consistent, reliable explanations
-- **Professional Output**: Publication-quality mathematical rendering
-- **Scalable Processing**: Handle large Lean projects efficiently
+- Lean 4 community for the excellent proof assistant
+- Early alpha testers for valuable feedback
 
 ---
 
-## 📚 **Documentation**
-
-- **[API Reference](docs/api.md)** - Complete function documentation
-- **[User Guide](docs/guide.md)** - Step-by-step tutorials
-- **[Architecture](docs/architecture.md)** - Technical design details
-- **[Contributing](docs/contributing.md)** - Development guidelines
-- **[Examples](examples/)** - Sample inputs and outputs
-
----
-
-## 🤝 **Community & Support**
-
-- **GitHub Issues**: Bug reports and feature requests
-- **Discussions**: Community Q&A and ideas
-- **Contributing**: Welcome contributions from the Lean community
-- **Academic Collaboration**: Open to research partnerships
-
----
-
-## 📜 **License**
-
-MIT License - See [LICENSE](LICENSE) for details.
-
----
-
-<p align="center">
-  <strong>Making formal mathematics accessible, one proof at a time.</strong> 🎓
-</p>
-
-<p align="center">
-  <a href="mailto:brightliu@college.harvard.edu">Contact</a> •
-  <a href="https://github.com/brightlikethelight/proof-sketcher/issues">Issues</a> •
-  <a href="https://github.com/brightlikethelight/proof-sketcher/discussions">Discussions</a>
-</p>
+**Note**: This README reflects the actual current state of the software. Features marked as "planned" or "under development" are not yet implemented. Please set expectations accordingly.

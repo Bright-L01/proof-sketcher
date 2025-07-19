@@ -1,28 +1,30 @@
 """Hybrid parser that combines LSP semantic analysis with simple fallback.
 
-This parser provides the best of both worlds:
+DEPRECATED: This hybrid parser uses the non-functional LSP client.
+Since the LSP client extracts 0 theorems and is 1000x slower than SimpleLeanParser,
+this hybrid parser should not be used. Use SimpleLeanParser directly instead.
+
+This parser was intended to provide:
 - Advanced semantic analysis via Lean 4 LSP when available
 - Reliable fallback to regex-based parsing when LSP is unavailable
 - Seamless interface that abstracts the complexity
 
-The hybrid approach ensures that Proof Sketcher works in all environments:
-- Full-featured semantic analysis in Lean 4 environments
-- Basic functionality in environments without Lean 4 installation
-- Graceful degradation when LSP server has issues
+However, due to the broken LSP implementation, it only adds overhead
+without any benefits. The LSP portion never successfully extracts theorems.
 
-Key Features:
-- Automatic LSP availability detection
-- Transparent fallback mechanism
-- Consistent interface regardless of backend
-- Performance optimization (LSP caching, simple parser speed)
-- Educational content enhancement for both modes
+Known issues:
+- LSP mode extracts 0 theorems
+- LSP mode is 1000x slower than simple parsing
+- Adds unnecessary complexity with no benefit
+- Falls back to simple parser anyway in most cases
+
+RECOMMENDATION: Use SimpleLeanParser directly for all parsing needs.
 """
 
 import asyncio
 import logging
 import subprocess
 from pathlib import Path
-from typing import Optional, Union
 
 from .lsp_client import LeanLSPClient, SemanticTheoremInfo
 from .models import ParseError, ParseResult
@@ -41,12 +43,24 @@ class HybridLeanParser:
     ):
         """Initialize the hybrid parser.
 
+        DEPRECATED: This hybrid parser uses the broken LSP client.
+        Use SimpleLeanParser directly instead.
+
         Args:
             lean_executable: Path to Lean 4 executable
             prefer_lsp: Whether to prefer LSP over simple parsing
             lsp_timeout: Timeout for LSP operations
             enable_fallback: Whether to fall back to simple parsing on LSP failure
         """
+        import warnings
+        warnings.warn(
+            "HybridLeanParser is deprecated because it uses the non-functional LSP client. "
+            "The LSP client extracts 0 theorems and is 1000x slower. "
+            "Use SimpleLeanParser directly instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        
         self.lean_executable = lean_executable
         self.prefer_lsp = prefer_lsp
         self.lsp_timeout = lsp_timeout
@@ -58,10 +72,10 @@ class HybridLeanParser:
         self.simple_parser = SimpleLeanParser()
 
         # Runtime state
-        self._lsp_available: Optional[bool] = None
+        self._lsp_available: bool | None = None
         self._lsp_checked = False
 
-    async def parse_file(self, file_path: Union[Path, str]) -> ParseResult:
+    async def parse_file(self, file_path: Path | str) -> ParseResult:
         """Parse a Lean file using the best available method.
 
         Args:
@@ -114,7 +128,7 @@ class HybridLeanParser:
             self.logger.info(f"Parsing {file_path} with simple regex parser")
             return await self._parse_with_simple_fallback(file_path)
 
-    def parse_file_sync(self, file_path: Union[Path, str]) -> ParseResult:
+    def parse_file_sync(self, file_path: Path | str) -> ParseResult:
         """Synchronous wrapper for parse_file.
 
         Args:
@@ -180,7 +194,7 @@ class HybridLeanParser:
         return self._lsp_available or False
 
     async def _parse_with_simple_fallback(
-        self, file_path: Path, lsp_error: Optional[str] = None
+        self, file_path: Path, lsp_error: str | None = None
     ) -> ParseResult:
         """Parse using simple parser with enhanced metadata."""
         result = self.simple_parser.parse_file(file_path)
@@ -225,7 +239,7 @@ class HybridLeanParser:
 
         return result
 
-    def _parse_with_simple_sync(self, file_path: Union[Path, str]) -> ParseResult:
+    def _parse_with_simple_sync(self, file_path: Path | str) -> ParseResult:
         """Synchronous simple parsing with basic enhancement."""
         if isinstance(file_path, str):
             file_path = Path(file_path)

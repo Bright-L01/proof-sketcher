@@ -117,19 +117,19 @@ theorem add_zero (n : Nat) : n + 0 = n := by
         )
 
         with patch(
-            "proof_sketcher.parser.lean_parser.LeanParser.parse_file"
+            "proof_sketcher.parser.lean_parser.SimpleLeanParser.parse_file"
         ) as mock_parse:
             mock_parse.return_value = mock_parse_result
 
             # Mock the generator
             with patch(
-                "proof_sketcher.generator.ai_generator.AIGenerator.generate_proof_sketch"
+                "proof_sketcher.generator.ai_generator.SimpleGenerator.generate_proof_sketch"
             ) as mock_generate:
                 mock_generate.return_value = mock_proof_sketch
 
                 # Mock the exporter
                 with patch(
-                    "proof_sketcher.exporter.html.HTMLExporter.export_single"
+                    "proof_sketcher.exporter.html.HTMLBaseExporter.export_single"
                 ) as mock_export:
                     mock_export.return_value = ExportResult(
                         success=True,
@@ -141,25 +141,25 @@ theorem add_zero (n : Nat) : n + 0 = n := by
                     )
 
                     # Run the pipeline
-                    from proof_sketcher.exporter.html import HTMLExporter
-                    from proof_sketcher.generator.ai_generator import AIGenerator
-                    from proof_sketcher.parser.lean_parser import LeanParser
+                    from proof_sketcher.exporter.html import HTMLBaseExporter
+                    from proof_sketcher.generator.ai_generator import SimpleGenerator
+                    from proof_sketcher.parser.simple_parser import SimpleLeanParser
 
                     # Parse
-                    parser = LeanParser()
+                    parser = SimpleLeanParser()
                     parse_result = parser.parse_file(lean_file)
                     assert parse_result.success
                     assert len(parse_result.theorems) == 2
 
                     # Generate
-                    generator = AIGenerator()
+                    generator = SimpleGenerator()
                     theorem = parse_result.theorems[0]
                     proof_sketch = generator.generate_proof_sketch(theorem)
                     assert proof_sketch.theorem_name == "nat_add_comm"
                     assert len(proof_sketch.key_steps) == 2
 
                     # Export
-                    exporter = HTMLExporter(
+                    exporter = HTMLBaseExporter(
                         ExportOptions(output_dir=temp_project_dir / "output")
                     )
                     export_result = exporter.export_single(proof_sketch)
@@ -222,7 +222,7 @@ theorem test{i} : {i} = {i} := by rfl
             }
 
             # Run batch processing
-            from proof_sketcher.batch.parallel_processor import ParallelProcessor
+            from proof_sketcher.exporter.batch_processor.parallel_processor import ParallelProcessor
 
             processor = ParallelProcessor(max_workers=2)
             results = processor.process_directory(temp_project_dir / "src")
@@ -238,15 +238,15 @@ theorem test{i} : {i} = {i} := by rfl
         bad_lean_file.write_text("invalid lean syntax {{{")
 
         with patch(
-            "proof_sketcher.parser.lean_parser.LeanParser.parse_file"
+            "proof_sketcher.parser.lean_parser.SimpleLeanParser.parse_file"
         ) as mock_parse:
             mock_parse.side_effect = ProofSketcherError(
                 "Syntax error", error_code="PARSE_001"
             )
 
-            from proof_sketcher.parser.lean_parser import LeanParser
+            from proof_sketcher.parser.simple_parser import SimpleLeanParser
 
-            parser = LeanParser()
+            parser = SimpleLeanParser()
 
             with pytest.raises(ProofSketcherError) as exc_info:
                 parser.parse_file(bad_lean_file)
@@ -289,7 +289,7 @@ class TestCLIIntegration:
 
         # Mock the pipeline components
         with patch(
-            "proof_sketcher.parser.lean_parser.LeanParser.parse_file"
+            "proof_sketcher.parser.lean_parser.SimpleLeanParser.parse_file"
         ) as mock_parse:
             mock_parse.return_value = ParseResult(
                 theorems=[TheoremInfo(name="test", statement="1 = 1", proof="rfl")],
@@ -397,10 +397,10 @@ class TestCacheIntegration:
 
     def test_export_cache_integration(self, tmp_path):
         """Test export caching for regeneration."""
-        from proof_sketcher.exporter.base import ExporterBase
+        from proof_sketcher.exporter.models import BaseExporterBase
 
         # Mock exporter with caching
-        class CachingExporter(ExporterBase):
+        class CachingBaseExporter(BaseExporterBase):
             def __init__(self):
                 self.cache = {}
 
@@ -418,7 +418,7 @@ class TestCacheIntegration:
                 self.cache[key] = result
                 return result
 
-        exporter = CachingExporter()
+        exporter = CachingBaseExporter()
         sketch = ProofSketch(theorem_name="test", theorem_statement="test")
 
         # First export
@@ -435,9 +435,9 @@ class TestResourceManagement:
 
     def test_memory_limits_pipeline(self):
         """Test that memory limits are enforced."""
-        from proof_sketcher.core.resources import ResourceLimits, ResourceMonitor
+        from proof_sketcher.core.resources import ExportOptions, ResourceMonitor
 
-        limits = ResourceLimits(max_memory_mb=100)
+        limits = ExportOptions(max_memory_mb=100)
         monitor = ResourceMonitor(limits)
 
         # Mock high memory usage
@@ -480,7 +480,7 @@ class TestPerformanceIntegration:
         """Test that parallel processing improves performance."""
         import time
 
-        from proof_sketcher.batch.parallel_processor import ParallelProcessor
+        from proof_sketcher.exporter.batch_processor.parallel_processor import ParallelProcessor
 
         # Create test theorems
         theorems = []
@@ -515,11 +515,11 @@ class TestPerformanceIntegration:
 
     def test_notation_optimization_performance(self):
         """Test optimized notation handler performance."""
-        from proof_sketcher.parser.mathlib_notation_optimized import (
-            OptimizedMathlibNotationHandler,
+        from proof_sketcher.parser.models_optimized import (
+            OptimizedParserConfig,
         )
 
-        handler = OptimizedMathlibNotationHandler()
+        handler = OptimizedParserConfig()
 
         # Test expressions
         expressions = [
@@ -548,9 +548,9 @@ class TestMathlibIntegration:
 
     def test_mathlib_notation_handling(self):
         """Test handling of complex Mathlib notation."""
-        from proof_sketcher.parser.mathlib_notation import MathlibNotationHandler
+        from proof_sketcher.parser.models import ParserConfig
 
-        handler = MathlibNotationHandler()
+        handler = ParserConfig()
 
         # Test complex mathematical expressions
         test_cases = [

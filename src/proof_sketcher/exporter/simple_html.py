@@ -1,26 +1,27 @@
 """Simple HTML exporter for MVP with MathJax 4.0 support."""
 
+import html
 from pathlib import Path
-from typing import Optional
 
-from ..generator.models import ProofSketch
+from ..generator.models import ProofSketch, EducationalLevel
 
 
 class SimpleHTMLExporter:
     """Simple HTML exporter with MathJax 4.0 support."""
 
-    def export(self, sketch: ProofSketch, output_path: Optional[Path] = None) -> str:
+    def export(self, sketch: ProofSketch, output_path: Path | None = None, educational_level: EducationalLevel = EducationalLevel.INTUITIVE) -> str:
         """Export proof sketch to HTML string.
 
         Args:
             sketch: Proof sketch to export
             output_path: Optional path to write to
+            educational_level: Educational complexity level for explanations
 
         Returns:
             HTML content as string
         """
         # Build HTML content with MathJax 4.0
-        html_content = self._build_html(sketch)
+        html_content = self._build_html(sketch, educational_level)
 
         # Write to file if path provided
         if output_path:
@@ -30,14 +31,16 @@ class SimpleHTMLExporter:
 
         return html_content
 
-    def _build_html(self, sketch: ProofSketch) -> str:
+    def _build_html(self, sketch: ProofSketch, educational_level: EducationalLevel) -> str:
         """Build complete HTML document."""
-        # Mathematical expressions for MathJax
+        # Mathematical expressions for MathJax (already safe)
         statement_math = self._format_math(sketch.theorem_statement)
 
-        # Build proof steps HTML
+        # Build proof steps HTML with proper escaping
         steps_html = ""
         for i, step in enumerate(sketch.key_steps, 1):
+            # Escape user content to prevent XSS
+            step_explanation = html.escape(step.get_explanation(educational_level))
             step_math = (
                 self._format_math(step.mathematical_content)
                 if step.mathematical_content
@@ -45,19 +48,19 @@ class SimpleHTMLExporter:
             )
             steps_html += f"""
             <div class="proof-step">
-                <h3>Step {i}: {step.description}</h3>
-                <p class="step-intuition">{step.intuition}</p>
-                {f'<div class="step-math">{step_math}</div>' if step_math else ''}
+                <h3>Step {i}</h3>
+                <p class="step-explanation">{step_explanation}</p>
+                {f'<div class="step-math">{step_math}</div>' if step_math else ""}
             </div>
             """
 
-        # Build complete HTML document
-        html = f"""<!DOCTYPE html>
+        # Build complete HTML document with escaped content
+        html_document = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{sketch.theorem_name} - Proof Sketcher</title>
+    <title>{html.escape(sketch.theorem_name)} - Proof Sketcher</title>
 
     <!-- MathJax 4.0 Configuration -->
     <script>
@@ -183,7 +186,7 @@ class SimpleHTMLExporter:
 </head>
 <body>
     <div class="theorem-container">
-        <h1>Theorem: {sketch.theorem_name}</h1>
+        <h1>Theorem: {html.escape(sketch.theorem_name)}</h1>
 
         <section>
             <h2>Statement</h2>
@@ -193,9 +196,9 @@ class SimpleHTMLExporter:
         </section>
 
         <section>
-            <h2>Explanation</h2>
+            <h2>{html.escape(educational_level.value.capitalize())} Explanation</h2>
             <div class="explanation">
-                {sketch.introduction}
+                {html.escape(sketch.get_overview(educational_level))}
             </div>
         </section>
 
@@ -207,7 +210,7 @@ class SimpleHTMLExporter:
         <section>
             <h2>Conclusion</h2>
             <div class="conclusion">
-                {sketch.conclusion}
+                {html.escape(sketch.get_conclusion(educational_level))}
             </div>
         </section>
 
@@ -216,13 +219,13 @@ class SimpleHTMLExporter:
             <div class="metadata">
                 <div class="metadata-item">
                     <strong>Difficulty:</strong>
-                    <span class="difficulty-{sketch.difficulty_level}">{sketch.difficulty_level.title()}</span>
+                    <span class="difficulty-{html.escape(sketch.difficulty_level)}">{html.escape(sketch.difficulty_level.title())}</span>
                 </div>
                 <div class="metadata-item">
-                    <strong>Mathematical Areas:</strong> {', '.join(sketch.mathematical_areas)}
+                    <strong>Mathematical Areas:</strong> {html.escape(", ".join(sketch.mathematical_areas))}
                 </div>
                 <div class="metadata-item">
-                    <strong>Prerequisites:</strong> {', '.join(sketch.prerequisites)}
+                    <strong>Prerequisites:</strong> {html.escape(", ".join(sketch.prerequisites))}
                 </div>
             </div>
         </section>
@@ -234,7 +237,7 @@ class SimpleHTMLExporter:
 </body>
 </html>"""
 
-        return html
+        return html_document
 
     def _format_math(self, text: str) -> str:
         """Format mathematical expressions for MathJax.
@@ -265,7 +268,7 @@ class SimpleHTMLExporter:
             "→": r"\\rightarrow",
             "∈": r"\\in",
             "⊆": r"\\subseteq",
-            "∪": r"\\cup",
+            "∪": r"\\cup",  # noqa: RUF001
             "∩": r"\\cap",
         }
 
@@ -273,7 +276,7 @@ class SimpleHTMLExporter:
             formatted = formatted.replace(lean_notation, latex_notation)
 
         # Wrap in math delimiters if it looks like a mathematical expression
-        if any(char in formatted for char in "=<>+*/-()[]{}∀∃→∈⊆∪∩"):
+        if any(char in formatted for char in "=<>+*/-()[]{}∀∃→∈⊆∪∩"):  # noqa: RUF001
             formatted = f"$${formatted}$$"
 
         return formatted

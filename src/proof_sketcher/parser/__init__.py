@@ -2,38 +2,42 @@
 
 This module provides functionality to parse Lean 4 source files and extract
 theorem definitions, statements, proofs, and metadata. It supports both
-standalone Lean files and Lake projects with advanced semantic analysis.
+standalone Lean files and Lake projects.
 
 Key Components:
-    LeanParser: Hybrid parser class (LSP + fallback)
-    LeanLSPClient: Full semantic analysis via Lean 4 LSP
-    SimpleLeanParser: Regex-based parser for basic extraction
+    LeanParser: Main parser class (SimpleLeanParser)
+    SimpleLeanParser: Regex-based parser for theorem extraction
     TheoremInfo: Data model for theorem information
-    SemanticTheoremInfo: Enhanced theorem info with semantic data
     ParseResult: Container for parse results and errors
+    
+    DEPRECATED:
+    LeanLSPClient: (DEPRECATED) LSP client - non-functional, do not use
+    HybridLeanParser: (DEPRECATED) Hybrid parser - uses broken LSP
+    SemanticTheoremInfo: (DEPRECATED) Enhanced theorem info from LSP
 
 Features:
-    - LSP-powered semantic analysis (Phase 9)
-    - Proof state evolution tracking
-    - Tactic sequence extraction
-    - Mathematical entity recognition
-    - Complexity scoring and difficulty assessment
-    - Robust fallback to regex parsing
-    - Educational content generation support
+    - Fast regex-based theorem extraction
+    - Support for nested namespaces
+    - Tactic extraction
+    - Dependency tracking
+    - Error handling and recovery
 
 Example:
     >>> from proof_sketcher.parser import LeanParser
     >>>
-    >>> # Create hybrid parser (prefers LSP, falls back to simple)
+    >>> # Create parser
     >>> parser = LeanParser()
     >>>
-    >>> # Parse with semantic analysis
-    >>> result = await parser.parse_file("example.lean")
+    >>> # Parse file
+    >>> result = parser.parse_file("example.lean")
     >>> theorem = result.theorems[0]
-    >>> print(f"Complexity: {theorem.complexity_score}")
-    >>> print(f"Tactics: {[t.name for t in theorem.tactic_sequence]}")
+    >>> print(f"Theorem: {theorem.name}")
+    >>> print(f"Statement: {theorem.statement}")
 
 For more details, see the individual module documentation.
+
+IMPORTANT: The LSP integration has been deprecated due to performance issues
+(1000x slower, 0 theorems extracted). Use SimpleLeanParser for all parsing needs.
 """
 
 from .hybrid_parser import HybridLeanParser
@@ -41,17 +45,17 @@ from .lsp_client import LeanLSPClient, ProofState, SemanticTheoremInfo, TacticIn
 from .models import ParseResult, TheoremInfo
 from .simple_parser import SimpleLeanParser
 
-# Use hybrid parser as default (LSP + fallback)
-LeanParser = HybridLeanParser
+# Use simple parser as default (LSP is deprecated and non-functional)
+LeanParser = SimpleLeanParser
 
 __all__ = [
-    "LeanParser",
     "HybridLeanParser",
     "LeanLSPClient",
-    "SimpleLeanParser",
+    "LeanParser",
     "ParseResult",
-    "TheoremInfo",
-    "SemanticTheoremInfo",
     "ProofState",
+    "SemanticTheoremInfo",
+    "SimpleLeanParser",
     "TacticInfo",
+    "TheoremInfo",
 ]

@@ -35,7 +35,6 @@ Usage:
 
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Union
 
 from ..parser.lsp_client import SemanticTheoremInfo
 from ..parser.models import TheoremInfo
@@ -50,10 +49,10 @@ class LearningStep:
     title: str
     description: str
     level: str
-    concepts: List[str] = field(default_factory=list)
-    examples: List[str] = field(default_factory=list)
-    exercises: List[str] = field(default_factory=list)
-    resources: List[str] = field(default_factory=list)
+    concepts: list[str] = field(default_factory=list)
+    examples: list[str] = field(default_factory=list)
+    exercises: list[str] = field(default_factory=list)
+    resources: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -63,9 +62,9 @@ class ConceptExplanation:
     concept: str
     informal_description: str
     formal_definition: str
-    examples: List[str] = field(default_factory=list)
-    common_misconceptions: List[str] = field(default_factory=list)
-    related_concepts: List[str] = field(default_factory=list)
+    examples: list[str] = field(default_factory=list)
+    common_misconceptions: list[str] = field(default_factory=list)
+    related_concepts: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -76,25 +75,25 @@ class ProgressiveSketch:
     theorem_statement: str
 
     # Multi-level explanations
-    levels: Dict[str, ProofSketch] = field(default_factory=dict)
+    levels: dict[str, ProofSketch] = field(default_factory=dict)
 
     # Educational enhancements
-    learning_pathway: List[LearningStep] = field(default_factory=list)
-    key_concepts: List[ConceptExplanation] = field(default_factory=list)
-    intuitive_examples: List[str] = field(default_factory=list)
-    formal_connections: List[str] = field(default_factory=list)
+    learning_pathway: list[LearningStep] = field(default_factory=list)
+    key_concepts: list[ConceptExplanation] = field(default_factory=list)
+    intuitive_examples: list[str] = field(default_factory=list)
+    formal_connections: list[str] = field(default_factory=list)
 
     # Interactive elements
-    exploration_suggestions: List[str] = field(default_factory=list)
-    visualization_ideas: List[str] = field(default_factory=list)
-    extension_problems: List[str] = field(default_factory=list)
+    exploration_suggestions: list[str] = field(default_factory=list)
+    visualization_ideas: list[str] = field(default_factory=list)
+    extension_problems: list[str] = field(default_factory=list)
 
     # Metadata
-    estimated_study_time: Dict[str, int] = field(
+    estimated_study_time: dict[str, int] = field(
         default_factory=dict
     )  # minutes per level
-    difficulty_progression: List[float] = field(default_factory=list)
-    mathematical_maturity_required: Dict[str, str] = field(default_factory=dict)
+    difficulty_progression: list[float] = field(default_factory=list)
+    mathematical_maturity_required: dict[str, str] = field(default_factory=dict)
 
 
 class ProgressiveGenerator:
@@ -111,7 +110,7 @@ class ProgressiveGenerator:
         self.pathway_templates = self._init_pathway_templates()
 
     def generate_progressive_explanation(
-        self, theorem: Union[SemanticTheoremInfo, TheoremInfo]
+        self, theorem: SemanticTheoremInfo | TheoremInfo
     ) -> ProgressiveSketch:
         """Generate a comprehensive progressive explanation.
 
@@ -187,9 +186,9 @@ class ProgressiveGenerator:
 
     def _extract_key_concepts(
         self,
-        theorem: Union[SemanticTheoremInfo, TheoremInfo],
-        levels: Dict[str, ProofSketch],
-    ) -> List[ConceptExplanation]:
+        theorem: SemanticTheoremInfo | TheoremInfo,
+        levels: dict[str, ProofSketch],
+    ) -> list[ConceptExplanation]:
         """Extract and explain key mathematical concepts."""
 
         concepts = []
@@ -229,10 +228,10 @@ class ProgressiveGenerator:
 
     def _generate_learning_pathway(
         self,
-        theorem: Union[SemanticTheoremInfo, TheoremInfo],
-        levels: Dict[str, ProofSketch],
-        concepts: List[ConceptExplanation],
-    ) -> List[LearningStep]:
+        theorem: SemanticTheoremInfo | TheoremInfo,
+        levels: dict[str, ProofSketch],
+        concepts: list[ConceptExplanation],
+    ) -> list[LearningStep]:
         """Generate a structured learning pathway."""
 
         pathway = []
@@ -319,9 +318,9 @@ class ProgressiveGenerator:
 
     def _generate_intuitive_examples(
         self,
-        theorem: Union[SemanticTheoremInfo, TheoremInfo],
-        concepts: List[ConceptExplanation],
-    ) -> List[str]:
+        theorem: SemanticTheoremInfo | TheoremInfo,
+        concepts: list[ConceptExplanation],
+    ) -> list[str]:
         """Generate concrete, intuitive examples."""
 
         examples = []
@@ -361,9 +360,9 @@ class ProgressiveGenerator:
 
     def _generate_exploration_suggestions(
         self,
-        theorem: Union[SemanticTheoremInfo, TheoremInfo],
-        levels: Dict[str, ProofSketch],
-    ) -> List[str]:
+        theorem: SemanticTheoremInfo | TheoremInfo,
+        levels: dict[str, ProofSketch],
+    ) -> list[str]:
         """Generate suggestions for interactive exploration."""
 
         suggestions = []
@@ -409,9 +408,9 @@ class ProgressiveGenerator:
 
     def _generate_formal_connections(
         self,
-        theorem: Union[SemanticTheoremInfo, TheoremInfo],
-        levels: Dict[str, ProofSketch],
-    ) -> List[str]:
+        theorem: SemanticTheoremInfo | TheoremInfo,
+        levels: dict[str, ProofSketch],
+    ) -> list[str]:
         """Generate connections to formal mathematical contexts."""
 
         connections = []
@@ -451,9 +450,9 @@ class ProgressiveGenerator:
 
     def _estimate_study_times(
         self,
-        theorem: Union[SemanticTheoremInfo, TheoremInfo],
-        levels: Dict[str, ProofSketch],
-    ) -> Dict[str, int]:
+        theorem: SemanticTheoremInfo | TheoremInfo,
+        levels: dict[str, ProofSketch],
+    ) -> dict[str, int]:
         """Estimate study time needed for each level (in minutes)."""
 
         base_time = 15  # Base time in minutes
@@ -474,9 +473,9 @@ class ProgressiveGenerator:
 
     def _generate_extension_problems(
         self,
-        theorem: Union[SemanticTheoremInfo, TheoremInfo],
-        levels: Dict[str, ProofSketch],
-    ) -> List[str]:
+        theorem: SemanticTheoremInfo | TheoremInfo,
+        levels: dict[str, ProofSketch],
+    ) -> list[str]:
         """Generate extension problems for further learning."""
 
         problems = []
@@ -514,9 +513,9 @@ class ProgressiveGenerator:
 
     def _assess_maturity_requirements(
         self,
-        theorem: Union[SemanticTheoremInfo, TheoremInfo],
-        levels: Dict[str, ProofSketch],
-    ) -> Dict[str, str]:
+        theorem: SemanticTheoremInfo | TheoremInfo,
+        levels: dict[str, ProofSketch],
+    ) -> dict[str, str]:
         """Assess mathematical maturity required for each level."""
 
         requirements = {}
@@ -556,8 +555,8 @@ class ProgressiveGenerator:
         return requirements
 
     def _generate_visualization_ideas(
-        self, theorem: Union[SemanticTheoremInfo, TheoremInfo]
-    ) -> List[str]:
+        self, theorem: SemanticTheoremInfo | TheoremInfo
+    ) -> list[str]:
         """Generate ideas for visualizing the theorem."""
 
         ideas = []
@@ -604,8 +603,8 @@ class ProgressiveGenerator:
     # Helper methods for generating specific educational content
 
     def _get_intuitive_examples(
-        self, theorem: Union[SemanticTheoremInfo, TheoremInfo]
-    ) -> List[str]:
+        self, theorem: SemanticTheoremInfo | TheoremInfo
+    ) -> list[str]:
         """Get intuitive examples for building understanding."""
         return [
             "Work with small, concrete numbers first",
@@ -614,8 +613,8 @@ class ProgressiveGenerator:
         ]
 
     def _get_notation_examples(
-        self, theorem: Union[SemanticTheoremInfo, TheoremInfo]
-    ) -> List[str]:
+        self, theorem: SemanticTheoremInfo | TheoremInfo
+    ) -> list[str]:
         """Get examples for understanding notation."""
         return [
             "Break down each symbol and what it means",
@@ -624,8 +623,8 @@ class ProgressiveGenerator:
         ]
 
     def _get_proof_strategy_examples(
-        self, theorem: Union[SemanticTheoremInfo, TheoremInfo], method: str
-    ) -> List[str]:
+        self, theorem: SemanticTheoremInfo | TheoremInfo, method: str
+    ) -> list[str]:
         """Get examples for understanding proof strategies."""
         if method == "induction":
             return [
@@ -647,8 +646,8 @@ class ProgressiveGenerator:
             ]
 
     def _get_formal_examples(
-        self, theorem: Union[SemanticTheoremInfo, TheoremInfo]
-    ) -> List[str]:
+        self, theorem: SemanticTheoremInfo | TheoremInfo
+    ) -> list[str]:
         """Get examples for formal understanding."""
         return [
             "Work through every detail of the formal proof",
@@ -657,8 +656,8 @@ class ProgressiveGenerator:
         ]
 
     def _get_intuition_exercises(
-        self, theorem: Union[SemanticTheoremInfo, TheoremInfo]
-    ) -> List[str]:
+        self, theorem: SemanticTheoremInfo | TheoremInfo
+    ) -> list[str]:
         """Get exercises for building intuition."""
         return [
             f"Explain {theorem.name} to a friend using only everyday language",
@@ -667,8 +666,8 @@ class ProgressiveGenerator:
         ]
 
     def _get_notation_exercises(
-        self, theorem: Union[SemanticTheoremInfo, TheoremInfo]
-    ) -> List[str]:
+        self, theorem: SemanticTheoremInfo | TheoremInfo
+    ) -> list[str]:
         """Get exercises for mastering notation."""
         return [
             "Translate the statement into plain English",
@@ -677,8 +676,8 @@ class ProgressiveGenerator:
         ]
 
     def _get_proof_exercises(
-        self, theorem: Union[SemanticTheoremInfo, TheoremInfo]
-    ) -> List[str]:
+        self, theorem: SemanticTheoremInfo | TheoremInfo
+    ) -> list[str]:
         """Get exercises for understanding proofs."""
         return [
             f"Try to prove {theorem.name} yourself before looking at the solution",
@@ -687,8 +686,8 @@ class ProgressiveGenerator:
         ]
 
     def _get_formal_exercises(
-        self, theorem: Union[SemanticTheoremInfo, TheoremInfo]
-    ) -> List[str]:
+        self, theorem: SemanticTheoremInfo | TheoremInfo
+    ) -> list[str]:
         """Get exercises for formal mastery."""
         return [
             "Write out every step of the proof in complete detail",
@@ -697,8 +696,8 @@ class ProgressiveGenerator:
         ]
 
     def _get_connection_examples(
-        self, theorem: Union[SemanticTheoremInfo, TheoremInfo]
-    ) -> List[str]:
+        self, theorem: SemanticTheoremInfo | TheoremInfo
+    ) -> list[str]:
         """Get examples of mathematical connections."""
         return [
             "Find other theorems that use similar techniques",
@@ -707,8 +706,8 @@ class ProgressiveGenerator:
         ]
 
     def _get_extension_exercises(
-        self, theorem: Union[SemanticTheoremInfo, TheoremInfo]
-    ) -> List[str]:
+        self, theorem: SemanticTheoremInfo | TheoremInfo
+    ) -> list[str]:
         """Get exercises for extending understanding."""
         return [
             f"Try to generalize {theorem.name} to other mathematical contexts",
@@ -718,7 +717,6 @@ class ProgressiveGenerator:
 
     def _estimate_basic_difficulty(self, theorem: TheoremInfo, level: str) -> float:
         """Estimate difficulty for basic theorems."""
-        base_difficulty = 2.0
         proof_length = len(theorem.proof or "")
 
         # Adjust based on proof length and content
@@ -781,7 +779,7 @@ class ProgressiveGenerator:
             concept="Universal Quantification (∀)",
             informal_description="A statement that something is true for ALL possible cases in a given domain.",
             formal_definition="∀x P(x) means that property P holds for every element x in the domain of discourse.",
-            examples=["∀n ∈ ℕ: n ≥ 0", "All triangles have three sides"],
+            examples=["∀n ∈ ℕ: n ≥ 0", "All triangles have three sides"],  # noqa: RUF001
             common_misconceptions=[
                 "Proving with just one example",
                 "Confusing ∀ with ∃",
@@ -800,7 +798,7 @@ class ProgressiveGenerator:
             informal_description="A statement that something is true for AT LEAST ONE case in a given domain.",
             formal_definition="∃x P(x) means that there exists at least one element x in the domain such that property P(x) holds.",
             examples=[
-                "∃n ∈ ℕ: n > 100",
+                "∃n ∈ ℕ: n > 100",  # noqa: RUF001
                 "There exists a prime number greater than 1000",
             ],
             common_misconceptions=[
@@ -839,7 +837,7 @@ class ProgressiveGenerator:
     def _explain_natural_numbers(self) -> ConceptExplanation:
         """Explain natural numbers."""
         return ConceptExplanation(
-            concept="Natural Numbers (ℕ)",
+            concept="Natural Numbers (ℕ)",  # noqa: RUF001
             informal_description="The counting numbers: 0, 1, 2, 3, 4, ...",
             formal_definition="The smallest set containing 0 and closed under the successor operation, often defined via Peano axioms.",
             examples=[
@@ -857,7 +855,7 @@ class ProgressiveGenerator:
     def _explain_real_numbers(self) -> ConceptExplanation:
         """Explain real numbers."""
         return ConceptExplanation(
-            concept="Real Numbers (ℝ)",
+            concept="Real Numbers (ℝ)",  # noqa: RUF001
             informal_description="All numbers on the number line, including fractions and irrational numbers.",
             formal_definition="The unique complete ordered field, often constructed as Dedekind cuts or Cauchy sequences of rationals.",
             examples=["π", "√2", "1/3", "All decimals"],
@@ -894,7 +892,7 @@ class ProgressiveGenerator:
 
     # Database initialization methods
 
-    def _init_concept_database(self) -> Dict[str, ConceptExplanation]:
+    def _init_concept_database(self) -> dict[str, ConceptExplanation]:
         """Initialize the concept explanation database."""
         return {
             "induction": self._explain_induction_concept(),
@@ -907,10 +905,10 @@ class ProgressiveGenerator:
             "sets": self._explain_sets(),
         }
 
-    def _init_example_database(self) -> Dict[str, List[str]]:
+    def _init_example_database(self) -> dict[str, list[str]]:
         """Initialize the example database."""
         return {
-            "arithmetic": ["2 + 3 = 5", "7 × 1 = 7", "10 - 0 = 10"],
+            "arithmetic": ["2 + 3 = 5", "7 × 1 = 7", "10 - 0 = 10"],  # noqa: RUF001
             "algebra": [
                 "x + 0 = x for any number x",
                 "(a + b) + c = a + (b + c)",
@@ -923,7 +921,7 @@ class ProgressiveGenerator:
             ],
         }
 
-    def _init_pathway_templates(self) -> Dict[str, List[str]]:
+    def _init_pathway_templates(self) -> dict[str, list[str]]:
         """Initialize learning pathway templates."""
         return {
             "equality_proofs": [

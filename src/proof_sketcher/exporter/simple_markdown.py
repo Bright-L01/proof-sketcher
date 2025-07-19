@@ -1,20 +1,20 @@
 """Simple markdown exporter for MVP."""
 
 from pathlib import Path
-from typing import Optional
 
-from ..generator.models import ProofSketch
+from ..generator.models import ProofSketch, EducationalLevel
 
 
 class SimpleMarkdownExporter:
     """Minimal markdown exporter that just outputs basic markdown."""
 
-    def export(self, sketch: ProofSketch, output_path: Optional[Path] = None) -> str:
+    def export(self, sketch: ProofSketch, output_path: Path | None = None, educational_level: EducationalLevel = EducationalLevel.INTUITIVE) -> str:
         """Export proof sketch to markdown string.
 
         Args:
             sketch: Proof sketch to export
             output_path: Optional path to write to
+            educational_level: Educational complexity level for explanations
 
         Returns:
             Markdown content as string
@@ -34,25 +34,28 @@ class SimpleMarkdownExporter:
             lines.append("```")
             lines.append("")
 
-        # Introduction
-        if sketch.introduction:
-            lines.append("## Explanation")
-            lines.append(sketch.introduction)
+        # Educational Overview
+        overview = sketch.get_overview(educational_level)
+        if overview:
+            level_name = educational_level.value.capitalize()
+            lines.append(f"## {level_name} Explanation")
+            lines.append(overview)
             lines.append("")
 
-        # Key Steps
+        # Proof Steps
         if sketch.key_steps:
             lines.append("## Proof Steps")
             for i, step in enumerate(sketch.key_steps, 1):
-                lines.append(f"### Step {i}: {step.description}")
-                if step.intuition:
-                    lines.append(step.intuition)
+                step_explanation = step.get_explanation(educational_level)
+                lines.append(f"### Step {i}")
+                lines.append(step_explanation)
                 lines.append("")
 
         # Conclusion
-        if sketch.conclusion:
+        conclusion = sketch.get_conclusion(educational_level)
+        if conclusion:
             lines.append("## Conclusion")
-            lines.append(sketch.conclusion)
+            lines.append(conclusion)
             lines.append("")
 
         # Difficulty and Areas

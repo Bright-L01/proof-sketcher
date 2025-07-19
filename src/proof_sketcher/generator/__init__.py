@@ -1,22 +1,24 @@
 """Generator module for creating natural language explanations of Lean theorems.
 
-This module uses AI language models to generate human-readable explanations of formal
-mathematical theorems and their proofs. It produces structured explanations
-with step-by-step breakdowns and key insights.
+⚠️ IMPORTANT: Despite the naming, this module currently uses TEMPLATE-BASED generation,
+not AI language models. The "AI" and "Claude" class names are legacy from planned
+features that were not implemented.
 
 Key Components:
-    AIGenerator: Main generator class using AI CLI tools
+    SimpleGenerator: Template-based explanation generator
     ProofSketch: Data model for generated explanations
     GenerationConfig: Configuration for generation parameters
-    GenerationCache: Caching adapter for generation responses
 
-Features:
-    - Natural language generation from formal proofs
-    - Step-by-step proof explanations
-    - Mathematical context integration
-    - Multiple explanation types (concise, detailed, tutorial)
-    - Response caching to reduce API calls
-    - Streaming output support
+Current Implementation:
+    - Template-based generation with pattern matching
+    - 4-level educational progression (intuitive → formal)
+    - Basic proof strategy detection
+    - No actual AI or LLM integration
+
+Limitations:
+    - Generic, non-theorem-specific explanations
+    - Limited mathematical accuracy
+    - No semantic understanding of proofs
 
 Example:
     >>> from proof_sketcher.generator import AIGenerator
@@ -51,23 +53,24 @@ from .progressive_generator import (
 from .semantic_generator import EducationalLevel, SemanticGenerator
 from .simple_generator import SimpleGenerator
 
-# Use semantic generator for Phase 9+ (with fallback)
-AIGenerator = SemanticGenerator
+# Default to simple generator (template-based)
+# Note: Despite the names, these are all template-based, not AI
+AIGenerator = SimpleGenerator
 
-# Backward compatibility aliases
-ClaudeGenerator = AIGenerator
+# Backward compatibility aliases (all template-based)
+ClaudeGenerator = SimpleGenerator
 
 __all__ = [
     "AIGenerator",
-    "SimpleGenerator",
-    "SemanticGenerator",
-    "ProgressiveGenerator",
     "ClaudeGenerator",  # Backward compatibility
-    "EducationalLevel",
-    "ProofSketch",
-    "ProgressiveSketch",
-    "LearningStep",
     "ConceptExplanation",
-    "ProofStep",
+    "EducationalLevel",
     "GenerationConfig",
+    "LearningStep",
+    "ProgressiveGenerator",
+    "ProgressiveSketch",
+    "ProofSketch",
+    "ProofStep",
+    "SemanticGenerator",
+    "SimpleGenerator",
 ]

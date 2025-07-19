@@ -12,10 +12,9 @@ Features:
 import logging
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from ..generator.models import ProofSketch
-from .base import BaseExporterImpl
+from .models import BaseExporter as BaseExporterImpl
 from .models import (
     ExportContext,
     ExportFormat,
@@ -24,7 +23,7 @@ from .models import (
     TemplateContext,
     TemplateType,
 )
-from .template_manager import TemplateManager
+from .models import TemplateContext as TemplateManager
 
 
 class MarkdownExporter(BaseExporterImpl):
@@ -40,8 +39,8 @@ class MarkdownExporter(BaseExporterImpl):
 
     def __init__(
         self,
-        options: Optional[ExportOptions] = None,
-        template_manager: Optional[TemplateManager] = None,
+        options: ExportOptions | None = None,
+        template_manager: TemplateManager | None = None,
     ):
         """Initialize Markdown exporter.
 
@@ -63,7 +62,7 @@ class MarkdownExporter(BaseExporterImpl):
             options, "math_notation", "dollars"
         )  # 'dollars' or 'latex'
 
-    def _export_sketch(self, sketch: ProofSketch, context: ExportContext) -> List[Path]:
+    def _export_sketch(self, sketch: ProofSketch, context: ExportContext) -> list[Path]:
         """Export a single proof sketch to Markdown.
 
         Args:
@@ -95,8 +94,8 @@ class MarkdownExporter(BaseExporterImpl):
         return created_files
 
     def _create_index(
-        self, sketches: List[ProofSketch], context: ExportContext
-    ) -> Optional[Path]:
+        self, sketches: list[ProofSketch], context: ExportContext
+    ) -> Path | None:
         """Create an index Markdown file (README.md).
 
         Args:
@@ -263,7 +262,7 @@ class MarkdownExporter(BaseExporterImpl):
 
     def _process_animation_for_github(
         self, animation_path: Path, theorem_name: str
-    ) -> Dict:
+    ) -> dict:
         """Process animation for GitHub markdown display.
 
         Args:
@@ -310,7 +309,7 @@ class MarkdownExporter(BaseExporterImpl):
             except ValueError:
                 return str(path)
 
-    def _generate_theorem_toc(self, sketch: ProofSketch) -> List[Dict]:
+    def _generate_theorem_toc(self, sketch: ProofSketch) -> list[dict]:
         """Generate table of contents for current theorem.
 
         Args:
@@ -348,7 +347,7 @@ class MarkdownExporter(BaseExporterImpl):
 
         return toc_entries
 
-    def _create_collapsible_sections(self, sketch: ProofSketch) -> Dict:
+    def _create_collapsible_sections(self, sketch: ProofSketch) -> dict:
         """Create collapsible sections for GitHub.
 
         Args:
@@ -431,7 +430,7 @@ class MarkdownExporter(BaseExporterImpl):
         return text[: max_length - 3] + "..."
 
     def export_multiple(
-        self, sketches: List[ProofSketch], context: Optional[ExportContext] = None
+        self, sketches: list[ProofSketch], context: ExportContext | None = None
     ) -> ExportResult:
         """Export multiple sketches with Markdown-specific features.
 
@@ -467,8 +466,8 @@ class MarkdownExporter(BaseExporterImpl):
         return result
 
     def _generate_toc(
-        self, sketches: List[ProofSketch], context: ExportContext
-    ) -> Optional[Path]:
+        self, sketches: list[ProofSketch], context: ExportContext
+    ) -> Path | None:
         """Generate table of contents file.
 
         Args:
@@ -523,8 +522,8 @@ class MarkdownExporter(BaseExporterImpl):
         return toc_file
 
     def _generate_enhanced_toc(
-        self, sketches: List[ProofSketch], context: ExportContext
-    ) -> Optional[Path]:
+        self, sketches: list[ProofSketch], context: ExportContext
+    ) -> Path | None:
         """Generate enhanced table of contents with GitHub features.
 
         Args:
@@ -597,9 +596,9 @@ class MarkdownExporter(BaseExporterImpl):
                         entry_parts[0] += " — " + " · ".join(entry_parts[1:])
 
                     if theorem.introduction:
-                        entry_parts[
-                            0
-                        ] += f"  \n  _{self._truncate_text(theorem.introduction, 100)}_"
+                        entry_parts[0] += (
+                            f"  \n  _{self._truncate_text(theorem.introduction, 100)}_"
+                        )
 
                     toc_content.append(entry_parts[0])
 
@@ -706,8 +705,8 @@ class MarkdownExporter(BaseExporterImpl):
         return toc_file
 
     def _group_by_difficulty(
-        self, sketches: List[ProofSketch]
-    ) -> Dict[str, List[ProofSketch]]:
+        self, sketches: list[ProofSketch]
+    ) -> dict[str, list[ProofSketch]]:
         """Group theorems by difficulty level.
 
         Args:
@@ -728,8 +727,8 @@ class MarkdownExporter(BaseExporterImpl):
         return groups
 
     def _generate_animation_previews(
-        self, sketches: List[ProofSketch], context: ExportContext
-    ) -> List[Path]:
+        self, sketches: list[ProofSketch], context: ExportContext
+    ) -> list[Path]:
         """Generate animation preview files for GitHub.
 
         Args:

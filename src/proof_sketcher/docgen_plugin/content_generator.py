@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..generator.progressive_generator import ProgressiveGenerator, ProgressiveSketch
 from ..generator.semantic_generator import EducationalLevel, SemanticGenerator
@@ -14,11 +14,11 @@ class EducationalMetadata:
     """Metadata about educational content generation."""
 
     difficulty_level: str
-    concepts: List[str]
-    prerequisites: List[str]
-    learning_objectives: List[str]
+    concepts: list[str]
+    prerequisites: list[str]
+    learning_objectives: list[str]
     estimated_time_minutes: int
-    visualization_suggestions: List[str]
+    visualization_suggestions: list[str]
 
 
 @dataclass
@@ -44,9 +44,9 @@ class EducationalContentGenerator:
         name: str,
         statement: str,
         proof: str = "",
-        docstring: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        docstring: str | None = None,
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Generate educational content from doc-gen4 data.
 
         Args:
@@ -105,8 +105,8 @@ class EducationalContentGenerator:
         name: str,
         statement: str,
         proof: str = "",
-        docstring: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
+        docstring: str | None = None,
+        context: dict[str, Any] | None = None,
     ) -> TheoremInfo:
         """Create TheoremInfo from doc-gen4 data.
 
@@ -185,7 +185,7 @@ class EducationalContentGenerator:
 
     def _create_interactive_elements(
         self, theorem_info: TheoremInfo, progressive_content: ProgressiveSketch
-    ) -> List[InteractiveElement]:
+    ) -> list[InteractiveElement]:
         """Create interactive elements for the theorem.
 
         Args:
@@ -223,7 +223,7 @@ class EducationalContentGenerator:
             elements.append(
                 InteractiveElement(
                     type="example",
-                    title=f"Step {i+1}: {step.title}",
+                    title=f"Step {i + 1}: {step.title}",
                     content=step.explanation,
                     level="intermediate",
                 )
@@ -242,7 +242,7 @@ class EducationalContentGenerator:
 
         return elements
 
-    def _extract_dependencies(self, statement: str, proof: str) -> List[str]:
+    def _extract_dependencies(self, statement: str, proof: str) -> list[str]:
         """Extract dependencies from statement and proof.
 
         Args:
@@ -263,7 +263,7 @@ class EducationalContentGenerator:
 
         return dependencies
 
-    def _extract_namespace(self, name: str) -> Optional[str]:
+    def _extract_namespace(self, name: str) -> str | None:
         """Extract namespace from theorem name.
 
         Args:
@@ -276,7 +276,7 @@ class EducationalContentGenerator:
             return name.rsplit(".", 1)[0]
         return None
 
-    def _extract_tactics(self, proof: str) -> List[str]:
+    def _extract_tactics(self, proof: str) -> list[str]:
         """Extract tactics from proof.
 
         Args:
@@ -349,7 +349,7 @@ class EducationalContentGenerator:
 
     def _generate_visualization_suggestions(
         self, theorem_info: TheoremInfo, progressive_content: ProgressiveSketch
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate visualization suggestions.
 
         Args:

@@ -48,7 +48,7 @@ from .generator import ClaudeGenerator
 from .parser import LeanParser
 
 __all__ = [
-    "LeanParser",
     "ClaudeGenerator",
+    "LeanParser",
     "__version__",
 ]

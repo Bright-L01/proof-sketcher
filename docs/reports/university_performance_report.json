@@ -1,0 +1,85 @@
+{
+  "test_suite": "university_performance_test",
+  "timestamp": "2025-07-19 12:20:20",
+  "total_test_time_seconds": 15.094819068908691,
+  "single_file_performance": {
+    "university_scale_basic": {
+      "operation": "single_file_university_scale_basic",
+      "duration": 0.028102874755859375,
+      "throughput": 782.8380616261708,
+      "memory_used_mb": 0.59375,
+      "success": true,
+      "items_processed": 22,
+      "error_count": 0
+    },
+    "university_scale_intermediate": {
+      "operation": "single_file_university_scale_intermediate",
+      "duration": 0.010415077209472656,
+      "throughput": 960.146506730153,
+      "memory_used_mb": 0.09375,
+      "success": true,
+      "items_processed": 10,
+      "error_count": 0
+    },
+    "university_scale_advanced": {
+      "operation": "single_file_university_scale_advanced",
+      "duration": 0.0035851001739501953,
+      "throughput": 278.932233823236,
+      "memory_used_mb": 0.0625,
+      "success": true,
+      "items_processed": 1,
+      "error_count": 0
+    }
+  },
+  "scalability_results": {
+    "test_results": [
+      {
+        "num_students": 5,
+        "session_duration": 15,
+        "successful_students": 0,
+        "failed_students": 0,
+        "success_rate": 0.0,
+        "total_theorems_processed": 0,
+        "avg_theorems_per_student": 0,
+        "avg_student_session_time": 15.000028991699219,
+        "system_throughput_theorems_per_sec": 0.0,
+        "total_test_time": 15.0452401638031,
+        "memory_increase_mb": -21.703125,
+        "status": "FAILED"
+      }
+    ],
+    "max_viable_capacity": 0,
+    "scalability_summary": {
+      "tests_run": 1,
+      "tests_passed": 0,
+      "max_students_80_percent_success": 0
+    }
+  },
+  "university_readiness_assessment": {
+    "overall_grade": "F - Not ready for production deployment",
+    "production_ready": false,
+    "university_scale_ready": false,
+    "classroom_ready": false,
+    "recommendations": [
+      "Address performance bottlenecks before production",
+      "Optimize concurrent processing for larger classes"
+    ],
+    "capacity_analysis": {
+      "max_concurrent_students": 0,
+      "scalability_tests_passed": 0,
+      "scalability_tests_total": 1
+    },
+    "performance_analysis": {
+      "avg_single_file_throughput": 673.9722673931866,
+      "max_single_file_memory_mb": 0.59375,
+      "single_file_tests_passed": 3,
+      "single_file_tests_total": 3
+    },
+    "bottlenecks": []
+  },
+  "system_info": {
+    "cpu_count": 8,
+    "total_memory_gb": 16.0,
+    "available_memory_gb": 2.7713775634765625
+  }
+}

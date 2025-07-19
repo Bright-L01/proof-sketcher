@@ -7,7 +7,7 @@ doc-gen4 documentation generation with educational content.
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .module_processor import ModuleProcessor
 from .template_engine import EducationalTemplateEngine
@@ -20,8 +20,8 @@ class LakeFacetConfig:
     input_dir: Path
     output_dir: Path
     enable_educational: bool = True
-    educational_levels: List[str] = None
-    cache_dir: Optional[Path] = None
+    educational_levels: list[str] = None
+    cache_dir: Path | None = None
 
     def __post_init__(self):
         if self.educational_levels is None:
@@ -46,7 +46,7 @@ class EducationalLakeFacet:
         if self.config.cache_dir:
             self.config.cache_dir.mkdir(parents=True, exist_ok=True)
 
-    def process_module_docs(self, module_name: str) -> Dict[str, Any]:
+    def process_module_docs(self, module_name: str) -> dict[str, Any]:
         """Process documentation for a single module.
 
         Args:
@@ -62,7 +62,7 @@ class EducationalLakeFacet:
 
         try:
             # Load and enhance module JSON
-            with open(module_json_path, "r", encoding="utf-8") as f:
+            with open(module_json_path, encoding="utf-8") as f:
                 module_json = json.load(f)
 
             enhanced_json = self.module_processor.enhance_module_json(module_json)
@@ -98,7 +98,7 @@ class EducationalLakeFacet:
         except Exception as e:
             return {"module_name": module_name, "error": str(e), "success": False}
 
-    def process_all_modules(self) -> Dict[str, Any]:
+    def process_all_modules(self) -> dict[str, Any]:
         """Process all modules in the input directory.
 
         Returns:
@@ -134,7 +134,7 @@ class EducationalLakeFacet:
         assets_dir = self.config.output_dir / "assets"
         self.template_engine.create_educational_assets(assets_dir)
 
-    def create_educational_index(self, processing_results: Dict[str, Any]) -> str:
+    def create_educational_index(self, processing_results: dict[str, Any]) -> str:
         """Create an index page for educational content.
 
         Args:
@@ -162,7 +162,7 @@ class EducationalLakeFacet:
 
         return str(index_path)
 
-    def _create_index_html(self, index_data: Dict[str, Any]) -> str:
+    def _create_index_html(self, index_data: dict[str, Any]) -> str:
         """Create HTML for the educational index page.
 
         Args:
@@ -291,7 +291,7 @@ class EducationalLakeFacet:
 </html>
         """
 
-    def _generate_module_cards(self, modules: List[Dict[str, Any]]) -> str:
+    def _generate_module_cards(self, modules: list[dict[str, Any]]) -> str:
         """Generate HTML cards for processed modules.
 
         Args:
