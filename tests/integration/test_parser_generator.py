@@ -20,9 +20,7 @@ class TestParserGeneratorIntegration:
     @pytest.fixture
     def parser_config(self):
         """Create parser configuration for tests."""
-        return ParserConfig(
-            lean_executable="lean", auto_detect_lake=False, lean_timeout=10
-        )
+        return ParserConfig(lean_executable="lean", timeout=10)
 
     @pytest.fixture
     def generator_config(self):

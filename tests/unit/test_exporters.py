@@ -24,7 +24,7 @@ from proof_sketcher.generator.models import ProofSketch, ProofStep
 def sample_proof_sketch():
     """Create a sample proof sketch for testing."""
     from proof_sketcher.generator.models import ProofStrategy
-    
+
     return ProofSketch(
         theorem_name="test_theorem",
         theorem_statement="∀ n : ℕ, n + 0 = n",
@@ -41,7 +41,7 @@ def sample_proof_sketch():
                 formal_explanation="By the definition of natural number addition",
                 tactics=["simp"],
                 mathematical_content="n + 0 = n",
-                lean_code="by simp"
+                lean_code="by simp",
             )
         ],
         intuitive_conclusion="Therefore, zero is the right identity for addition.",
@@ -52,7 +52,7 @@ def sample_proof_sketch():
         discrete_math_topic="arithmetic",
         difficulty_level="beginner",
         mathematical_areas=["arithmetic", "number_theory"],
-        prerequisites=["basic_arithmetic"]
+        prerequisites=["basic_arithmetic"],
     )
 
 
@@ -75,7 +75,7 @@ class TestBaseExporterBase:
             @property
             def format(self):
                 return ExportFormat.HTML
-                
+
             def export_single(self, proof_sketch, animation_path=None):
                 return ExportResult(
                     success=True,
@@ -83,7 +83,7 @@ class TestBaseExporterBase:
                     output_files=[Path("test.html")],
                     metadata={},
                 )
-                
+
             def export_multiple(self, proof_sketches):
                 return [self.export_single(sketch) for sketch in proof_sketches]
 
@@ -99,12 +99,12 @@ class TestBaseExporterBase:
             @property
             def format(self):
                 return ExportFormat.HTML
-                
+
             def export_single(self, proof_sketch, animation_path=None):
                 return ExportResult(
                     success=True, format=ExportFormat.HTML, output_files=[], metadata={}
                 )
-                
+
             def export_multiple(self, proof_sketches):
                 return [self.export_single(sketch) for sketch in proof_sketches]
 
@@ -159,8 +159,8 @@ class TestHTMLExporter:
 
             assert result.success
             assert result.format == ExportFormat.HTML
-            assert len(result.output_files) == 1
-            assert result.output_files[0].suffix == ".html"
+            assert len(result.files_created) == 1
+            assert result.files_created[0].suffix == ".html"
             mock_render.assert_called_once()
 
     def test_html_export_with_animations(

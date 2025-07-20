@@ -12,7 +12,7 @@ import pytest
 from click.testing import CliRunner
 
 from proof_sketcher.cli.main import cli
-from proof_sketcher.generator.models import ProofSketch, ProofStep
+from proof_sketcher.generator.models import ProofSketch, ProofStep, ProofStrategy
 from proof_sketcher.parser.models import TheoremInfo
 
 
@@ -121,38 +121,41 @@ def sample_proof_sketch() -> ProofSketch:
     return ProofSketch(
         theorem_name="add_comm",
         theorem_statement="∀ (a b : Nat), a + b = b + a",
-        explanation="This theorem establishes that addition is commutative for natural numbers.",
-        steps=[
+        intuitive_overview="This theorem shows that the order of addition doesn't matter for natural numbers.",
+        conceptual_overview="We use mathematical induction on the first argument to prove commutativity.",
+        bridging_overview="The proof connects our intuitive understanding of addition with formal induction.",
+        formal_overview="This is proven using Lean's induction tactic on natural numbers.",
+        key_steps=[
             ProofStep(
                 step_number=1,
-                description="Base case: prove 0 + b = b + 0",
-                tactic="simp",
-                mathematical_content="0 + b = b",
-                complexity=1,
+                intuitive_explanation="First, we check that 0 + b equals b + 0",
+                conceptual_explanation="Base case: prove commutativity when a = 0",
+                bridging_explanation="We use the definition of addition for zero",
+                formal_explanation="By definition, 0 + b = b and b + 0 = b",
+                tactics=["simp"],
+                mathematical_content="0 + b = b = b + 0",
+                lean_code="simp",
             ),
             ProofStep(
                 step_number=2,
-                description="Inductive step: assume (a + b = b + a) and prove (succ a + b = b + succ a)",
-                tactic="simp [succ_add, ih]",
-                mathematical_content="succ a + b = succ (a + b) = succ (b + a) = b + succ a",
-                complexity=2,
+                intuitive_explanation="If a + b = b + a, then (a+1) + b = b + (a+1)",
+                conceptual_explanation="Inductive step: extend from a to successor of a",
+                bridging_explanation="Use the inductive hypothesis and successor properties",
+                formal_explanation="succ a + b = succ (a + b) = succ (b + a) = b + succ a",
+                tactics=["simp", "rw"],
+                mathematical_content="succ a + b = b + succ a",
+                lean_code="simp [succ_add, ih]",
             ),
         ],
+        intuitive_conclusion="Therefore, addition is commutative for all natural numbers.",
+        conceptual_conclusion="Induction proves the property holds for all naturals.",
+        bridging_conclusion="We've shown our intuition about addition is formally correct.",
+        formal_conclusion="By induction, ∀ a b : Nat, a + b = b + a.",
+        proof_strategy=ProofStrategy.INDUCTION,
+        discrete_math_topic="arithmetic",
         difficulty_level="intermediate",
-        prerequisites=["natural numbers", "mathematical induction"],
-        applications=["algebra", "number_theory"],
-        proof_strategy="mathematical induction",
-        key_insights=[
-            "Use induction on the first argument",
-            "Apply properties of successor",
-        ],
-        estimated_time=15,
-        source_file="sample.lean",
-        generation_metadata={
-            "generator": "offline",
-            "timestamp": "2025-01-01T00:00:00Z",
-            "version": "0.1.0",
-        },
+        mathematical_areas=["arithmetic", "number_theory"],
+        prerequisites=["natural_numbers", "induction"],
     )
 
 
@@ -264,6 +267,61 @@ class TestDataFactory:
             content.append(f"theorem {name} : {statement} := sorry")
 
         return "\n".join(content)
+
+    @staticmethod
+    def create_proof_sketch(**overrides) -> ProofSketch:
+        """Create a valid ProofSketch with sensible defaults.
+
+        All required fields are provided with test-appropriate defaults.
+        Use overrides to customize specific fields.
+        """
+        defaults = {
+            "theorem_name": "test_theorem",
+            "theorem_statement": "∀ n : ℕ, n + 0 = n",
+            "intuitive_overview": "This theorem shows that adding zero to any natural number leaves it unchanged.",
+            "conceptual_overview": "We use the definition of natural number addition to prove this identity property.",
+            "bridging_overview": "The proof connects our intuitive understanding of zero as the additive identity with the formal definition in Lean.",
+            "formal_overview": "This theorem is proven using Lean's inductive definition of natural number addition.",
+            "key_steps": [TestDataFactory.create_proof_step()],
+            "intuitive_conclusion": "Therefore, zero is the right identity for addition.",
+            "conceptual_conclusion": "This completes our proof of the right identity property.",
+            "bridging_conclusion": "We've shown the formal definition matches our intuition.",
+            "formal_conclusion": "The theorem is proven by definitional equality.",
+            "proof_strategy": ProofStrategy.DIRECT,
+            "discrete_math_topic": "arithmetic",
+            "difficulty_level": "beginner",
+            "mathematical_areas": ["arithmetic", "number_theory"],
+            "prerequisites": ["natural_numbers", "addition"],
+        }
+
+        defaults.update(overrides)
+        return ProofSketch(**defaults)
+
+    @staticmethod
+    def create_proof_step(**overrides) -> ProofStep:
+        """Create a valid ProofStep with sensible defaults."""
+        defaults = {
+            "step_number": 1,
+            "intuitive_explanation": "Test intuitive explanation",
+            "conceptual_explanation": "Test conceptual explanation",
+            "bridging_explanation": "Test bridging explanation",
+            "formal_explanation": "Test formal explanation",
+            "tactics": ["simp"],
+            "mathematical_content": "test content",
+            "lean_code": "by simp",
+        }
+
+        defaults.update(overrides)
+        return ProofStep(**defaults)
+
+    @staticmethod
+    def create_minimal_proof_sketch(theorem_name: str = "test_theorem") -> ProofSketch:
+        """Create a minimal valid ProofSketch for simple tests."""
+        return TestDataFactory.create_proof_sketch(
+            theorem_name=theorem_name,
+            theorem_statement=f"theorem {theorem_name}",
+            key_steps=[],
+        )
 
 
 @pytest.fixture

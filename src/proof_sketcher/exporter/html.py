@@ -40,13 +40,18 @@ class HTMLExporter(BaseExporterImpl):
             template_manager: Template manager
         """
         super().__init__(options)
-        
+
         # Template manager (create simple implementation for testing)
         if template_manager is None:
             # Create a simple template manager for testing
             class SimpleTemplateManager:
+                def __init__(self):
+                    # Create a mock template directory
+                    self.template_dir = Path(__file__).parent / "templates"
+
                 def render_template(self, format_type, template_type, context):
                     return f"<html><body>{context.get('theorem_name', 'test')}</body></html>"
+
             template_manager = SimpleTemplateManager()
         self.template_manager = template_manager
         self.logger = logging.getLogger(__name__)
@@ -79,25 +84,30 @@ class HTMLExporter(BaseExporterImpl):
         """Export a single proof sketch to HTML."""
         if context is None:
             context = ExportContext(
-                format=ExportFormat.HTML,
-                output_dir=self.options.output_dir
+                format=ExportFormat.HTML, output_dir=self.options.output_dir
             )
-        
+
         try:
             created_files = self._export_sketch(sketch, context)
             return ExportResult(
                 success=True,
                 format=ExportFormat.HTML,
-                output_files=created_files,
-                metadata={"theorem_name": sketch.theorem_name}
+                output_path=(
+                    created_files[0] if created_files else self.options.output_dir
+                ),
+                files_created=created_files,
+                warnings=[],
+                errors=[],
             )
         except Exception as e:
             self.logger.error(f"Failed to export {sketch.theorem_name}: {e}")
             return ExportResult(
                 success=False,
                 format=ExportFormat.HTML,
-                output_files=[],
-                metadata={"error": str(e)}
+                output_path=self.options.output_dir,
+                files_created=[],
+                warnings=[],
+                errors=[str(e)],
             )
 
     def export_multiple(
@@ -106,26 +116,27 @@ class HTMLExporter(BaseExporterImpl):
         """Export multiple proof sketches to HTML."""
         if context is None:
             context = ExportContext(
-                format=ExportFormat.HTML,
-                output_dir=self.options.output_dir
+                format=ExportFormat.HTML, output_dir=self.options.output_dir
             )
-        
+
         all_files = []
         errors = []
-        
+
         for sketch in sketches:
             result = self.export_single(sketch, context)
             if result.success:
-                all_files.extend(result.output_files)
+                all_files.extend(result.files_created)
             else:
-                errors.append(result.metadata.get("error", "Unknown error"))
-        
+                errors.extend(result.errors)
+
         success = len(errors) == 0
         return ExportResult(
             success=success,
             format=ExportFormat.HTML,
-            output_files=all_files,
-            metadata={"errors": errors} if errors else {}
+            output_path=self.options.output_dir,
+            files_created=all_files,
+            warnings=[],
+            errors=errors,
         )
 
     def _export_sketch(self, sketch: ProofSketch, context: ExportContext) -> list[Path]:
@@ -278,8 +289,31 @@ class HTMLExporter(BaseExporterImpl):
         Returns:
             Template context dictionary
         """
-        # Get base context from parent
-        base_context = super()._create_template_context(sketch, context)
+        # Create base template context
+        base_context = {
+            "theorem_name": sketch.theorem_name,
+            "theorem_statement": sketch.theorem_statement,
+            "intuitive_overview": sketch.intuitive_overview,
+            "conceptual_overview": sketch.conceptual_overview,
+            "bridging_overview": sketch.bridging_overview,
+            "formal_overview": sketch.formal_overview,
+            "key_steps": sketch.key_steps,
+            "intuitive_conclusion": sketch.intuitive_conclusion,
+            "conceptual_conclusion": sketch.conceptual_conclusion,
+            "bridging_conclusion": sketch.bridging_conclusion,
+            "formal_conclusion": sketch.formal_conclusion,
+            "proof_strategy": sketch.proof_strategy,
+            "difficulty_level": sketch.difficulty_level,
+            "mathematical_areas": sketch.mathematical_areas,
+            "prerequisites": sketch.prerequisites,
+            "discrete_math_topic": sketch.discrete_math_topic,
+            "timestamp": (
+                context.timestamp.isoformat() if context.include_timestamps else None
+            ),
+            "project_name": context.project_name,
+            "author": context.author,
+            "version": context.version,
+        }
 
         # Add HTML-specific fields with doc-gen4 compatibility
         base_context["syntax_theme"] = (

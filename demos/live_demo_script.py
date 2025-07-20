@@ -17,6 +17,8 @@ Perfect for:
 - Performance validation
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
 import sys
@@ -80,9 +82,7 @@ class LiveDemo:
     def setup_components(self):
         """Initialize Proof Sketcher components."""
         # Parser with enhanced capabilities
-        parser_config = ParserConfig(
-            fallback_to_regex=True, auto_detect_lake=True, lean_timeout=30.0
-        )
+        parser_config = ParserConfig(timeout=30)
         self.parser = LeanParser(parser_config)
 
         # Offline generator for demos (faster, no API dependency)

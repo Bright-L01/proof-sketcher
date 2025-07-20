@@ -13,6 +13,8 @@ This demo showcases real-world usage of Proof Sketcher with:
 Demonstrates the complete pipeline from Lean source to publication-ready documentation.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import sys
@@ -56,9 +58,7 @@ class ProductionDemo:
         self.console.print(f"[dim]Demo output directory: {self.demo_dir}[/dim]\n")
 
         # Initialize components
-        parser_config = ParserConfig(
-            fallback_to_regex=True, auto_detect_lake=True, lean_timeout=30.0
-        )
+        parser_config = ParserConfig(timeout=30)
         self.parser = LeanParser(parser_config)
         self.generator = OfflineGenerator()
 
