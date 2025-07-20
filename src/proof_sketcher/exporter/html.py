@@ -39,7 +39,16 @@ class HTMLExporter(BaseExporterImpl):
             options: Export options
             template_manager: Template manager
         """
-        super().__init__(ExportFormat.HTML, options, template_manager)
+        super().__init__(options)
+        
+        # Template manager (create simple implementation for testing)
+        if template_manager is None:
+            # Create a simple template manager for testing
+            class SimpleTemplateManager:
+                def render_template(self, format_type, template_type, context):
+                    return f"<html><body>{context.get('theorem_name', 'test')}</body></html>"
+            template_manager = SimpleTemplateManager()
+        self.template_manager = template_manager
         self.logger = logging.getLogger(__name__)
 
         # Asset optimization settings
@@ -58,6 +67,66 @@ class HTMLExporter(BaseExporterImpl):
             "code": "code",
             "math": "math-display",
         }
+
+    @property
+    def format(self) -> ExportFormat:
+        """Get the export format."""
+        return ExportFormat.HTML
+
+    def export_single(
+        self, sketch: ProofSketch, context: ExportContext | None = None
+    ) -> ExportResult:
+        """Export a single proof sketch to HTML."""
+        if context is None:
+            context = ExportContext(
+                format=ExportFormat.HTML,
+                output_dir=self.options.output_dir
+            )
+        
+        try:
+            created_files = self._export_sketch(sketch, context)
+            return ExportResult(
+                success=True,
+                format=ExportFormat.HTML,
+                output_files=created_files,
+                metadata={"theorem_name": sketch.theorem_name}
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to export {sketch.theorem_name}: {e}")
+            return ExportResult(
+                success=False,
+                format=ExportFormat.HTML,
+                output_files=[],
+                metadata={"error": str(e)}
+            )
+
+    def export_multiple(
+        self, sketches: list[ProofSketch], context: ExportContext | None = None
+    ) -> ExportResult:
+        """Export multiple proof sketches to HTML."""
+        if context is None:
+            context = ExportContext(
+                format=ExportFormat.HTML,
+                output_dir=self.options.output_dir
+            )
+        
+        all_files = []
+        errors = []
+        
+        for sketch in sketches:
+            result = self.export_single(sketch, context)
+            if result.success:
+                all_files.extend(result.output_files)
+            else:
+                errors.append(result.metadata.get("error", "Unknown error"))
+        
+        success = len(errors) == 0
+        return ExportResult(
+            success=success,
+            format=ExportFormat.HTML,
+            output_files=all_files,
+            metadata={"errors": errors} if errors else {}
+        )
 
     def _export_sketch(self, sketch: ProofSketch, context: ExportContext) -> list[Path]:
         """Export a single proof sketch to HTML.

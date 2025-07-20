@@ -23,28 +23,36 @@ from proof_sketcher.generator.models import ProofSketch, ProofStep
 @pytest.fixture
 def sample_proof_sketch():
     """Create a sample proof sketch for testing."""
+    from proof_sketcher.generator.models import ProofStrategy
+    
     return ProofSketch(
         theorem_name="test_theorem",
         theorem_statement="∀ n : ℕ, n + 0 = n",
-        introduction="This theorem proves that zero is the right identity for addition.",
+        intuitive_overview="This theorem shows that zero is the right identity for addition.",
+        conceptual_overview="We use the definition of natural number addition to prove this identity.",
+        bridging_overview="The proof connects our intuitive understanding with formal definitions.",
+        formal_overview="This theorem is proven using Lean's definition of natural number addition.",
         key_steps=[
             ProofStep(
-step_number=1,
-    intuitive_explanation="Test intuitive explanation",
-    conceptual_explanation="Test conceptual explanation",
-    bridging_explanation="Test bridging explanation",
-    formal_explanation="Test formal explanation",
-                description="Apply the definition of addition",
+                step_number=1,
+                intuitive_explanation="Zero doesn't change the value when added",
+                conceptual_explanation="Apply the definition of addition",
+                bridging_explanation="Use formal definitions to prove the identity",
+                formal_explanation="By the definition of natural number addition",
+                tactics=["simp"],
                 mathematical_content="n + 0 = n",
-                reasoning="By the definition of natural number addition",
-                tactics_used=["simp"],
-                intuition="Zero doesn't change the value when added",
-)
+                lean_code="by simp"
+            )
         ],
-        conclusion="Therefore, zero is the right identity for addition.",
-        difficulty_level="easy",
-        key_insights=["Identity element", "Natural number arithmetic"],
-        mathematical_context="Number theory",
+        intuitive_conclusion="Therefore, zero is the right identity for addition.",
+        conceptual_conclusion="This completes our proof of the identity property.",
+        bridging_conclusion="We have connected intuitive and formal reasoning.",
+        formal_conclusion="The theorem is proven using Lean's type system.",
+        proof_strategy=ProofStrategy.DIRECT,
+        discrete_math_topic="arithmetic",
+        difficulty_level="beginner",
+        mathematical_areas=["arithmetic", "number_theory"],
+        prerequisites=["basic_arithmetic"]
     )
 
 
