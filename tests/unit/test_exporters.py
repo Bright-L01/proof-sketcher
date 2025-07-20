@@ -29,13 +29,17 @@ def sample_proof_sketch():
         introduction="This theorem proves that zero is the right identity for addition.",
         key_steps=[
             ProofStep(
-                step_number=1,
+step_number=1,
+    intuitive_explanation="Test intuitive explanation",
+    conceptual_explanation="Test conceptual explanation",
+    bridging_explanation="Test bridging explanation",
+    formal_explanation="Test formal explanation",
                 description="Apply the definition of addition",
                 mathematical_content="n + 0 = n",
                 reasoning="By the definition of natural number addition",
                 tactics_used=["simp"],
                 intuition="Zero doesn't change the value when added",
-            )
+)
         ],
         conclusion="Therefore, zero is the right identity for addition.",
         difficulty_level="easy",
@@ -60,6 +64,10 @@ class TestBaseExporterBase:
         """Test base exporter initialization."""
 
         class TestBaseExporter(BaseExporter):
+            @property
+            def format(self):
+                return ExportFormat.HTML
+                
             def export_single(self, proof_sketch, animation_path=None):
                 return ExportResult(
                     success=True,
@@ -67,8 +75,11 @@ class TestBaseExporterBase:
                     output_files=[Path("test.html")],
                     metadata={},
                 )
+                
+            def export_multiple(self, proof_sketches):
+                return [self.export_single(sketch) for sketch in proof_sketches]
 
-        exporter = TestBaseExporter(ExportFormat.HTML, export_options)
+        exporter = TestBaseExporter(export_options)
         assert exporter.options == export_options
         assert exporter.options.output_dir == export_options.output_dir
 
@@ -77,12 +88,19 @@ class TestBaseExporterBase:
         options = ExportOptions(output_dir=tmp_path / "new_dir")
 
         class TestBaseExporter(BaseExporter):
+            @property
+            def format(self):
+                return ExportFormat.HTML
+                
             def export_single(self, proof_sketch, animation_path=None):
                 return ExportResult(
                     success=True, format=ExportFormat.HTML, output_files=[], metadata={}
                 )
+                
+            def export_multiple(self, proof_sketches):
+                return [self.export_single(sketch) for sketch in proof_sketches]
 
-        exporter = TestBaseExporter(ExportFormat.HTML, options)
+        exporter = TestBaseExporter(options)
         exporter._ensure_output_dir()
         assert (tmp_path / "new_dir").exists()
 

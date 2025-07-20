@@ -1,5 +1,7 @@
 """Info commands - version and format information."""
 
+from __future__ import annotations
+
 import click
 from rich.console import Console
 from rich.table import Table

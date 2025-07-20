@@ -9,12 +9,11 @@ in the proof-sketcher codebase based on actual testing and code review.
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
 # Add the src directory to the path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from proof_sketcher.core.error_handling import ErrorAccumulator, error_context
 from proof_sketcher.core.exceptions import ProofSketcherError, ResourceLimitExceeded
@@ -45,7 +44,7 @@ def assess_error_handling():
         raise ResourceLimitExceeded("Memory", "4GB", "6GB")
     except ProofSketcherError:
         print("✅ PASS: Exception hierarchy inheritance works")
-    except:
+    except Exception:
         print("❌ FAIL: Exception hierarchy broken")
 
     # Test 2: Error Accumulator for Batch Operations

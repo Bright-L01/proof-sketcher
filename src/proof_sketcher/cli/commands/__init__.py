@@ -1,6 +1,8 @@
 """CLI commands for Proof Sketcher."""
 
 # Re-export all commands for easy access
+from __future__ import annotations
+
 from .batch import batch
 from .cache import cache
 from .config import config

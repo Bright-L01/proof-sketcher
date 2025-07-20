@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Test script to run proof-sketcher on classical mathematics examples."""
 
+from __future__ import annotations
+
 import subprocess
 import sys
 from pathlib import Path
