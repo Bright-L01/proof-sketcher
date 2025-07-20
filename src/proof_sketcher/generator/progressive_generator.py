@@ -33,6 +33,8 @@ Usage:
     >>> pathway = progressive_sketch.learning_pathway
 """
 
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass, field
 
@@ -779,7 +781,10 @@ class ProgressiveGenerator:
             concept="Universal Quantification (∀)",
             informal_description="A statement that something is true for ALL possible cases in a given domain.",
             formal_definition="∀x P(x) means that property P holds for every element x in the domain of discourse.",
-            examples=["∀n ∈ ℕ: n ≥ 0", "All triangles have three sides"],  # noqa: RUF001
+            examples=[
+                "∀n ∈ ℕ: n ≥ 0",
+                "All triangles have three sides",
+            ],  # noqa: RUF001
             common_misconceptions=[
                 "Proving with just one example",
                 "Confusing ∀ with ∃",

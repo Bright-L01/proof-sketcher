@@ -1,5 +1,7 @@
 """Unit tests for parser modules."""
 
+from __future__ import annotations
+
 import json
 from unittest.mock import Mock, patch
 
@@ -7,10 +9,8 @@ import pytest
 
 from proof_sketcher.parser.config import ParserConfig
 from proof_sketcher.parser.hybrid_parser import HybridLeanParser
-
-from proof_sketcher.parser.simple_parser import SimpleLeanParser
-from proof_sketcher.parser.config import ParserConfig
 from proof_sketcher.parser.models import ParseError, ParseResult, TheoremInfo
+from proof_sketcher.parser.simple_parser import SimpleLeanParser
 
 
 @pytest.fixture
@@ -212,7 +212,7 @@ theorem another_valid : False → True := by
 @pytest.mark.skip(reason="HybridLeanParser is deprecated - uses non-functional LSP")
 class TestHybridLeanParser:
     """Test enhanced Lean parser with additional features.
-    
+
     DEPRECATED: These tests are skipped because HybridLeanParser uses
     the non-functional LSP client. Use SimpleLeanParser instead.
     """

@@ -1,5 +1,7 @@
 """Batch processor for exporting multiple theorems."""
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
 
@@ -14,7 +16,7 @@ from .simple_markdown import SimpleMarkdownExporter
 
 class BatchExporter:
     """Batch processor for exporting multiple theorems to various formats."""
-    
+
     # Resource limits
     MAX_BATCH_SIZE = 100  # Maximum number of theorems to process at once
     MAX_CONCURRENT_EXPORTS = 10  # Maximum concurrent export operations
@@ -51,15 +53,15 @@ class BatchExporter:
         """
         if formats is None:
             formats = ["markdown", "html"]
-            
+
         # Validate batch size
         if len(sketches) > self.MAX_BATCH_SIZE:
             self.logger.warning(
                 f"Batch size ({len(sketches)}) exceeds maximum ({self.MAX_BATCH_SIZE}). "
                 f"Processing first {self.MAX_BATCH_SIZE} sketches only."
             )
-            sketches = sketches[:self.MAX_BATCH_SIZE]
-            
+            sketches = sketches[: self.MAX_BATCH_SIZE]
+
         results = {}
 
         for format_name in formats:
@@ -83,9 +85,11 @@ class BatchExporter:
 
         files = []
         error_accumulator = ErrorAccumulator(self.logger)
-        
+
         for sketch in sketches:
-            with error_accumulator.capture(f"exporting {sketch.theorem_name} to markdown"):
+            with error_accumulator.capture(
+                f"exporting {sketch.theorem_name} to markdown"
+            ):
                 # Sanitize theorem name for safe filename
                 safe_name = sanitize_theorem_name(sketch.theorem_name)
                 filename = f"{safe_name}.md"
@@ -97,7 +101,9 @@ class BatchExporter:
 
         # Log summary if there were errors
         if error_accumulator.has_errors:
-            self.logger.warning(f"Markdown export completed with {error_accumulator.error_count} errors")
+            self.logger.warning(
+                f"Markdown export completed with {error_accumulator.error_count} errors"
+            )
             self.logger.debug(error_accumulator.get_summary())
 
         return files
@@ -109,7 +115,7 @@ class BatchExporter:
 
         files = []
         error_accumulator = ErrorAccumulator(self.logger)
-        
+
         for sketch in sketches:
             with error_accumulator.capture(f"exporting {sketch.theorem_name} to HTML"):
                 # Sanitize theorem name for safe filename
@@ -123,7 +129,9 @@ class BatchExporter:
 
         # Log summary if there were errors
         if error_accumulator.has_errors:
-            self.logger.warning(f"HTML export completed with {error_accumulator.error_count} errors")
+            self.logger.warning(
+                f"HTML export completed with {error_accumulator.error_count} errors"
+            )
             self.logger.debug(error_accumulator.get_summary())
 
         return files

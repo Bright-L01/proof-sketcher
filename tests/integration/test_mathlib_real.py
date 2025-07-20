@@ -4,6 +4,8 @@ These tests verify that Proof Sketcher works correctly with actual Mathlib4 theo
 handling real mathematical notation, dependencies, and complex proof structures.
 """
 
+from __future__ import annotations
+
 import subprocess
 import tempfile
 import time
@@ -16,8 +18,8 @@ from proof_sketcher.exporter.batch_processor import BatchExporter
 from proof_sketcher.exporter.markdown import MarkdownExporter
 from proof_sketcher.generator import SimpleGenerator
 from proof_sketcher.generator.offline import OfflineGenerator
-from proof_sketcher.parser.simple_parser import SimpleLeanParser
 from proof_sketcher.parser.config import ParserConfig
+from proof_sketcher.parser.simple_parser import SimpleLeanParser
 
 
 class MathlibTestFixtures:
@@ -382,10 +384,7 @@ theorem unicode_test (A B : Set ℕ) : A ∪ B = B ∪ A := by
         # Test export of processed theorems
         for item in processed_theorems[:3]:  # Test first 3
             try:
-                from proof_sketcher.exporter.models import (
-                    ExportContext,
-                    ExportOptions,
-                )
+                from proof_sketcher.exporter.models import ExportContext, ExportOptions
 
                 options = ExportOptions(output_dir=tmp_path / "output")
                 exporter = MarkdownExporter(options)
@@ -406,7 +405,10 @@ theorem unicode_test (A B : Set ℕ) : A ∪ B = B ∪ A := by
 
     def test_mathlib_batch_processing(self, tmp_path):
         """Test batch processing with mathlib-style content."""
-        from proof_sketcher.exporter.batch_processor import ParallelProcessor, BatchExporter
+        from proof_sketcher.exporter.batch_processor import (
+            BatchExporter,
+            ParallelProcessor,
+        )
 
         # Create test files
         fixtures = MathlibTestFixtures.create_minimal_mathlib_files(tmp_path)

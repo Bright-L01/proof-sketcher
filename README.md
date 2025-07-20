@@ -9,6 +9,7 @@ Proof-Sketcher is an educational tool that generates natural language explanatio
 ## Current Status: Alpha (v0.1.0)
 
 ### ✅ What Works
+
 - **Basic Lean parsing**: Extracts theorems from `.lean` files
 - **Template-based explanations**: Generates explanations at 4 educational levels
 - **Multiple export formats**: HTML and Markdown output
@@ -16,6 +17,7 @@ Proof-Sketcher is an educational tool that generates natural language explanatio
 - **Resource limits**: Memory and timeout protection
 
 ### ❌ Known Limitations
+
 - **No concurrent user support**: Single-user only (critical limitation)
 - **Template-based content**: Not AI-generated despite package names
 - **LSP integration non-functional**: Use simple parser instead
@@ -23,6 +25,7 @@ Proof-Sketcher is an educational tool that generates natural language explanatio
 - **Low test coverage**: Currently 11% (target: 80%)
 
 ### 🚧 Under Development
+
 - Concurrent user support (required for classroom use)
 - Improved educational content quality
 - Real semantic analysis of proofs
@@ -32,6 +35,7 @@ Proof-Sketcher is an educational tool that generates natural language explanatio
 ## Installation
 
 ### Requirements
+
 - Python 3.10+
 - Lean 4 (optional, for `.lean` file validation)
 

@@ -1,5 +1,7 @@
 """Unit tests for exporter modules."""
 
+from __future__ import annotations
+
 import json
 import tempfile
 from pathlib import Path
@@ -7,14 +9,14 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from proof_sketcher.exporter.models import BaseExporter
 from proof_sketcher.exporter.html import HTMLExporter
-from proof_sketcher.exporter.models import BaseExporter
 from proof_sketcher.exporter.markdown import MarkdownExporter
-from proof_sketcher.exporter.markdown import MarkdownExporter
-from proof_sketcher.exporter.models import ExportFormat, ExportOptions, ExportResult
-from proof_sketcher.exporter.models import BaseExporter
-
+from proof_sketcher.exporter.models import (
+    BaseExporter,
+    ExportFormat,
+    ExportOptions,
+    ExportResult,
+)
 from proof_sketcher.generator.models import ProofSketch, ProofStep
 
 

@@ -49,6 +49,8 @@ Export Formats:
 For template customization, see the templates/ directory.
 """
 
+from __future__ import annotations
+
 from .batch_processor import BatchExporter
 from .simple_html import SimpleHTMLExporter
 from .simple_markdown import SimpleMarkdownExporter

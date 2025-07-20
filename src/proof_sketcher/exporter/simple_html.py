@@ -1,15 +1,22 @@
 """Simple HTML exporter for MVP with MathJax 4.0 support."""
 
+from __future__ import annotations
+
 import html
 from pathlib import Path
 
-from ..generator.models import ProofSketch, EducationalLevel
+from ..generator.models import EducationalLevel, ProofSketch
 
 
 class SimpleHTMLExporter:
     """Simple HTML exporter with MathJax 4.0 support."""
 
-    def export(self, sketch: ProofSketch, output_path: Path | None = None, educational_level: EducationalLevel = EducationalLevel.INTUITIVE) -> str:
+    def export(
+        self,
+        sketch: ProofSketch,
+        output_path: Path | None = None,
+        educational_level: EducationalLevel = EducationalLevel.INTUITIVE,
+    ) -> str:
         """Export proof sketch to HTML string.
 
         Args:
@@ -31,7 +38,9 @@ class SimpleHTMLExporter:
 
         return html_content
 
-    def _build_html(self, sketch: ProofSketch, educational_level: EducationalLevel) -> str:
+    def _build_html(
+        self, sketch: ProofSketch, educational_level: EducationalLevel
+    ) -> str:
         """Build complete HTML document."""
         # Mathematical expressions for MathJax (already safe)
         statement_math = self._format_math(sketch.theorem_statement)

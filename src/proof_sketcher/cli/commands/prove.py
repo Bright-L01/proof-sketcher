@@ -1,5 +1,7 @@
 """Prove command - generate explanations for Lean theorems."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import click
@@ -81,7 +83,7 @@ def prove(
         except InvalidPathError as e:
             console.print(f"[red]Invalid file path:[/red] {e}")
             raise SystemExit(1)
-        
+
         parser = SimpleLeanParser()
         result = parser.parse_file(file_path)
 
@@ -142,7 +144,7 @@ def prove(
 
             # Convert educational level string to enum
             level_enum = EducationalLevel[educational_level.upper()]
-            
+
             # Export
             if fmt == "html":
                 exporter = SimpleHTMLExporter()

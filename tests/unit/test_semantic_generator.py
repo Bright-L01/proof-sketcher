@@ -10,6 +10,8 @@ This test verifies:
 Run this test to verify the semantic generator works correctly.
 """
 
+from __future__ import annotations
+
 import tempfile
 from pathlib import Path
 

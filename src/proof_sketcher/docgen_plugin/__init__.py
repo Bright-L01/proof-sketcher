@@ -31,6 +31,8 @@ Architecture:
     doc-gen4 Module JSON → Educational Analysis → Progressive Content → Enhanced JSON
 """
 
+from __future__ import annotations
+
 from .content_generator import EducationalContentGenerator
 from .module_processor import ModuleProcessor
 from .template_engine import EducationalTemplateEngine

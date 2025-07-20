@@ -1,5 +1,7 @@
 """Template engine for rendering educational content in doc-gen4 HTML."""
 
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Any
 

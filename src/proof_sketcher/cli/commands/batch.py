@@ -1,5 +1,7 @@
 """Batch processing command - process multiple Lean files."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import click

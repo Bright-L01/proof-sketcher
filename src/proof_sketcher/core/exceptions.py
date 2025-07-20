@@ -1,11 +1,13 @@
 """Core exceptions for Proof Sketcher."""
 
+from __future__ import annotations
+
 from typing import Any
 
 
 class ProofSketcherError(Exception):
     """Base exception for all Proof Sketcher errors."""
-    
+
     def __init__(self, message: str, details: dict[str, Any] | None = None):
         """Initialize with message and optional details."""
         super().__init__(message)
@@ -31,7 +33,7 @@ class ParserError(ProofSketcherError):
 
 class FileParseError(ParserError):
     """Error parsing Lean file."""
-    
+
     def __init__(self, file_path: str, message: str, line_number: int | None = None):
         """Initialize with file details."""
         details = {"file_path": file_path}
@@ -68,7 +70,7 @@ class ExporterError(ProofSketcherError):
 
 class ExportFailedError(ExporterError):
     """Failed to export proof sketch."""
-    
+
     def __init__(self, format: str, message: str, file_path: str | None = None):
         """Initialize with export details."""
         details = {"format": format}
@@ -84,27 +86,23 @@ class ResourceError(ProofSketcherError):
 
 class ResourceLimitExceeded(ResourceError):
     """Resource limit exceeded."""
-    
+
     def __init__(self, resource_type: str, limit: Any, current: Any):
         """Initialize with resource details."""
         message = f"{resource_type} limit exceeded: {current} > {limit}"
-        details = {
-            "resource_type": resource_type,
-            "limit": limit,
-            "current": current
-        }
+        details = {"resource_type": resource_type, "limit": limit, "current": current}
         super().__init__(message, details)
 
 
 class RateLimitExceeded(ResourceLimitExceeded):
     """Rate limit exceeded."""
-    
+
     def __init__(self, calls: int, window: float):
         """Initialize with rate limit details."""
         super().__init__("Rate", f"{calls} calls/{window}s", "exceeded")
 
 
-# Input validation exceptions  
+# Input validation exceptions
 class ValidationError(ProofSketcherError):
     """Input validation error."""
 

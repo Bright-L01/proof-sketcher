@@ -1,5 +1,7 @@
 """Configuration management command."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import click
@@ -37,7 +39,9 @@ def config(show: bool, reset: bool) -> None:
         default_config = ProofSketcherConfig()
         config_path = Path(".proof-sketcher.yaml")
         default_config.save(config_path)
-        console.print(f"✅ [green]Configuration reset to defaults and saved to {config_path}[/green]")
+        console.print(
+            f"✅ [green]Configuration reset to defaults and saved to {config_path}[/green]"
+        )
         return
 
     if show:
@@ -45,7 +49,7 @@ def config(show: bool, reset: bool) -> None:
         config_obj = ProofSketcherConfig.load()
         console.print("[bold green]Current Configuration:[/bold green]")
         console.print()
-        
+
         # Global settings
         console.print("[bold]Global Settings:[/bold]")
         console.print(f"  Project Name: {config_obj.project_name}")
@@ -55,7 +59,7 @@ def config(show: bool, reset: bool) -> None:
         console.print(f"  Cache Directory: {config_obj.cache_dir}")
         console.print(f"  Data Directory: {config_obj.data_dir}")
         console.print()
-        
+
         # Parser settings
         console.print("[bold]Parser Settings:[/bold]")
         console.print(f"  Lean Executable: {config_obj.parser.lean_executable}")
@@ -64,7 +68,7 @@ def config(show: bool, reset: bool) -> None:
         console.print(f"  Extract Proofs: {config_obj.parser.extract_proofs}")
         console.print(f"  Timeout: {config_obj.parser.timeout}s")
         console.print()
-        
+
         # Generator settings
         console.print("[bold]Generator Settings:[/bold]")
         console.print(f"  Model: {config_obj.generator.model.value}")
@@ -73,7 +77,7 @@ def config(show: bool, reset: bool) -> None:
         console.print(f"  Verbosity: {config_obj.generator.verbosity}")
         console.print(f"  Include Reasoning: {config_obj.generator.include_reasoning}")
         console.print()
-        
+
         # Export settings
         console.print("[bold]Export Settings:[/bold]")
         console.print(f"  Output Directory: {config_obj.export.output_dir}")

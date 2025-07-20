@@ -19,13 +19,13 @@ theorem monotone_function_image (f : ℝ → ℝ) (hf : Monotone f) (s : Set ℝ
   f '' s = {y | ∃ x ∈ s, f x = y} := by
   rfl
 
-theorem continuous_image_compact (f : ℝ → ℝ) (K : Set ℝ) 
+theorem continuous_image_compact (f : ℝ → ℝ) (K : Set ℝ)
   (hK : IsCompact K) (hf : ContinuousOn f K) :
   IsCompact (f '' K) := by
   exact IsCompact.image hK hf
 
 -- Sequence convergence
-theorem convergent_sequence_bounded (a : ℕ → ℝ) (L : ℝ) 
+theorem convergent_sequence_bounded (a : ℕ → ℝ) (L : ℝ)
   (ha : Filter.Tendsto a Filter.atTop (𝓝 L)) :
   ∃ M : ℝ, ∀ n : ℕ, |a n| ≤ M := by
   -- Convergent sequences are bounded
@@ -87,12 +87,12 @@ theorem field_div_self (a : F) (ha : a ≠ 0) : a / a = 1 := by
 theorem vector_add_comm {V : Type*} [AddCommGroup V] (u v : V) : u + v = v + u := by
   exact add_comm u v
 
-theorem scalar_distributive {F V : Type*} [Field F] [AddCommGroup V] [Module F V] 
+theorem scalar_distributive {F V : Type*} [Field F] [AddCommGroup V] [Module F V]
   (a : F) (u v : V) : a • (u + v) = a • u + a • v := by
   exact smul_add a u v
 
 -- Topology basics
-theorem open_sets_union {X : Type*} [TopologicalSpace X] 
+theorem open_sets_union {X : Type*} [TopologicalSpace X]
   (𝒰 : Set (Set X)) (h : ∀ U ∈ 𝒰, IsOpen U) :
   IsOpen (⋃₀ 𝒰) := by
   exact isOpen_sSup h
@@ -115,7 +115,7 @@ theorem metric_self (x : X) : dist x x = 0 := by
   exact dist_self x
 
 -- Calculus basics
-theorem derivative_sum (f g : ℝ → ℝ) (x : ℝ) 
+theorem derivative_sum (f g : ℝ → ℝ) (x : ℝ)
   (hf : DifferentiableAt ℝ f x) (hg : DifferentiableAt ℝ g x) :
   deriv (fun t ↦ f t + g t) x = deriv f x + deriv g x := by
   exact deriv_add hf hg

@@ -1,5 +1,7 @@
 """Main CLI entry point and configuration."""
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
 

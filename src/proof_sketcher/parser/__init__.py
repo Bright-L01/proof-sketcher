@@ -9,7 +9,7 @@ Key Components:
     SimpleLeanParser: Regex-based parser for theorem extraction
     TheoremInfo: Data model for theorem information
     ParseResult: Container for parse results and errors
-    
+
     DEPRECATED:
     LeanLSPClient: (DEPRECATED) LSP client - non-functional, do not use
     HybridLeanParser: (DEPRECATED) Hybrid parser - uses broken LSP
@@ -39,6 +39,8 @@ For more details, see the individual module documentation.
 IMPORTANT: The LSP integration has been deprecated due to performance issues
 (1000x slower, 0 theorems extracted). Use SimpleLeanParser for all parsing needs.
 """
+
+from __future__ import annotations
 
 from .hybrid_parser import HybridLeanParser
 from .lsp_client import LeanLSPClient, ProofState, SemanticTheoremInfo, TacticInfo

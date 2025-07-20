@@ -1,11 +1,11 @@
 -- Mathematical Induction Examples for Discrete Mathematics
 
 /-- Sum of first n natural numbers equals n(n+1)/2 -/
-theorem sum_first_n_naturals (n : Nat) : 
+theorem sum_first_n_naturals (n : Nat) :
   (List.range (n + 1)).sum = n * (n + 1) / 2 := by
   induction n with
   | zero => simp
-  | succ k ih => 
+  | succ k ih =>
     simp [List.range_succ]
     rw [ih]
     ring
@@ -24,18 +24,18 @@ theorem two_pow_ge_succ (n : Nat) : 2^n ≥ n + 1 := by
       _ = (k + 1) + 1 := by ring
 
 /-- Every integer n ≥ 8 can be expressed as 3a + 5b for non-negative integers a, b -/
-theorem coin_problem (n : Nat) (h : n ≥ 8) : 
+theorem coin_problem (n : Nat) (h : n ≥ 8) :
   ∃ a b : Nat, n = 3 * a + 5 * b := by
   induction n using Nat.strong_induction_on with
   | h n ih =>
     cases' n with n
     · -- n = 0, contradicts h
       simp at h
-    cases' n with n  
+    cases' n with n
     · -- n = 1, contradicts h
       simp at h
     cases' n with n
-    · -- n = 2, contradicts h  
+    · -- n = 2, contradicts h
       simp at h
     cases' n with n
     · -- n = 3, contradicts h

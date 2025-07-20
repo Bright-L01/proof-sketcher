@@ -1,5 +1,7 @@
 """Simple Lean parser for MVP - extracts basic theorem information."""
 
+from __future__ import annotations
+
 import re
 import time
 from datetime import datetime
@@ -7,13 +9,13 @@ from pathlib import Path
 
 from ..core.error_handling import error_context, setup_error_logger
 from ..core.exceptions import FileParseError
-from ..core.resource_limits import timeout, TimeoutError
+from ..core.resource_limits import TimeoutError, timeout
 from .models import FileMetadata, ParseError, ParseResult, TheoremInfo
 
 
 class SimpleLeanParser:
     """Minimal parser that extracts theorem names and statements from Lean files."""
-    
+
     # Resource limits
     MAX_FILE_SIZE_MB = 10  # Maximum file size in megabytes
     MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024  # Convert to bytes
@@ -84,7 +86,7 @@ class SimpleLeanParser:
                 metadata=None,
                 parse_time_ms=0.0,
             )
-        
+
         start_time = time.time()
         try:
             # Apply timeout to the entire parsing operation
@@ -102,7 +104,7 @@ class SimpleLeanParser:
                     imports=[],  # Could be extracted later
                     lean_version=None,
                 )
-                
+
                 parse_time_ms = (time.time() - start_time) * 1000
 
                 return ParseResult(
@@ -112,7 +114,7 @@ class SimpleLeanParser:
                     metadata=metadata,
                     parse_time_ms=parse_time_ms,
                 )
-                
+
         except TimeoutError as e:
             return ParseResult(
                 success=False,

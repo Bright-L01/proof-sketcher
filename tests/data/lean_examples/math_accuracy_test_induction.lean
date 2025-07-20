@@ -35,7 +35,7 @@ def factorial : ℕ → ℕ
 
 theorem test_factorial_positive (n : ℕ) : 0 < factorial n := by
   induction n with
-  | zero => 
+  | zero =>
     simp [factorial]
   | succ n ih =>
     simp [factorial]

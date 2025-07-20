@@ -1,14 +1,21 @@
 """Simple markdown exporter for MVP."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
-from ..generator.models import ProofSketch, EducationalLevel
+from ..generator.models import EducationalLevel, ProofSketch
 
 
 class SimpleMarkdownExporter:
     """Minimal markdown exporter that just outputs basic markdown."""
 
-    def export(self, sketch: ProofSketch, output_path: Path | None = None, educational_level: EducationalLevel = EducationalLevel.INTUITIVE) -> str:
+    def export(
+        self,
+        sketch: ProofSketch,
+        output_path: Path | None = None,
+        educational_level: EducationalLevel = EducationalLevel.INTUITIVE,
+    ) -> str:
         """Export proof sketch to markdown string.
 
         Args:

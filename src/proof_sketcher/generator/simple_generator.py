@@ -4,19 +4,21 @@
 and predefined templates to generate explanations at different educational levels.
 """
 
+from __future__ import annotations
+
 from ..parser.models import TheoremInfo
-from .models import GenerationConfig, ProofSketch, EducationalLevel
+from .models import EducationalLevel, GenerationConfig, ProofSketch
 from .offline import EducationalGenerator
 
 
 class SimpleGenerator:
     """Educational generator implementing the Proof Explanation Ladder.
-    
+
     This generator serves undergraduate discrete mathematics students transitioning
     to formal proofs by providing progressive explanations at 4 complexity levels:
-    
+
     Level 1 (Intuitive): Why this theorem matters and what it means
-    Level 2 (Conceptual): What proof strategy we're using and why  
+    Level 2 (Conceptual): What proof strategy we're using and why
     Level 3 (Bridging): How informal reasoning maps to formal steps
     Level 4 (Formal): Complete Lean 4 syntax with annotations
     """
@@ -24,7 +26,7 @@ class SimpleGenerator:
     def __init__(self) -> None:
         """Initialize educational generator with the Proof Explanation Ladder."""
         self.educational_generator = EducationalGenerator()
-        
+
     @property
     def offline_generator(self):
         """Backward compatibility property."""
@@ -54,36 +56,36 @@ class SimpleGenerator:
             Educational proof sketch with progressive complexity levels
         """
         return self.generate_offline(theorem)
-        
+
     def generate_explanation_for_level(
         self, theorem: TheoremInfo, level: EducationalLevel
     ) -> dict[str, str]:
         """Generate explanation for a specific educational level.
-        
+
         Args:
             theorem: Theorem to explain
             level: Educational complexity level (1-4)
-            
+
         Returns:
             Dictionary with overview, steps, and conclusion for the specified level
         """
         sketch = self.generate_proof_sketch(theorem)
-        
+
         # Extract explanations for the specified level
         overview = sketch.get_overview(level)
         conclusion = sketch.get_conclusion(level)
-        
+
         # Get step explanations for this level
         step_explanations = []
         for step in sketch.key_steps:
             step_explanations.append(step.get_explanation(level))
-            
+
         return {
             "overview": overview,
             "steps": step_explanations,
             "conclusion": conclusion,
             "level": level.value,
-            "theorem_name": theorem.name
+            "theorem_name": theorem.name,
         }
 
     def generate_educational_sketch(
@@ -125,25 +127,27 @@ class SimpleGenerator:
             return self.generate_offline(base_theorem)
         else:
             return self.generate_offline(theorem)
-            
+
     def get_learning_progression(self, theorem: TheoremInfo) -> dict[str, dict]:
         """Get the complete learning progression for a theorem across all 4 levels.
-        
+
         This method implements the core Lean Learning Bridge functionality,
         providing a structured path from intuitive understanding to formal proofs.
-        
+
         Args:
             theorem: Theorem to explain
-            
+
         Returns:
             Dictionary with explanations for all 4 educational levels
         """
         sketch = self.generate_proof_sketch(theorem)
-        
+
         progression = {}
         for level in EducationalLevel:
-            progression[level.value] = self.generate_explanation_for_level(theorem, level)
-            
+            progression[level.value] = self.generate_explanation_for_level(
+                theorem, level
+            )
+
         # Add metadata about the learning progression
         progression["metadata"] = {
             "theorem_name": theorem.name,
@@ -151,7 +155,7 @@ class SimpleGenerator:
             "discrete_math_topic": sketch.discrete_math_topic,
             "difficulty_level": sketch.difficulty_level,
             "mathematical_areas": sketch.mathematical_areas,
-            "prerequisites": sketch.prerequisites
+            "prerequisites": sketch.prerequisites,
         }
-        
+
         return progression

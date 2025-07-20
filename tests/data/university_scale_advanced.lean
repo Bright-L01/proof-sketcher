@@ -13,7 +13,7 @@ import Mathlib.RingTheory.Ideal.Basic
 theorem monotone_convergence_simplified (f : ℕ → ℝ → ℝ) (μ : MeasureTheory.Measure ℝ)
   (h_mono : ∀ x, Monotone (fun n ↦ f n x))
   (h_integrable : ∀ n, MeasureTheory.Integrable (f n) μ) :
-  MeasureTheory.Integrable (fun x ↦ ⨆ n, f n x) μ → 
+  MeasureTheory.Integrable (fun x ↦ ⨆ n, f n x) μ →
   Filter.Tendsto (fun n ↦ ∫ x, f n x ∂μ) Filter.atTop (𝓝 (∫ x, ⨆ n, f n x ∂μ)) := by
   sorry
 
@@ -25,7 +25,7 @@ theorem dominated_convergence_simplified (f : ℕ → ℝ → ℝ) (g : ℝ → 
   sorry
 
 -- Functional analysis
-theorem banach_steinhaus_simplified {X Y : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X] 
+theorem banach_steinhaus_simplified {X Y : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
   [CompleteSpace X] [NormedAddCommGroup Y] [NormedSpace ℝ Y]
   (T : ℕ → X →L[ℝ] Y)
   (h_bounded : ∀ x : X, ∃ M : ℝ, ∀ n : ℕ, ‖T n x‖ ≤ M) :
@@ -47,7 +47,7 @@ theorem cauchy_integral_formula (f : ℂ → ℂ) (γ : ℝ → ℂ) (z₀ : ℂ
   : f z₀ = (1 / (2 * π * Complex.I)) • ∮ w in γ, f w / (w - z₀) := by
   sorry
 
-theorem liouville_theorem (f : ℂ → ℂ) 
+theorem liouville_theorem (f : ℂ → ℂ)
   (h_entire : AnalyticOn ℂ f (Set.univ : Set ℂ))
   (h_bounded : ∃ M : ℝ, ∀ z : ℂ, |f z| ≤ M) :
   ∃ c : ℂ, ∀ z : ℂ, f z = c := by
@@ -104,7 +104,7 @@ theorem dirichlet_theorem_primes_arithmetic_progression (a d : ℕ) (h_coprime :
   -- Dirichlet's theorem on primes in arithmetic progressions
   sorry
 
-theorem quadratic_reciprocity (p q : ℕ) [Fact p.Prime] [Fact q.Prime] 
+theorem quadratic_reciprocity (p q : ℕ) [Fact p.Prime] [Fact q.Prime]
   (hp_odd : Odd p) (hq_odd : Odd q) (h_distinct : p ≠ q) :
   ZMod.legendre_sym q p * ZMod.legendre_sym p q = (-1 : ZMod p)^((p-1)/2 * (q-1)/2) := by
   sorry
@@ -115,7 +115,7 @@ theorem hilbert_nullstellensatz_weak (k : Type*) [Field k] [IsAlgebraicallyClose
   ∃ x : Fin n → k, ∀ f ∈ I, MvPolynomial.eval x f = 0 := by
   sorry
 
-theorem bezout_theorem_curves (F G : MvPolynomial (Fin 2) ℂ) 
+theorem bezout_theorem_curves (F G : MvPolynomial (Fin 2) ℂ)
   (h_deg_F : F.totalDegree = d₁) (h_deg_G : G.totalDegree = d₂)
   (h_no_common_component : sorry) :
   (sorry : Finset _).card ≤ d₁ * d₂ := by -- Number of intersection points
@@ -147,13 +147,13 @@ theorem cantor_theorem (α : Type*) : ¬∃ f : α → Set α, Function.Surjecti
 
 theorem axiom_choice_equivalent_zorn :
   (∀ α : Type*, ∃ f : (Set α → α), ∀ s : Set α, s.Nonempty → f s ∈ s) ↔
-  (∀ (α : Type*) (r : α → α → Prop), 
+  (∀ (α : Type*) (r : α → α → Prop),
     (∀ c : Set α, IsChain r c → ∃ ub, ∀ x ∈ c, r x ub) →
     ∃ m, ∀ x, r m x → r x m) := by
   sorry
 
 -- Model theory
-theorem compactness_theorem_propositional (Γ : Set (Set Prop)) 
+theorem compactness_theorem_propositional (Γ : Set (Set Prop))
   (h_finitely_satisfiable : ∀ Δ : Finset (Set Prop), ↑Δ ⊆ Γ → ∃ v : Prop → Bool, sorry) :
   ∃ v : Prop → Bool, sorry := by -- Complete valuation satisfying Γ
   sorry

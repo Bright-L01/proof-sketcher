@@ -21,6 +21,8 @@ Known issues:
 RECOMMENDATION: Use SimpleLeanParser directly for all parsing needs.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import subprocess
@@ -53,14 +55,15 @@ class HybridLeanParser:
             enable_fallback: Whether to fall back to simple parsing on LSP failure
         """
         import warnings
+
         warnings.warn(
             "HybridLeanParser is deprecated because it uses the non-functional LSP client. "
             "The LSP client extracts 0 theorems and is 1000x slower. "
             "Use SimpleLeanParser directly instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
-        
+
         self.lean_executable = lean_executable
         self.prefer_lsp = prefer_lsp
         self.lsp_timeout = lsp_timeout

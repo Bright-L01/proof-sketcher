@@ -1,5 +1,7 @@
 """Parser configuration."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 
 
@@ -32,15 +34,16 @@ class ParserConfig:
             raise ValueError("timeout must be positive")
         if self.max_file_size <= 0:
             raise ValueError("max_file_size must be positive")
-        
+
         # Warn if LSP is enabled
         if self.use_lsp:
             import warnings
+
             warnings.warn(
                 "LSP integration is deprecated and non-functional. "
                 "It extracts 0 theorems and is 1000x slower than the simple parser. "
                 "Setting use_lsp=False automatically.",
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             self.use_lsp = False

@@ -7,6 +7,8 @@ This module provides centralized configuration management with support for:
 - Runtime configuration updates
 """
 
+from __future__ import annotations
+
 from .config import (
     ExportConfig,
     ProofSketcherConfig,

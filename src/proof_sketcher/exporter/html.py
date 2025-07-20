@@ -1,5 +1,7 @@
 """HTML exporter for generating web documentation."""
 
+from __future__ import annotations
+
 import gzip
 import hashlib
 import json
@@ -10,14 +12,9 @@ from pathlib import Path
 
 from ..generator.models import ProofSketch
 from .models import BaseExporter as BaseExporterImpl
-from .models import (
-    ExportContext,
-    ExportFormat,
-    ExportOptions,
-    ExportResult,
-    TemplateType,
-)
+from .models import ExportContext, ExportFormat, ExportOptions, ExportResult
 from .models import TemplateContext as TemplateManager
+from .models import TemplateType
 
 
 class HTMLExporter(BaseExporterImpl):

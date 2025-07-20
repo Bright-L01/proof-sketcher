@@ -3,12 +3,14 @@ Test parsing real Lean theorems to ensure parser works correctly.
 This is the critical test that currently fails - empty statements.
 """
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import pytest
 
-from proof_sketcher.parser.simple_parser import SimpleLeanParser
 from proof_sketcher.parser.models import ParseResult, TheoremInfo
+from proof_sketcher.parser.simple_parser import SimpleLeanParser
 
 # Real Lean theorem test cases
 REAL_LEAN_THEOREMS = [
@@ -110,9 +112,9 @@ class TestRealTheoremParsing:
         assert result.success, f"Parse failed: {result.errors}"
 
         # Should find exactly one theorem
-        assert len(result.theorems) == 1, (
-            f"Expected 1 theorem, got {len(result.theorems)}"
-        )
+        assert (
+            len(result.theorems) == 1
+        ), f"Expected 1 theorem, got {len(result.theorems)}"
         theorem = result.theorems[0]
 
         # Check theorem structure
@@ -120,34 +122,34 @@ class TestRealTheoremParsing:
 
         # CRITICAL: Statement must not be empty!
         assert theorem.statement != "", f"Statement is empty for theorem {theorem.name}"
-        assert theorem.statement != "Unknown", (
-            f"Statement is 'Unknown' for theorem {theorem.name}"
-        )
-        assert theorem.statement is not None, (
-            f"Statement is None for theorem {theorem.name}"
-        )
+        assert (
+            theorem.statement != "Unknown"
+        ), f"Statement is 'Unknown' for theorem {theorem.name}"
+        assert (
+            theorem.statement is not None
+        ), f"Statement is None for theorem {theorem.name}"
 
         # Check expected values
         expected = theorem_data["expected"]
 
         # Name should match
-        assert theorem.name == expected["name"], (
-            f"Name mismatch: expected {expected['name']}, got {theorem.name}"
-        )
+        assert (
+            theorem.name == expected["name"]
+        ), f"Name mismatch: expected {expected['name']}, got {theorem.name}"
 
         # Statement should contain expected text
         statement_lower = theorem.statement.lower()
         for expected_text in expected["statement_contains"]:
-            assert expected_text.lower() in statement_lower, (
-                f"Statement '{theorem.statement}' should contain '{expected_text}'"
-            )
+            assert (
+                expected_text.lower() in statement_lower
+            ), f"Statement '{theorem.statement}' should contain '{expected_text}'"
 
         # Check docstring if expected
         if "docstring" in expected:
             assert theorem.docstring is not None, "Expected docstring but got None"
-            assert expected["docstring"] in theorem.docstring, (
-                f"Docstring '{theorem.docstring}' should contain '{expected['docstring']}'"
-            )
+            assert (
+                expected["docstring"] in theorem.docstring
+            ), f"Docstring '{theorem.docstring}' should contain '{expected['docstring']}'"
 
         # Check proof if expected
         if expected.get("has_proof", False):

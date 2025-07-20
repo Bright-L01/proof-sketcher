@@ -9,6 +9,8 @@ This module provides performance benchmarks to validate optimization improvement
 - Regression detection
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
 import statistics
@@ -27,12 +29,12 @@ import pytest
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
+from proof_sketcher.config.config import ProofSketcherConfig
 from proof_sketcher.exporter.html import HTMLExporter
 from proof_sketcher.exporter.models import ExportContext, ExportOptions
 from proof_sketcher.generator.offline import OfflineGenerator
-from proof_sketcher.config.config import ProofSketcherConfig
-from proof_sketcher.parser.simple_parser import SimpleLeanParser
 from proof_sketcher.parser.config import ParserConfig
+from proof_sketcher.parser.simple_parser import SimpleLeanParser
 
 
 class BenchmarkSuite:
@@ -623,16 +625,16 @@ def test_performance_improvements():
     # Verify notation handler improvement
     if "notation_handler" in results and "speedup" in results["notation_handler"]:
         speedup = results["notation_handler"]["speedup"]
-        assert speedup > 3.0, (
-            f"Notation handler only {speedup:.2f}x faster (target: 3x)"
-        )
+        assert (
+            speedup > 3.0
+        ), f"Notation handler only {speedup:.2f}x faster (target: 3x)"
 
     # Verify parallel processing improvement
     if "parallel_processing" in results and "speedup" in results["parallel_processing"]:
         speedup = results["parallel_processing"]["speedup"]
-        assert speedup > 2.0, (
-            f"Parallel processing only {speedup:.2f}x faster (target: 2x)"
-        )
+        assert (
+            speedup > 2.0
+        ), f"Parallel processing only {speedup:.2f}x faster (target: 2x)"
 
     # Verify memory efficiency
     if (
@@ -640,9 +642,9 @@ def test_performance_improvements():
         and "memory_efficiency_percent" in results["memory_usage"]
     ):
         efficiency = results["memory_usage"]["memory_efficiency_percent"]
-        assert efficiency > 10.0, (
-            f"Memory efficiency only {efficiency:.1f}% (target: 10%)"
-        )
+        assert (
+            efficiency > 10.0
+        ), f"Memory efficiency only {efficiency:.1f}% (target: 10%)"
 
     # Verify overall performance score
     if "overall_performance_score" in results:
@@ -674,9 +676,9 @@ def test_resource_limits_functionality():
     assert results["monitoring_functional"], "Resource monitoring not working"
 
     # Animation limits should be applied
-    assert results["animation_limits_applied"], (
-        "Animation complexity limits not applied"
-    )
+    assert results[
+        "animation_limits_applied"
+    ], "Animation complexity limits not applied"
 
 
 if __name__ == "__main__":

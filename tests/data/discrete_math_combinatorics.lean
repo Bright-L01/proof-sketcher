@@ -6,7 +6,7 @@ theorem binom_symm (n k : Nat) (h : k ≤ n) : Nat.choose n k = Nat.choose n (n 
   rw [Nat.add_sub_cancel' h]
 
 /-- Pascal's identity: C(n+1,k+1) = C(n,k) + C(n,k+1) -/
-theorem pascal_identity (n k : Nat) : 
+theorem pascal_identity (n k : Nat) :
   Nat.choose (n + 1) (k + 1) = Nat.choose n k + Nat.choose n (k + 1) := by
   rw [Nat.choose_succ_succ]
 
@@ -38,11 +38,11 @@ theorem factorial_one : Nat.factorial 1 = 1 := by
 
 /-- Permutation formula: P(n,k) = n! / (n-k)! when k ≤ n -/
 -- Note: In Lean, we typically work with the relationship directly rather than division
-theorem perm_def (n k : Nat) (h : k ≤ n) : 
+theorem perm_def (n k : Nat) (h : k ≤ n) :
   n.factorial = Nat.choose n k * k.factorial * (n - k).factorial := by
   rw [← Nat.choose_mul_factorial_mul_factorial h]
 
 /-- Sum of first n numbers using combination identity -/
-theorem sum_range_choose (n : Nat) : 
+theorem sum_range_choose (n : Nat) :
   (List.range n).sum = Nat.choose n 2 := by
   sorry -- This requires more advanced techniques

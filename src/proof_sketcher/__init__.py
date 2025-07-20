@@ -40,6 +40,8 @@ For more information, see:
     - Examples: https://github.com/your-org/proof-sketcher/examples
 """
 
+from __future__ import annotations
+
 __version__ = "0.0.1a1"  # Alpha 1, NOT production!
 __author__ = "Proof Sketcher Contributors"
 

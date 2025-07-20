@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """MVP Integration Test - Proves the basic pipeline works."""
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 

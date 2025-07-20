@@ -27,6 +27,8 @@ Usage:
     ... )
 """
 
+from __future__ import annotations
+
 import logging
 
 from ..parser.lsp_client import SemanticTheoremInfo, TacticInfo

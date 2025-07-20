@@ -12,7 +12,7 @@ historical reference and potential future fixes.
 
 Known issues:
 - Extracts 0 theorems from any file
-- 1000x slower than simple regex parser  
+- 1000x slower than simple regex parser
 - LSP communication appears to be broken
 - No working implementation found
 
@@ -25,6 +25,8 @@ Original intended features (non-functional):
 - Mathematical context detection
 - Progressive difficulty assessment
 """
+
+from __future__ import annotations
 
 import asyncio
 import json
@@ -39,8 +41,13 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from ..core.error_handling import error_context, setup_error_logger
-from ..core.exceptions import LSPConnectionError, LSPTimeoutError, FileParseError
-from ..core.resource_limits import RateLimiter, ResourceMonitor, async_timeout, TimeoutError
+from ..core.exceptions import FileParseError, LSPConnectionError, LSPTimeoutError
+from ..core.resource_limits import (
+    RateLimiter,
+    ResourceMonitor,
+    TimeoutError,
+    async_timeout,
+)
 from .models import FileMetadata, ParseError, ParseResult, TheoremInfo
 
 
@@ -86,9 +93,14 @@ class SemanticTheoremInfo(TheoremInfo):
 class LeanLSPClient:
     """Lean 4 Language Server Protocol client for semantic analysis."""
 
-    def __init__(self, lean_executable: str = "lean", timeout: float = 30.0,
-                 max_memory_mb: int = 500, rate_limit_calls: int = 100,
-                 rate_limit_window: float = 60.0):
+    def __init__(
+        self,
+        lean_executable: str = "lean",
+        timeout: float = 30.0,
+        max_memory_mb: int = 500,
+        rate_limit_calls: int = 100,
+        rate_limit_window: float = 60.0,
+    ):
         """Initialize the LSP client.
 
         DEPRECATED: This LSP client is non-functional. Use SimpleLeanParser instead.
@@ -101,79 +113,107 @@ class LeanLSPClient:
             rate_limit_window: Time window for rate limiting (seconds)
         """
         import warnings
+
         warnings.warn(
             "LeanLSPClient is deprecated and non-functional. "
             "It extracts 0 theorems and is 1000x slower than SimpleLeanParser. "
             "Use SimpleLeanParser instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
-        
+
         # Validate and sanitize the executable path
         self.lean_executable = self._validate_executable(lean_executable)
         self.timeout = timeout
         self.logger = setup_error_logger(__name__)
         self._process: subprocess.Popen | None = None
         self._request_id = 0
-        
+
         # Resource limits
         self.resource_monitor = ResourceMonitor(max_memory_mb=max_memory_mb)
         self.rate_limiter = RateLimiter(
-            max_calls=rate_limit_calls,
-            time_window=rate_limit_window
+            max_calls=rate_limit_calls, time_window=rate_limit_window
         )
 
     def _validate_executable(self, executable_path: str) -> str:
         """Validate and sanitize the executable path for security.
-        
+
         Args:
             executable_path: Path to the executable
-            
+
         Returns:
             Validated and sanitized executable path
-            
+
         Raises:
             ValueError: If the executable path is invalid or insecure
         """
         # Validate against shell injection characters first
-        if any(char in executable_path for char in [';', '&', '|', '`', '$', '(', ')', '<', '>', '\n', '\r', '"', "'"]):
-            raise ValueError(f"Invalid characters in executable path: {executable_path}")
-        
+        if any(
+            char in executable_path
+            for char in [
+                ";",
+                "&",
+                "|",
+                "`",
+                "$",
+                "(",
+                ")",
+                "<",
+                ">",
+                "\n",
+                "\r",
+                '"',
+                "'",
+            ]
+        ):
+            raise ValueError(
+                f"Invalid characters in executable path: {executable_path}"
+            )
+
         # Check if it's a simple command name (no path separators)
-        if os.sep not in executable_path and '/' not in executable_path and '\\' not in executable_path:
+        if (
+            os.sep not in executable_path
+            and "/" not in executable_path
+            and "\\" not in executable_path
+        ):
             # It's just a command name like "lean", check if it's allowed
-            allowed_commands = ['lean', 'lean4', 'lean.exe', 'lean4.exe']
+            allowed_commands = ["lean", "lean4", "lean.exe", "lean4.exe"]
             if executable_path not in allowed_commands:
-                raise ValueError(f"Command must be one of {allowed_commands}, got: {executable_path}")
-            
+                raise ValueError(
+                    f"Command must be one of {allowed_commands}, got: {executable_path}"
+                )
+
             # Try to find it in PATH
             import shutil
+
             full_path = shutil.which(executable_path)
             if not full_path:
                 raise ValueError(f"Executable '{executable_path}' not found in PATH")
-            
+
             # Use the full path for additional validation
             path = Path(full_path).resolve()
         else:
             # It's a path, validate it
             path = Path(executable_path).resolve()
-            
+
             # Security checks
             if not path.exists():
                 raise ValueError(f"Executable not found: {executable_path}")
-                
+
             if not path.is_file():
                 raise ValueError(f"Executable path is not a file: {executable_path}")
-                
+
             # Check if executable
             if not os.access(str(path), os.X_OK):
                 raise ValueError(f"File is not executable: {executable_path}")
-                
+
             # Only allow specific executable names for Lean
-            allowed_names = ['lean', 'lean4', 'lean.exe', 'lean4.exe']
+            allowed_names = ["lean", "lean4", "lean.exe", "lean4.exe"]
             if path.name not in allowed_names:
-                raise ValueError(f"Executable must be one of {allowed_names}, got: {path.name}")
-        
+                raise ValueError(
+                    f"Executable must be one of {allowed_names}, got: {path.name}"
+                )
+
         # Return the validated path as string
         return str(path)
 
@@ -231,7 +271,7 @@ class LeanLSPClient:
 
             # Apply rate limiting
             await self.rate_limiter.acquire()
-            
+
             # Monitor resources during LSP operations
             async def lsp_operations():
                 # Start LSP server and analyze file
@@ -242,14 +282,16 @@ class LeanLSPClient:
 
                 # Extract theorem information using LSP
                 return await self._extract_theorems_semantic(file_path)
-            
+
             # Run with timeout and resource monitoring
             try:
                 theorems = await self.resource_monitor.monitor_async(
                     async_timeout(lsp_operations(), self.timeout)
                 )
             except asyncio.TimeoutError:
-                raise LSPTimeoutError(f"LSP parsing timed out after {self.timeout} seconds")
+                raise LSPTimeoutError(
+                    f"LSP parsing timed out after {self.timeout} seconds"
+                )
 
             end_time = time.time()
             parse_time_ms = (end_time - start_time) * 1000
@@ -276,7 +318,9 @@ class LeanLSPClient:
 
         except (LSPTimeoutError, LSPConnectionError, FileParseError) as e:
             # Handle our custom exceptions
-            self.logger.error(f"LSP parsing failed: {e}", extra={"details": getattr(e, 'details', {})})
+            self.logger.error(
+                f"LSP parsing failed: {e}", extra={"details": getattr(e, "details", {})}
+            )
             return ParseResult(
                 success=False,
                 errors=[
@@ -294,7 +338,9 @@ class LeanLSPClient:
             )
         except Exception as e:
             # Handle unexpected exceptions
-            self.logger.error(f"Unexpected error during LSP parsing: {e}", exc_info=True)
+            self.logger.error(
+                f"Unexpected error during LSP parsing: {e}", exc_info=True
+            )
             return ParseResult(
                 success=False,
                 errors=[
@@ -319,7 +365,7 @@ class LeanLSPClient:
             # Start Lean LSP server with security measures
             # Use shlex.quote to prevent shell injection
             command = [self.lean_executable, "--server"]
-            
+
             # Additional security: no shell execution
             self._process = subprocess.Popen(
                 command,
@@ -360,7 +406,9 @@ class LeanLSPClient:
             self.logger.error(f"Failed to start LSP server process: {e}")
             raise LSPConnectionError(f"Failed to start LSP server: {e}")
         except Exception as e:
-            self.logger.error(f"Unexpected error starting LSP server: {e}", exc_info=True)
+            self.logger.error(
+                f"Unexpected error starting LSP server: {e}", exc_info=True
+            )
             raise LSPConnectionError(f"Failed to start LSP server: {e}")
 
     async def _stop_lsp_server(self) -> None:

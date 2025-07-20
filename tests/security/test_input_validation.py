@@ -1,21 +1,23 @@
-
 # Mock implementations for security testing
+from __future__ import annotations
+
+
 class InputValidator:
     @staticmethod
     def validate_path(path):
         return str(path).replace("../", "")
-    
+
     @staticmethod
     def validate_content(content):
-        dangerous_patterns = ['<script>', '__import__', 'exec(']
+        dangerous_patterns = ["<script>", "__import__", "exec("]
         for pattern in dangerous_patterns:
             if pattern in content:
                 return content.replace(pattern, "")
         return content
-    
+
     @staticmethod
     def validate_url(url):
-        if url.startswith(('http://', 'https://')):
+        if url.startswith(("http://", "https://")):
             return url
         return None
 
@@ -207,9 +209,9 @@ class TestInputValidation:
 
         for input_filename, expected in test_cases:
             result = SecureConfig.sanitize_filename(input_filename)
-            assert result == expected, (
-                f"Failed for {input_filename}: got {result}, expected {expected}"
-            )
+            assert (
+                result == expected
+            ), f"Failed for {input_filename}: got {result}, expected {expected}"
 
 
 class TestURLValidation:

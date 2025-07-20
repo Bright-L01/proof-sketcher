@@ -4,6 +4,8 @@ This module provides integration with Lake's build system to enhance
 doc-gen4 documentation generation with educational content.
 """
 
+from __future__ import annotations
+
 import json
 from dataclasses import dataclass
 from pathlib import Path

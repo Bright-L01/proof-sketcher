@@ -1,5 +1,7 @@
 """Models for natural language generation."""
 
+from __future__ import annotations
+
 import hashlib
 from datetime import datetime
 from enum import Enum
@@ -28,45 +30,55 @@ class GenerationType(str, Enum):
 
 class EducationalLevel(str, Enum):
     """Educational complexity levels for the Proof Explanation Ladder."""
-    
-    INTUITIVE = "intuitive"      # Level 1: Why this theorem matters and what it means
-    CONCEPTUAL = "conceptual"    # Level 2: What proof strategy we're using and why  
-    BRIDGING = "bridging"        # Level 3: How informal reasoning maps to formal steps
-    FORMAL = "formal"            # Level 4: Complete Lean 4 syntax with annotations
+
+    INTUITIVE = "intuitive"  # Level 1: Why this theorem matters and what it means
+    CONCEPTUAL = "conceptual"  # Level 2: What proof strategy we're using and why
+    BRIDGING = "bridging"  # Level 3: How informal reasoning maps to formal steps
+    FORMAL = "formal"  # Level 4: Complete Lean 4 syntax with annotations
 
 
 class ProofStrategy(str, Enum):
     """Common proof strategies in discrete mathematics."""
-    
-    INDUCTION = "induction"                    # Mathematical induction
-    CONTRADICTION = "contradiction"           # Proof by contradiction (reductio ad absurdum)
-    DIRECT = "direct"                        # Direct proof
-    CASES = "cases"                          # Case analysis / proof by cases
-    CONSTRUCTION = "construction"            # Constructive existential proof
-    CONTRAPOSITIVE = "contrapositive"        # Proof by contrapositive
+
+    INDUCTION = "induction"  # Mathematical induction
+    CONTRADICTION = "contradiction"  # Proof by contradiction (reductio ad absurdum)
+    DIRECT = "direct"  # Direct proof
+    CASES = "cases"  # Case analysis / proof by cases
+    CONSTRUCTION = "construction"  # Constructive existential proof
+    CONTRAPOSITIVE = "contrapositive"  # Proof by contrapositive
 
 
 class ProofStep(BaseModel):
     """A single step in a proof sketch with educational levels."""
 
     step_number: int = Field(..., description="Step number in the proof")
-    
+
     # Progressive explanations for different educational levels
-    intuitive_explanation: str = Field(..., description="Level 1: Intuitive explanation of what this step does")
-    conceptual_explanation: str = Field(..., description="Level 2: Conceptual explanation with strategy context")
-    bridging_explanation: str = Field(..., description="Level 3: Bridge between informal and formal reasoning")
-    formal_explanation: str = Field(..., description="Level 4: Complete formal explanation with syntax")
-    
+    intuitive_explanation: str = Field(
+        ..., description="Level 1: Intuitive explanation of what this step does"
+    )
+    conceptual_explanation: str = Field(
+        ..., description="Level 2: Conceptual explanation with strategy context"
+    )
+    bridging_explanation: str = Field(
+        ..., description="Level 3: Bridge between informal and formal reasoning"
+    )
+    formal_explanation: str = Field(
+        ..., description="Level 4: Complete formal explanation with syntax"
+    )
+
     # Technical details
     tactics: list[str] = Field(default_factory=list, description="Lean tactics used")
-    mathematical_content: str = Field(..., description="Mathematical content of the step")
+    mathematical_content: str = Field(
+        ..., description="Mathematical content of the step"
+    )
     lean_code: str | None = Field(None, description="Actual Lean 4 code for this step")
 
     class Config:
         """Pydantic configuration."""
 
         str_strip_whitespace = True
-        
+
     def get_explanation(self, level: EducationalLevel) -> str:
         """Get explanation for the specified educational level."""
         explanations = {
@@ -83,24 +95,42 @@ class ProofSketch(BaseModel):
 
     theorem_name: str = Field(..., description="Name of the theorem")
     theorem_statement: str = Field(..., description="Formal statement of the theorem")
-    
+
     # Progressive educational content
-    intuitive_overview: str = Field(..., description="Level 1: Why this theorem matters and what it means")
-    conceptual_overview: str = Field(..., description="Level 2: What proof strategy we're using and why")
-    bridging_overview: str = Field(..., description="Level 3: How informal reasoning maps to formal steps")
-    formal_overview: str = Field(..., description="Level 4: Complete formal context and setup")
-    
+    intuitive_overview: str = Field(
+        ..., description="Level 1: Why this theorem matters and what it means"
+    )
+    conceptual_overview: str = Field(
+        ..., description="Level 2: What proof strategy we're using and why"
+    )
+    bridging_overview: str = Field(
+        ..., description="Level 3: How informal reasoning maps to formal steps"
+    )
+    formal_overview: str = Field(
+        ..., description="Level 4: Complete formal context and setup"
+    )
+
     key_steps: list[ProofStep] = Field(..., description="Key steps in the proof")
-    
+
     # Progressive conclusions
     intuitive_conclusion: str = Field(..., description="Level 1: Intuitive wrap-up")
-    conceptual_conclusion: str = Field(..., description="Level 2: Strategic significance")
-    bridging_conclusion: str = Field(..., description="Level 3: Connection to formal proof")
-    formal_conclusion: str = Field(..., description="Level 4: Complete formal conclusion")
+    conceptual_conclusion: str = Field(
+        ..., description="Level 2: Strategic significance"
+    )
+    bridging_conclusion: str = Field(
+        ..., description="Level 3: Connection to formal proof"
+    )
+    formal_conclusion: str = Field(
+        ..., description="Level 4: Complete formal conclusion"
+    )
 
     # Educational metadata
-    proof_strategy: ProofStrategy = Field(..., description="Primary proof strategy used")
-    discrete_math_topic: str | None = Field(None, description="Specific discrete mathematics topic")
+    proof_strategy: ProofStrategy = Field(
+        ..., description="Primary proof strategy used"
+    )
+    discrete_math_topic: str | None = Field(
+        None, description="Specific discrete mathematics topic"
+    )
     difficulty_level: str = Field(
         "intermediate", description="Difficulty: beginner, intermediate, advanced"
     )
@@ -131,7 +161,7 @@ class ProofSketch(BaseModel):
             if step.step_number == step_number:
                 return step
         return None
-        
+
     def get_overview(self, level: EducationalLevel) -> str:
         """Get overview for the specified educational level."""
         overviews = {
@@ -141,7 +171,7 @@ class ProofSketch(BaseModel):
             EducationalLevel.FORMAL: self.formal_overview,
         }
         return overviews[level]
-        
+
     def get_conclusion(self, level: EducationalLevel) -> str:
         """Get conclusion for the specified educational level."""
         conclusions = {

@@ -43,6 +43,8 @@ Generation Types:
 For configuration options, see GenerationConfig documentation.
 """
 
+from __future__ import annotations
+
 from .models import GenerationConfig, ProofSketch, ProofStep
 from .progressive_generator import (
     ConceptExplanation,

@@ -9,21 +9,18 @@ Features:
 - Mermaid diagram support
 """
 
+from __future__ import annotations
+
 import logging
 import re
 from pathlib import Path
 
 from ..generator.models import ProofSketch
 from .models import BaseExporter as BaseExporterImpl
-from .models import (
-    ExportContext,
-    ExportFormat,
-    ExportOptions,
-    ExportResult,
-    TemplateContext,
-    TemplateType,
-)
+from .models import ExportContext, ExportFormat, ExportOptions, ExportResult
+from .models import TemplateContext
 from .models import TemplateContext as TemplateManager
+from .models import TemplateType
 
 
 class MarkdownExporter(BaseExporterImpl):
@@ -596,9 +593,9 @@ class MarkdownExporter(BaseExporterImpl):
                         entry_parts[0] += " — " + " · ".join(entry_parts[1:])
 
                     if theorem.introduction:
-                        entry_parts[0] += (
-                            f"  \n  _{self._truncate_text(theorem.introduction, 100)}_"
-                        )
+                        entry_parts[
+                            0
+                        ] += f"  \n  _{self._truncate_text(theorem.introduction, 100)}_"
 
                     toc_content.append(entry_parts[0])
 

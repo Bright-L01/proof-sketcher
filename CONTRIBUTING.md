@@ -5,6 +5,7 @@ Thank you for your interest in contributing to Proof-Sketcher! This document pro
 ## Current State
 
 **⚠️ IMPORTANT**: Proof-Sketcher is alpha software with significant architectural issues:
+
 - Cannot handle concurrent users (major blocker)
 - Template-based content generation (not AI)
 - LSP integration is non-functional
@@ -44,12 +45,14 @@ pytest
 ### Code Style
 
 We use:
+
 - **Ruff** for linting and formatting
 - **mypy** for type checking
 - **Black** compatible formatting
 - **Pre-commit** hooks for consistency
 
 Run checks locally:
+
 ```bash
 # Format code
 ruff format .
@@ -69,6 +72,7 @@ pre-commit run --all-files
 ### Reporting Issues
 
 Before creating an issue:
+
 1. Check existing issues (including closed ones)
 2. Verify the issue exists in the latest version
 3. Include minimal reproduction steps
@@ -116,6 +120,7 @@ We especially need help with:
 ### Commit Messages
 
 Follow conventional commits:
+
 ```
 feat: add support for new theorem type
 fix: resolve concurrent user crash
@@ -150,6 +155,7 @@ pytest tests/integration/
 - Test edge cases and error conditions
 
 Example test:
+
 ```python
 def test_parser_handles_empty_file():
     """Parser should return empty result for empty file."""
@@ -180,16 +186,19 @@ src/proof_sketcher/
 ## Areas Needing Major Work
 
 ### 1. Concurrent User Support (Highest Priority)
+
 - Current implementation uses global state
 - No connection pooling or session management
 - Requires fundamental redesign
 
 ### 2. Content Generation
+
 - Replace generic templates with theorem-specific content
 - Consider actual AI integration or improved templates
 - Add mathematical accuracy
 
 ### 3. Testing Infrastructure
+
 - Increase coverage from 11% to 80%
 - Add performance benchmarks
 - Add integration tests with real Lean files

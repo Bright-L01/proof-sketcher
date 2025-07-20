@@ -1,13 +1,15 @@
 """Integration tests for parser and generator components."""
 
+from __future__ import annotations
+
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 
-from proof_sketcher.generator.simple_generator import SimpleGenerator as ClaudeGenerator
 from proof_sketcher.generator.models import GenerationConfig, GenerationModel
+from proof_sketcher.generator.simple_generator import SimpleGenerator as ClaudeGenerator
 from proof_sketcher.parser.config import ParserConfig
 from proof_sketcher.parser.simple_parser import SimpleLeanParser
 

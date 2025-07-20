@@ -5,6 +5,8 @@ through generating proof sketches, creating animations, and exporting to
 various formats.
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
 import shutil
@@ -222,7 +224,9 @@ theorem test{i} : {i} = {i} := by rfl
             }
 
             # Run batch processing
-            from proof_sketcher.exporter.batch_processor.parallel_processor import ParallelProcessor
+            from proof_sketcher.exporter.batch_processor.parallel_processor import (
+                ParallelProcessor,
+            )
 
             processor = ParallelProcessor(max_workers=2)
             results = processor.process_directory(temp_project_dir / "src")
@@ -480,7 +484,9 @@ class TestPerformanceIntegration:
         """Test that parallel processing improves performance."""
         import time
 
-        from proof_sketcher.exporter.batch_processor.parallel_processor import ParallelProcessor
+        from proof_sketcher.exporter.batch_processor.parallel_processor import (
+            ParallelProcessor,
+        )
 
         # Create test theorems
         theorems = []
@@ -515,9 +521,7 @@ class TestPerformanceIntegration:
 
     def test_notation_optimization_performance(self):
         """Test optimized notation handler performance."""
-        from proof_sketcher.parser.models_optimized import (
-            OptimizedParserConfig,
-        )
+        from proof_sketcher.parser.models_optimized import OptimizedParserConfig
 
         handler = OptimizedParserConfig()
 

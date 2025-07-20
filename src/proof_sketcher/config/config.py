@@ -7,6 +7,8 @@ This module provides a unified configuration system that supports:
 - Runtime configuration updates
 """
 
+from __future__ import annotations
+
 import os
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
