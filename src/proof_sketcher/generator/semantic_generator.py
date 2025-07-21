@@ -33,7 +33,7 @@ import logging
 
 from ..parser.lsp_client import SemanticTheoremInfo, TacticInfo
 from ..parser.models import TheoremInfo
-from .models import GenerationConfig, ProofSketch, ProofStep
+from .models import GenerationConfig, ProofSketch, ProofStep, ProofStrategy
 
 
 class EducationalLevel:
@@ -149,12 +149,43 @@ class SemanticGenerator:
         areas = self._identify_educational_areas(theorem)
         prerequisites = self._generate_educational_prerequisites(theorem, target_level)
 
+        # For semantic sketches, create more sophisticated progressive content
+        intuitive_overview = introduction
+        conceptual_overview = f"We'll prove this using {areas[0] if areas else 'mathematical'} concepts and techniques."
+        bridging_overview = (
+            "This proof bridges intuitive understanding with formal mathematical rigor."
+        )
+        formal_overview = (
+            "The formal proof uses advanced techniques and careful logical reasoning."
+        )
+
+        intuitive_conclusion = conclusion
+        conceptual_conclusion = (
+            "This result has important implications for our understanding of the topic."
+        )
+        bridging_conclusion = "The formal proof confirms our intuitive expectations."
+        formal_conclusion = (
+            "The theorem is rigorously established with all details verified."
+        )
+
+        # Determine proof strategy
+        proof_strategy = (
+            ProofStrategy.DIRECT
+        )  # Default, would be enhanced with actual analysis
+
         return ProofSketch(
             theorem_name=theorem.name,
             theorem_statement=theorem.statement or "",
-            introduction=introduction,
+            intuitive_overview=intuitive_overview,
+            conceptual_overview=conceptual_overview,
+            bridging_overview=bridging_overview,
+            formal_overview=formal_overview,
             key_steps=steps,
-            conclusion=conclusion,
+            intuitive_conclusion=intuitive_conclusion,
+            conceptual_conclusion=conceptual_conclusion,
+            bridging_conclusion=bridging_conclusion,
+            formal_conclusion=formal_conclusion,
+            proof_strategy=proof_strategy,
             difficulty_level=difficulty,
             mathematical_areas=areas,
             prerequisites=prerequisites,
@@ -177,12 +208,45 @@ class SemanticGenerator:
         # Generate basic conclusion
         conclusion = self._generate_basic_conclusion(theorem, target_level)
 
+        # Create progressive overviews from introduction
+        intuitive_overview = (
+            introduction
+            if target_level == "beginner"
+            else "This theorem establishes an important mathematical relationship."
+        )
+        conceptual_overview = (
+            "We'll use direct reasoning and simplification to prove this result."
+        )
+        bridging_overview = "The proof connects our intuitive understanding to formal mathematical techniques."
+        formal_overview = "Using Lean's proof tactics, we establish the theorem through logical steps."
+
+        # Create progressive conclusions
+        intuitive_conclusion = (
+            conclusion
+            if target_level == "beginner"
+            else "We've successfully proven the theorem."
+        )
+        conceptual_conclusion = (
+            "This proof demonstrates the power of mathematical reasoning."
+        )
+        bridging_conclusion = "Our formal proof validates our intuitive understanding."
+        formal_conclusion = (
+            "The theorem is established through rigorous formal verification."
+        )
+
         return ProofSketch(
             theorem_name=theorem.name,
             theorem_statement=theorem.statement or "",
-            introduction=introduction,
+            intuitive_overview=intuitive_overview,
+            conceptual_overview=conceptual_overview,
+            bridging_overview=bridging_overview,
+            formal_overview=formal_overview,
             key_steps=steps,
-            conclusion=conclusion,
+            intuitive_conclusion=intuitive_conclusion,
+            conceptual_conclusion=conceptual_conclusion,
+            bridging_conclusion=bridging_conclusion,
+            formal_conclusion=formal_conclusion,
+            proof_strategy=ProofStrategy.DIRECT,
             difficulty_level=target_level,
             mathematical_areas=["mathematics"],
             prerequisites=["Basic mathematical reasoning"],
@@ -222,13 +286,16 @@ class SemanticGenerator:
         steps = []
 
         # Setup step
+        intuition = self._get_basic_setup_intuition(target_level)
         steps.append(
             ProofStep(
                 step_number=1,
-                description="Set up the proof context",
+                intuitive_explanation=intuition,
+                conceptual_explanation="We start by understanding what we need to prove and what we know.",
+                bridging_explanation="Setting up the formal context from our intuitive understanding.",
+                formal_explanation="Establish the proof context with initial assumptions and goal.",
                 tactics=["setup"],
                 mathematical_content="Initial assumptions and goal",
-                intuition=self._get_basic_setup_intuition(target_level),
             )
         )
 
@@ -250,10 +317,12 @@ class SemanticGenerator:
         steps.append(
             ProofStep(
                 step_number=2,
-                description=description,
+                intuitive_explanation=intuition,
+                conceptual_explanation=f"We {description.lower()} to reach our goal.",
+                bridging_explanation=f"The {description.lower()} connects our assumptions to the conclusion.",
+                formal_explanation=f"Apply {description.lower()} using the proof tactics.",
                 tactics=["main"],
                 mathematical_content="Core proof steps",
-                intuition=intuition,
             )
         )
 
@@ -584,10 +653,12 @@ class SemanticGenerator:
 
         return ProofStep(
             step_number=step_number,
-            description=description,
+            intuitive_explanation=intuition,
+            conceptual_explanation=f"{description} using {', '.join(t.name for t in tactics)} tactics.",
+            bridging_explanation=f"This step bridges informal reasoning to formal tactics: {', '.join(t.name for t in tactics)}.",
+            formal_explanation=f"Formally: {description} via tactics: {', '.join(t.name for t in tactics)}.",
             tactics=[t.name for t in tactics],
             mathematical_content=f"Tactics: {', '.join(t.name for t in tactics)}",
-            intuition=intuition,
         )
 
     def _enhance_intuition_for_beginners(
@@ -635,13 +706,16 @@ class SemanticGenerator:
         steps = []
 
         # Step 1: Setup and context
+        intuition = self._get_setup_intuition(target_level, edu_profile)
         steps.append(
             ProofStep(
                 step_number=1,
-                description="Establish the proof context and understand what we need to show",
+                intuitive_explanation=intuition,
+                conceptual_explanation="Establish the proof context and understand what we need to show.",
+                bridging_explanation="We translate our goal into formal mathematical language.",
+                formal_explanation="Set up the initial proof state and clarify the goal.",
                 tactics=["setup"],
                 mathematical_content="Initial proof state and goal",
-                intuition=self._get_setup_intuition(target_level, edu_profile),
             )
         )
 
@@ -650,22 +724,29 @@ class SemanticGenerator:
         steps.append(
             ProofStep(
                 step_number=2,
-                description="Apply the main mathematical reasoning",
+                intuitive_explanation=main_intuition,
+                conceptual_explanation="Apply the main mathematical reasoning to progress the proof.",
+                bridging_explanation="Connect the formal techniques to our intuitive understanding.",
+                formal_explanation="Execute the core logical progression using appropriate tactics.",
                 tactics=["main_step"],
                 mathematical_content="Core logical progression",
-                intuition=main_intuition,
             )
         )
 
         # Step 3: Conclusion (if complex enough)
         if edu_profile.get("complexity", 0) > 2:
+            conclusion_intuition = self._get_conclusion_intuition(
+                target_level, edu_profile
+            )
             steps.append(
                 ProofStep(
                     step_number=3,
-                    description="Complete the proof and verify our result",
+                    intuitive_explanation=conclusion_intuition,
+                    conceptual_explanation="Complete the proof and verify our result matches the goal.",
+                    bridging_explanation="Ensure our formal proof aligns with our intuitive understanding.",
+                    formal_explanation="Finalize the proof with proper verification of the conclusion.",
                     tactics=["conclude"],
                     mathematical_content="Final verification",
-                    intuition=self._get_conclusion_intuition(target_level, edu_profile),
                 )
             )
 
@@ -724,10 +805,12 @@ class SemanticGenerator:
 
         return ProofStep(
             step_number=step_number,
-            description=f"Step {step_number}: Apply mathematical reasoning",
+            intuitive_explanation="This step advances the proof using logical principles.",
+            conceptual_explanation=f"Step {step_number}: Apply mathematical reasoning to make progress.",
+            bridging_explanation="We use formal logic to advance from our current position.",
+            formal_explanation="Apply appropriate mathematical techniques to progress the proof.",
             tactics=["unknown"],
             mathematical_content="Mathematical progress",
-            intuition="This step advances the proof using logical principles.",
         )
 
     def _generate_educational_conclusion(

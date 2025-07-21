@@ -151,7 +151,7 @@ class EducationalContentGenerator:
             Educational metadata
         """
         # Extract key concepts
-        concepts = [concept.name for concept in progressive_content.key_concepts]
+        concepts = [concept.concept for concept in progressive_content.key_concepts]
 
         # Estimate difficulty based on statement complexity
         difficulty_level = self._estimate_difficulty(theorem_info.statement)

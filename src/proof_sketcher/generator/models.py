@@ -182,6 +182,22 @@ class ProofSketch(BaseModel):
         }
         return conclusions[level]
 
+    @property
+    def introduction(self) -> str:
+        """Backward compatibility property for tests expecting 'introduction' field.
+
+        Maps to intuitive_overview (Level 1) which provides the introductory explanation.
+        """
+        return self.intuitive_overview
+
+    @property
+    def conclusion(self) -> str:
+        """Backward compatibility property for tests expecting 'conclusion' field.
+
+        Maps to intuitive_conclusion (Level 1) which provides the basic conclusion.
+        """
+        return self.intuitive_conclusion
+
     class Config:
         """Pydantic configuration."""
 

@@ -46,13 +46,14 @@ class MarkdownExporter(BaseExporterImpl):
             template_manager: Template manager
         """
         super().__init__(options)
-        
+
         # Template manager (create simple implementation for testing)
         if template_manager is None:
             # Create a simple template manager for testing
             class SimpleTemplateManager:
                 def render_template(self, format_type, template_type, context):
                     return f"# {context.get('theorem_name', 'test')}\n\n{context.get('theorem_statement', 'test statement')}"
+
             template_manager = SimpleTemplateManager()
         self.template_manager = template_manager
         self.logger = logging.getLogger(__name__)
@@ -79,25 +80,30 @@ class MarkdownExporter(BaseExporterImpl):
         """Export a single proof sketch to Markdown."""
         if context is None:
             context = ExportContext(
-                format=ExportFormat.MARKDOWN,
-                output_dir=self.options.output_dir
+                format=ExportFormat.MARKDOWN, output_dir=self.options.output_dir
             )
-        
+
         try:
             created_files = self._export_sketch(sketch, context)
             return ExportResult(
                 success=True,
                 format=ExportFormat.MARKDOWN,
-                output_files=created_files,
-                metadata={"theorem_name": sketch.theorem_name}
+                output_path=(
+                    created_files[0] if created_files else self.options.output_dir
+                ),
+                files_created=created_files,
+                warnings=[],
+                errors=[],
             )
         except Exception as e:
             self.logger.error(f"Failed to export {sketch.theorem_name}: {e}")
             return ExportResult(
                 success=False,
                 format=ExportFormat.MARKDOWN,
-                output_files=[],
-                metadata={"error": str(e)}
+                output_path=self.options.output_dir,
+                files_created=[],
+                warnings=[],
+                errors=[str(e)],
             )
 
     def export_multiple(
@@ -106,20 +112,19 @@ class MarkdownExporter(BaseExporterImpl):
         """Export multiple proof sketches to Markdown."""
         if context is None:
             context = ExportContext(
-                format=ExportFormat.MARKDOWN,
-                output_dir=self.options.output_dir
+                format=ExportFormat.MARKDOWN, output_dir=self.options.output_dir
             )
-        
+
         all_files = []
         errors = []
-        
+
         for sketch in sketches:
             result = self.export_single(sketch, context)
             if result.success:
-                all_files.extend(result.output_files)
+                all_files.extend(result.files_created)
             else:
-                errors.append(result.metadata.get("error", "Unknown error"))
-        
+                errors.extend(result.errors)
+
         # Create index file
         try:
             index_file = self._create_index(sketches, context)
@@ -127,13 +132,15 @@ class MarkdownExporter(BaseExporterImpl):
                 all_files.append(index_file)
         except Exception as e:
             errors.append(f"Failed to create index: {e}")
-        
+
         success = len(errors) == 0
         return ExportResult(
             success=success,
             format=ExportFormat.MARKDOWN,
-            output_files=all_files,
-            metadata={"errors": errors} if errors else {}
+            output_path=self.options.output_dir,
+            files_created=all_files,
+            warnings=[],
+            errors=errors,
         )
 
     def _export_sketch(self, sketch: ProofSketch, context: ExportContext) -> list[Path]:

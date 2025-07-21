@@ -54,6 +54,7 @@ from __future__ import annotations
 from .batch_processor import BatchExporter
 from .simple_html import SimpleHTMLExporter
 from .simple_markdown import SimpleMarkdownExporter
+from .template_manager import TemplateManager
 
 # Use simple exporters for MVP
 MarkdownExporter = SimpleMarkdownExporter
@@ -65,4 +66,5 @@ __all__ = [
     "MarkdownExporter",
     "SimpleHTMLExporter",
     "SimpleMarkdownExporter",
+    "TemplateManager",
 ]

@@ -9,13 +9,13 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from proof_sketcher.exporter.html import HTMLExporter
-from proof_sketcher.exporter.markdown import MarkdownExporter
+from proof_sketcher.exporter import HTMLExporter, MarkdownExporter, TemplateManager
 from proof_sketcher.exporter.models import (
     BaseExporter,
     ExportFormat,
     ExportOptions,
     ExportResult,
+    TemplateContext,
 )
 from proof_sketcher.generator.models import ProofSketch, ProofStep
 
@@ -453,13 +453,13 @@ class TestTemplateManager:
 
     def test_template_manager_initialization(self):
         """Test template manager initialization."""
-        manager = TemplateContext()
+        manager = TemplateManager()
         assert manager.env is not None
         assert manager.template_dir.exists()
 
     def test_render_html_template(self, sample_proof_sketch):
         """Test HTML template rendering."""
-        manager = TemplateContext()
+        manager = TemplateManager()
 
         with patch.object(manager.env, "get_template") as mock_get:
             mock_template = Mock()
@@ -475,7 +475,7 @@ class TestTemplateManager:
 
     def test_render_markdown_template(self, sample_proof_sketch):
         """Test Markdown template rendering."""
-        manager = TemplateContext()
+        manager = TemplateManager()
 
         with patch.object(manager.env, "get_template") as mock_get:
             mock_template = Mock()
@@ -490,7 +490,7 @@ class TestTemplateManager:
 
     def test_template_context_helpers(self):
         """Test template context helpers."""
-        manager = TemplateContext()
+        manager = TemplateManager()
 
         # Test math formatting helper
         assert hasattr(manager, "_format_math")
@@ -499,7 +499,7 @@ class TestTemplateManager:
 
     def test_custom_template_filters(self):
         """Test custom Jinja2 filters."""
-        manager = TemplateContext()
+        manager = TemplateManager()
 
         # Check custom filters are registered
         assert "format_math" in manager.env.filters
@@ -508,14 +508,14 @@ class TestTemplateManager:
 
     def test_template_not_found_handling(self):
         """Test handling of missing templates."""
-        manager = TemplateContext()
+        manager = TemplateManager()
 
         with pytest.raises(Exception):
             manager.render_template("nonexistent.jinja2", data={})
 
     def test_template_inheritance(self, sample_proof_sketch):
         """Test template inheritance system."""
-        manager = TemplateContext()
+        manager = TemplateManager()
 
         with patch.object(manager.env, "get_template") as mock_get:
             # Mock a template that extends base
