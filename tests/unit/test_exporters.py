@@ -17,7 +17,7 @@ from proof_sketcher.exporter.models import (
     ExportResult,
     TemplateContext,
 )
-from proof_sketcher.generator.models import ProofSketch, ProofStep
+from proof_sketcher.generator.models import ProofSketch, ProofStep, ProofStrategy
 
 
 @pytest.fixture
@@ -186,10 +186,19 @@ class TestHTMLExporter:
             ProofSketch(
                 theorem_name=f"theorem_{i}",
                 theorem_statement=f"Statement {i}",
-                introduction=f"Introduction {i}",
+                intuitive_overview=f"Introduction {i}",
+                conceptual_overview=f"Conceptual overview {i}",
+                bridging_overview=f"Bridging overview {i}",
+                formal_overview=f"Formal overview {i}",
                 key_steps=[],
-                conclusion=f"Conclusion {i}",
-                difficulty_level="easy",
+                intuitive_conclusion=f"Conclusion {i}",
+                conceptual_conclusion=f"Conceptual conclusion {i}",
+                bridging_conclusion=f"Bridging conclusion {i}",
+                formal_conclusion=f"Formal conclusion {i}",
+                proof_strategy=ProofStrategy.DIRECT,
+                difficulty_level="beginner",
+                mathematical_areas=["test"],
+                prerequisites=["basic_logic"],
             )
             for i in range(3)
         ]
@@ -200,7 +209,10 @@ class TestHTMLExporter:
             mock_export.return_value = ExportResult(
                 success=True,
                 format=ExportFormat.HTML,
-                output_files=[Path("test.html")],
+                output_path=Path("test.html"),
+                files_created=[Path("test.html")],
+                warnings=[],
+                errors=[],
                 metadata={},
             )
 

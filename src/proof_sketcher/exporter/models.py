@@ -75,6 +75,7 @@ class ExportResult:
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     export_time: float = 0.0
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def main_file(self) -> Path | None:
