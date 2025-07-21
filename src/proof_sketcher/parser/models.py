@@ -136,3 +136,41 @@ class ParseResult(BaseModel):
 
         arbitrary_types_allowed = True
         validate_assignment = True
+
+
+class ParserConfig(BaseModel):
+    """Basic parser configuration for mathematical notation handling."""
+    
+    def convert_to_latex(self, expr: str) -> str:
+        """Convert mathematical expression to LaTeX format.
+        
+        Args:
+            expr: Mathematical expression string
+            
+        Returns:
+            LaTeX-formatted string
+        """
+        # Basic LaTeX conversion for common mathematical symbols
+        latex_mappings = {
+            "∀": r"\forall",
+            "∃": r"\exists", 
+            "ℕ": r"\mathbb{N}",
+            "ℝ": r"\mathbb{R}",
+            "→": r"\rightarrow",
+            "∧": r"\land",
+            "∨": r"\lor",
+            "¬": r"\neg",
+            "⊣": r"\dashv",
+            "∇": r"\nabla",
+            "×": r"\times",
+            "⨆": r"\bigsqcup",
+            "⋃": r"\bigcup",
+            "∫": r"\int",
+            "π": r"\pi",
+        }
+        
+        result = expr
+        for symbol, latex in latex_mappings.items():
+            result = result.replace(symbol, latex)
+            
+        return result

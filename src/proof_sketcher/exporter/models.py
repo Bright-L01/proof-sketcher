@@ -290,3 +290,7 @@ class BaseExporter(ABC):
                 else None
             ),
         )
+
+
+# Backward compatibility alias for tests
+BaseExporterBase = BaseExporter
