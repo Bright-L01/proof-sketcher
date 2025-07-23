@@ -448,8 +448,9 @@ class TestMarkdownExporter:
             with patch.object(exporter.base_exporter, "export_single") as mock_export:
                 mock_export.return_value = ExportResult(
                     success=True,
-                    format=ExportFormat.HTML,
-                    output_files=[Path("test.html")],
+                    format=ExportFormat.MARKDOWN,
+                    output_path=Path("test.md"),
+                    files_created=[Path("test.md")],
                     metadata={},
                 )
 

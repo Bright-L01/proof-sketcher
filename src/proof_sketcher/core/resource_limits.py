@@ -338,11 +338,11 @@ def sanitize_path(path: str) -> str:
             # Path is outside current working directory
             # Only allow if it's a standard system path or explicitly safe
             safe_prefixes = [
-                "/tmp", 
-                "/var/tmp", 
+                "/tmp",
+                "/var/tmp",
                 "/private/var/folders",  # macOS temp dirs
                 "/var/folders",  # macOS temp dirs alternate
-                str(Path.home())
+                str(Path.home()),
             ]
             if not any(str(resolved).startswith(prefix) for prefix in safe_prefixes):
                 raise InvalidPathError("Path escapes current working directory")
@@ -367,6 +367,26 @@ def sanitize_theorem_name(name: str) -> str:
 
     # Remove any characters that aren't alphanumeric, underscore, dash, or dot
     sanitized = re.sub(r"[^a-zA-Z0-9_\-.]", "_", name)
+
+    # Remove path traversal sequences (..)
+    sanitized = re.sub(r"\.\.", "", sanitized)
+    
+    # Handle Windows reserved names
+    windows_reserved = {
+        "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5",
+        "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4",
+        "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+    }
+    if sanitized.upper() in windows_reserved:
+        sanitized = sanitized + "_theorem"
+    
+    # Handle special directory names
+    if sanitized in [".", ".."]:
+        sanitized = "dot_theorem"
+    
+    # Handle hidden files (starting with dot)
+    if sanitized.startswith(".") and len(sanitized) > 1:
+        sanitized = "hidden_" + sanitized[1:]
 
     # Remove leading/trailing dots and underscores
     sanitized = sanitized.strip("._")

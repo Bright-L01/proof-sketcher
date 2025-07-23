@@ -222,29 +222,29 @@ class SimpleLeanParser:
         """
         # Look for docstring before the theorem
         docstring = None
-        lines_before = content[:start_pos].split('\n')
-        
+        lines_before = content[:start_pos].split("\n")
+
         # Look backwards from the theorem line for docstring
         for i in range(len(lines_before) - 1, max(0, len(lines_before) - 10), -1):
             line = lines_before[i].strip()
-            if line.startswith('/--') and line.endswith('-/'):
+            if line.startswith("/--") and line.endswith("-/"):
                 # Single line docstring
                 docstring = line[3:-2].strip()
                 break
-            elif line.startswith('/--'):
+            elif line.startswith("/--"):
                 # Multi-line docstring start
                 docstring_lines = [line[3:].strip()]
                 # Look forward for the end
                 for j in range(i + 1, len(lines_before)):
                     next_line = lines_before[j].strip()
-                    if next_line.endswith('-/'):
+                    if next_line.endswith("-/"):
                         docstring_lines.append(next_line[:-2].strip())
-                        docstring = ' '.join(docstring_lines).strip()
+                        docstring = " ".join(docstring_lines).strip()
                         break
                     else:
                         docstring_lines.append(next_line)
                 break
-            elif line and not line.startswith('--'):
+            elif line and not line.startswith("--"):
                 # Hit non-comment content, stop looking
                 break
         # Find the end of this theorem (start of next theorem/lemma/def or end of file)
@@ -297,7 +297,7 @@ class SimpleLeanParser:
 
         # Extract just the type/result part after the colon
         type_part = theorem_part[last_colon_pos + 1 :].strip()
-        
+
         # Extract the full statement including parameter type info
         # Start after the theorem name and include everything up to :=
         name_match = re.match(r"(?:theorem|lemma)\s+(\w+)\s*", theorem_part)
