@@ -1,0 +1,50 @@
+Running test analysis...
+================================================================================
+TEST FAILURE ANALYSIS REPORT
+================================================================================
+
+Overall Statistics:
+  Total Tests: 292
+  Passed: 107 (36.6%)
+  Failed: 170 (58.2%)
+  Errors: 8
+  Skipped: 7
+  Current Pass Rate: 36.6%
+  Gap to 80%: 43.4%
+
+Failures by Category:
+
+Other Error (9 failures):
+  - ______________ ERROR at setup of test_educational_content_quality ______________
+  - FAILED tests/manual_tests/test_critical_error_handling.py::test_error_context_propagation - AssertionError: assert 'initializing system' in 'Unexpected error during loading configuration: Configuration file missing'
+  - FAILED tests/manual_tests/test_critical_error_handling.py::test_file_parser_error_handling - AssertionError: assert 'Not a Lean file' in 'File not found: test.txt'
+  ... and 6 more
+
+Pydantic Validation Error (7 failures):
+  - ____ ERROR at setup of TestFullPipeline.test_parse_generate_export_pipeline ____
+  - _______ ERROR at setup of TestFullPipeline.test_async_animation_pipeline _______
+  - ____ ERROR at setup of TestMarkdownExporter.test_mathlib_sketch_enhancement ____
+  ... and 4 more
+
+================================================================================
+Failures by Module:
+  security/input_validation: 188 failures
+  integration/full_pipeline: 28 failures
+  unit/exporters: 24 failures
+  integration/end_to_end: 20 failures
+  integration/mathlib_real: 20 failures
+  unit/docgen_plugin: 12 failures
+  parser/real_theorems: 10 failures
+  security/exploit_attempts: 8 failures
+  manual_tests/critical_error_handling: 6 failures
+  performance/benchmarks: 6 failures
+
+================================================================================
+RECOMMENDED FIX PRIORITY:
+
+Need to fix 126 tests to reach 80% pass rate
+
+1. Fix Other Error (9 tests)
+   Impact: Would increase pass rate by 3.1%
+2. Fix Pydantic Validation Error (7 tests)
+   Impact: Would increase pass rate by 2.4%

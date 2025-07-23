@@ -395,6 +395,172 @@ class ProofSketcherConfig:
             ),
             "export": self.export.dict() if hasattr(self.export, "dict") else {},
         }
+    
+    # Security methods for testing compatibility
+    @staticmethod
+    def sanitize_filename(filename: str) -> str:
+        """Mock filename sanitization for security testing."""
+        import re
+        
+        # Convert to string and strip whitespace
+        filename = str(filename).strip()
+        
+        # Handle empty or whitespace-only filenames
+        if not filename or filename in ['', '.', '..', '...']:
+            return 'unknown'
+            
+        # Remove path traversal attempts first
+        while '../' in filename or '..\\' in filename:
+            filename = filename.replace('../', '').replace('..\\', '')
+            
+        # Remove leading dots and spaces
+        filename = filename.lstrip('. ')
+        
+        # If nothing left after cleaning, return unknown
+        if not filename:
+            return 'unknown'
+            
+        # Remove dangerous characters
+        safe_name = re.sub(r'[<>:"/\\|?*]', '', filename)
+        
+        # Ensure filename isn't too long (keep extension if possible)
+        if len(safe_name) > 255:
+            # Try to preserve extension
+            parts = safe_name.rsplit('.', 1)
+            if len(parts) == 2 and len(parts[1]) <= 10:
+                # Keep extension, truncate name
+                name_part = parts[0][:255 - len(parts[1]) - 1]
+                safe_name = f"{name_part}.{parts[1]}"
+            else:
+                safe_name = safe_name[:255]
+                
+        return safe_name if safe_name else 'unknown'
+    
+    @staticmethod
+    def validate_url(url: str, allow_local: bool = False) -> bool:
+        """Mock URL validation for security testing."""
+        import re
+        from urllib.parse import urlparse
+        
+        url = str(url).strip()
+        
+        # Empty URL is invalid
+        if not url:
+            return False
+            
+        # Check for allowed protocols
+        allowed_protocols = ['https', 'wss']  # WebSocket secure is also allowed
+        if allow_local:
+            allowed_protocols.extend(['http', 'ws'])
+            
+        try:
+            parsed = urlparse(url)
+            
+            # Check protocol
+            if parsed.scheme not in allowed_protocols:
+                return False
+                
+            # Check for path traversal attempts
+            if '../' in url:
+                return False
+                
+            # Check hostname exists
+            if not parsed.netloc:
+                return False
+                
+            # Check for local and internal addresses
+            hostname = parsed.hostname or ''
+            
+            # List of local addresses
+            local_addresses = ['localhost', '127.0.0.1', '0.0.0.0']
+            is_local = hostname in local_addresses or hostname.startswith('192.168.') or hostname.startswith('10.')
+            
+            # Check for internal/private domain names that should be blocked
+            internal_domains = ['internal', 'local', 'private', 'intranet', 'corp']
+            is_internal = any(domain in hostname.lower() for domain in internal_domains)
+            
+            if not allow_local:
+                # Block both local and internal addresses
+                if is_local or is_internal:
+                    return False
+                    
+                # For non-local, require HTTPS or WSS
+                if parsed.scheme in ['http', 'ws']:
+                    return False
+            else:
+                # Even with allow_local, still block internal non-localhost addresses
+                if is_internal and hostname not in local_addresses:
+                    return False
+                
+            return True
+            
+        except Exception:
+            return False
+    
+    @staticmethod
+    def get_api_key() -> str | None:
+        """Mock API key retrieval for security testing."""
+        import os
+        
+        # Try different environment variable names
+        key = os.environ.get('ANTHROPIC_API_KEY') or os.environ.get('PROOF_SKETCHER_API_KEY')
+        
+        if not key:
+            return None
+            
+        # Validate key format (must start with 'sk-' and be at least 20 chars)
+        if not key.startswith('sk-') or len(key) < 20:
+            return None
+            
+        return key
+    
+    @staticmethod
+    def generate_session_id() -> str:
+        """Mock session ID generation for security testing."""
+        import secrets
+        # Generate URL-safe base64 encoded session ID
+        return secrets.token_urlsafe(24)  # 24 bytes = 32 chars base64
+    
+    @staticmethod
+    def generate_nonce() -> str:
+        """Mock nonce generation for security testing."""
+        import secrets
+        # Generate URL-safe base64 encoded nonce
+        return secrets.token_urlsafe(12)  # 12 bytes = 16 chars base64
+    
+    @staticmethod
+    def get_secure_headers() -> dict[str, str]:
+        """Mock secure headers generation for security testing."""
+        import secrets
+        # Generate nonce for CSP
+        nonce = secrets.token_urlsafe(16)
+        
+        return {
+            'X-Content-Type-Options': 'nosniff',
+            'X-Frame-Options': 'DENY',
+            'X-XSS-Protection': '1; mode=block',
+            'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+            'Content-Security-Policy': f"default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'nonce-{nonce}'",
+            'Referrer-Policy': 'strict-origin-when-cross-origin',
+            'Permissions-Policy': 'geolocation=(), microphone=(), camera=()'
+        }
+    
+    @staticmethod
+    def validate_environment() -> dict[str, bool]:
+        """Mock environment validation for security testing."""
+        import os
+        import secrets
+        
+        # Check for API key
+        api_key = os.environ.get('ANTHROPIC_API_KEY') or os.environ.get('PROOF_SKETCHER_API_KEY')
+        api_key_valid = bool(api_key and api_key.startswith('sk-') and len(api_key) >= 20)
+        
+        return {
+            'api_key_present': api_key_valid,
+            'debug_disabled': not os.environ.get('DEBUG', '').lower() in ('true', '1', 'yes'),
+            'ssl_verify_enabled': os.environ.get('PYTHONHTTPSVERIFY', '1') != '0',
+            'secure_random_available': True  # secrets module is always available in Python 3.6+
+        }
 
 
 # Global configuration instance

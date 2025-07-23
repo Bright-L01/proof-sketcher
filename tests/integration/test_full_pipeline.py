@@ -8,12 +8,8 @@ various formats.
 from __future__ import annotations
 
 import asyncio
-import json
-import shutil
-import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -155,7 +151,9 @@ theorem add_zero (n : Nat) : n + 0 = n := by
 
                     # Run the pipeline
                     from proof_sketcher.exporter.html import HTMLExporter
-                    from proof_sketcher.generator.simple_generator import SimpleGenerator
+                    from proof_sketcher.generator.simple_generator import (
+                        SimpleGenerator,
+                    )
                     from proof_sketcher.parser.simple_parser import SimpleLeanParser
 
                     # Parse
