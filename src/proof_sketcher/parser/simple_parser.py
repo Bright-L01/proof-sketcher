@@ -220,6 +220,33 @@ class SimpleLeanParser:
         Returns:
             TheoremInfo if successfully parsed, None otherwise
         """
+        # Look for docstring before the theorem
+        docstring = None
+        lines_before = content[:start_pos].split('\n')
+        
+        # Look backwards from the theorem line for docstring
+        for i in range(len(lines_before) - 1, max(0, len(lines_before) - 10), -1):
+            line = lines_before[i].strip()
+            if line.startswith('/--') and line.endswith('-/'):
+                # Single line docstring
+                docstring = line[3:-2].strip()
+                break
+            elif line.startswith('/--'):
+                # Multi-line docstring start
+                docstring_lines = [line[3:].strip()]
+                # Look forward for the end
+                for j in range(i + 1, len(lines_before)):
+                    next_line = lines_before[j].strip()
+                    if next_line.endswith('-/'):
+                        docstring_lines.append(next_line[:-2].strip())
+                        docstring = ' '.join(docstring_lines).strip()
+                        break
+                    else:
+                        docstring_lines.append(next_line)
+                break
+            elif line and not line.startswith('--'):
+                # Hit non-comment content, stop looking
+                break
         # Find the end of this theorem (start of next theorem/lemma/def or end of file)
         end_patterns = [
             r"\ntheorem\s+",
@@ -268,7 +295,20 @@ class SimpleLeanParser:
         if last_colon_pos == -1:
             return None
 
-        statement = theorem_part[last_colon_pos + 1 :].strip()
+        # Extract just the type/result part after the colon
+        type_part = theorem_part[last_colon_pos + 1 :].strip()
+        
+        # Extract the full statement including parameter type info
+        # Start after the theorem name and include everything up to :=
+        name_match = re.match(r"(?:theorem|lemma)\s+(\w+)\s*", theorem_part)
+        if name_match:
+            full_statement_start = name_match.end()
+            full_statement = theorem_part[full_statement_start:].strip()
+            # For better clarity, we'll use the full statement that includes type info
+            statement = full_statement
+        else:
+            # Fallback to just the type part if we can't extract the full statement
+            statement = type_part
 
         # Extract theorem name from the beginning
         name_match = re.match(r"(?:theorem|lemma)\s+(\w+)", theorem_part)
@@ -289,7 +329,7 @@ class SimpleLeanParser:
             proof=proof,
             dependencies=[],
             line_number=None,
-            docstring=None,
+            docstring=docstring,
             namespace=None,
             visibility="public",
             tactics=[],

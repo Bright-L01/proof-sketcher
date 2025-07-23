@@ -104,7 +104,8 @@ theorem test_theorem : 1 + 1 = 2 := by norm_num
                         )
 
                 assert result.exit_code == 0
-                assert "Found 1 theorems" in result.output
+                assert "Selected theorem: test_theorem" in result.output
+                assert "Generated HTML explanation" in result.output
 
     def test_prove_with_options(self, runner, sample_lean_file):
         """Test prove command with various options."""
@@ -132,51 +133,71 @@ theorem test_theorem : 1 + 1 = 2 := by norm_num
 
     def test_prove_specific_theorem(self, runner, sample_lean_file):
         """Test proving specific theorem."""
-        with patch("proof_sketcher.cli.SimpleLeanParser") as mock_parser:
-            # Return multiple theorems, but only one matches
-            mock_result = Mock()
-            mock_result.success = True
-            # Create properly configured mock theorems
-            theorem1 = Mock()
-            theorem1.name = "theorem1"
-            theorem1.statement = "stmt1"
+        # Mock config loading
+        with patch("proof_sketcher.config.config.ProofSketcherConfig.load") as mock_load:
+            mock_config = Mock()
+            mock_config.debug = False
+            mock_config.log_level = "INFO"
+            mock_load.return_value = mock_config
+            
+            with patch("proof_sketcher.cli.commands.prove.SimpleLeanParser") as mock_parser:
+                # Return multiple theorems, but only one matches
+                mock_result = Mock()
+                mock_result.success = True
+                # Create properly configured mock theorems
+                theorem1 = Mock()
+                theorem1.name = "theorem1"
+                theorem1.statement = "stmt1"
 
-            theorem2 = Mock()
-            theorem2.name = "specific_theorem"
-            theorem2.statement = "stmt2"
+                theorem2 = Mock()
+                theorem2.name = "specific_theorem"
+                theorem2.statement = "stmt2"
 
-            theorem3 = Mock()
-            theorem3.name = "theorem3"
-            theorem3.statement = "stmt3"
+                theorem3 = Mock()
+                theorem3.name = "theorem3"
+                theorem3.statement = "stmt3"
 
-            mock_result.theorems = [theorem1, theorem2, theorem3]
-            mock_result.errors = []
-            mock_parser.return_value.parse_file.return_value = mock_result
+                mock_result.theorems = [theorem1, theorem2, theorem3]
+                mock_result.errors = []
+                mock_parser.return_value.parse_file.return_value = mock_result
 
-            # Mock ClaudeGenerator
-            with patch("proof_sketcher.cli.ClaudeGenerator") as mock_generator:
-                mock_instance = Mock()
-                mock_generator.return_value = mock_instance
-                mock_instance.generate_proof_sketch.return_value = Mock(
-                    theorem_name="specific_theorem"
-                )
+                # Mock SimpleGenerator
+                with patch("proof_sketcher.cli.commands.prove.SimpleGenerator") as mock_generator:
+                    mock_instance = Mock()
+                    mock_generator.return_value = mock_instance
+                    # Create a proper mock sketch with all expected attributes
+                    mock_sketch = Mock()
+                    mock_sketch.theorem_name = "specific_theorem"
+                    mock_sketch.theorem_statement = "stmt2"
+                    mock_sketch.intuitive_overview = "Mock overview"
+                    mock_sketch.key_steps = []
+                    mock_instance.generate_offline.return_value = mock_sketch
 
-                result = runner.invoke(
-                    cli,
-                    ["prove", str(sample_lean_file), "--theorem", "specific_theorem"],
-                )
+                    # Mock exporters to avoid iteration issues
+                    with patch("proof_sketcher.cli.commands.prove.SimpleHTMLExporter") as mock_html_exporter:
+                        mock_html_instance = Mock()
+                        mock_html_exporter.return_value = mock_html_instance
+                        mock_html_instance.export.return_value = None
 
-                if (
-                    result.exit_code != 0
-                    or "Found 1 theorems to process" not in result.output
-                ):
-                    print(f"\nOutput: {result.output}")
-                    print(f"\nTheorems: {[t.name for t in mock_result.theorems]}")
+                        # Mock Path operations to avoid file not found errors in preview
+                        with patch("pathlib.Path.stat") as mock_stat, \
+                             patch("pathlib.Path.read_text") as mock_read_text:
+                            mock_stat.return_value.st_size = 1000  # Small file size
+                            mock_read_text.return_value = "Mock HTML content"
 
-                assert result.exit_code == 0
-                assert "Found 1 theorems to process" in result.output
-                # Should only generate for the specific theorem
-                assert mock_instance.generate_proof_sketch.call_count == 1
+                            result = runner.invoke(
+                                cli,
+                                ["prove", str(sample_lean_file), "--theorem", "specific_theorem"],
+                            )
+
+                            if result.exit_code != 0:
+                                print(f"\nOutput: {result.output}")
+                                print(f"\nTheorems: {[t.name for t in mock_result.theorems]}")
+
+                            assert result.exit_code == 0
+                            assert "Selected theorem: specific_theorem" in result.output
+                            # Should only generate for the specific theorem
+                            assert mock_instance.generate_offline.call_count == 1
 
     def test_prove_error_handling(self, runner):
         """Test error handling in prove command."""

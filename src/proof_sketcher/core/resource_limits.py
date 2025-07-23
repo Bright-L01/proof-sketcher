@@ -337,7 +337,13 @@ def sanitize_path(path: str) -> str:
         except ValueError:
             # Path is outside current working directory
             # Only allow if it's a standard system path or explicitly safe
-            safe_prefixes = ["/tmp", "/var/tmp", str(Path.home())]
+            safe_prefixes = [
+                "/tmp", 
+                "/var/tmp", 
+                "/private/var/folders",  # macOS temp dirs
+                "/var/folders",  # macOS temp dirs alternate
+                str(Path.home())
+            ]
             if not any(str(resolved).startswith(prefix) for prefix in safe_prefixes):
                 raise InvalidPathError("Path escapes current working directory")
 
