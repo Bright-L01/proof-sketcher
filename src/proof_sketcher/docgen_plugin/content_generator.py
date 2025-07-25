@@ -85,9 +85,9 @@ class EducationalContentGenerator:
 
         return {
             "progressive_explanations": {
-                "beginner": progressive_content.beginner_explanation,
-                "intermediate": progressive_content.intermediate_explanation,
-                "advanced": progressive_content.advanced_explanation,
+                "beginner": progressive_content.levels.get("beginner", {}),
+                "intermediate": progressive_content.levels.get("intermediate", {}),
+                "advanced": progressive_content.levels.get("advanced", {}),
             },
             "learning_pathway": [
                 step.to_dict() for step in progressive_content.learning_pathway
@@ -204,7 +204,15 @@ class EducationalContentGenerator:
             InteractiveElement(
                 type="expandable",
                 title="Proof Overview",
-                content=progressive_content.intermediate_explanation.overview,
+                content=(
+                    getattr(
+                        progressive_content.levels.get("intermediate"),
+                        "introduction",
+                        "Intermediate level overview",
+                    )
+                    if progressive_content.levels.get("intermediate")
+                    else "Intermediate level overview"
+                ),
                 level="intermediate",
             )
         )
@@ -214,8 +222,8 @@ class EducationalContentGenerator:
             elements.append(
                 InteractiveElement(
                     type="expandable",
-                    title=f"Concept: {concept.name}",
-                    content=concept.explanation,
+                    title=f"Concept: {concept.concept}",
+                    content=concept.informal_description,
                     level="beginner",
                 )
             )

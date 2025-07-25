@@ -1,0 +1,14 @@
+# Generated from pyproject.toml main dependencies
+click>=8.1.7,<9.0
+pydantic>=2.5.0,<3.0
+rich>=13.7.0,<14.0
+jinja2>=3.1.2,<4.0
+httpx>=0.25.2,<1.0
+toml>=0.10.2,<1.0
+pathlib2>=2.3.7,<3.0
+colorama>=0.4.6,<1.0
+
+# Security updates
+h11>=0.16.0,<1.0
+httpcore>=1.0.7,<2.0
+urllib3>=2.5.0,<3.0

@@ -1,0 +1,28 @@
+# Generated from pyproject.toml dev dependencies
+-r requirements.txt
+
+# Testing
+pytest>=8.0,<9.0
+pytest-asyncio>=0.21.1,<1.0
+pytest-cov>=4.1.0,<5.0
+pytest-mock>=3.12.0,<4.0
+pytest-timeout>=2.2.0,<3.0
+pytest-xdist>=3.5.0,<4.0
+hypothesis>=6.92.0,<7.0
+
+# Code quality
+ruff>=0.1.8,<1.0
+mypy>=1.7.1,<2.0
+pre-commit>=4.0.0,<5.0
+
+# Security scanning
+bandit[toml]>=1.7.5,<2.0
+safety>=3.0.0,<4.0
+
+# Documentation
+sphinx>=7.1.2,<8.0
+myst-parser>=2.0.0,<3.0
+
+# Build tools
+build>=1.0.3,<2.0
+twine>=4.0.2,<5.0
